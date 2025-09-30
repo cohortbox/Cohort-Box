@@ -60,11 +60,6 @@ const authTokenSocketIO = (socket, next) => {
 
 io.use(authTokenSocketIO);
 
-
-app.get('/', (req, res) => {
-    res.json({ message: 'Hello, Server is running 🚀!' })
-})
-
 app.get('/api/delete-all', authTokenAPI, async (req, res) => {
     try{
         await Message.deleteMany({});
