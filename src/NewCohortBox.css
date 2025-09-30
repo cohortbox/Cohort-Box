@@ -1,0 +1,96 @@
+.ncb-container{
+    display: flex;
+}
+
+.ncb-body-container{
+    padding: 20px 30px;
+    width: 100%;
+    background-color: var(--black);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    box-sizing: border-box;
+    justify-content: center;
+}
+
+.ncb-heading{
+    margin: 0;
+    color: var(--fontColor);
+    font-size: 1.5rem;
+}
+
+.ncb-options-container{
+    padding: 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    border: 1px solid var(--small);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 800px;
+    height: 100%;
+    min-height: 700px;
+    box-sizing: border-box;
+}
+
+.ncb-select-members{
+    display: flex;
+    gap: 1rem;
+}
+
+.ncb-select-members-btn{
+    height: 40px;
+    color: var(--fontColor);
+    border: 1px solid var(--green);
+    background-color: var(--black);
+    font-family: 'GSB';
+    border-radius: 5px;
+    font-size: 1rem;
+    padding: 0 10px;
+    transition: 0.2s;
+}
+
+.ncb-select-members-btn:hover{
+    background-color: var(--green);
+    color: var(--black);
+}
+
+.ncb-member-count{
+    color: var(--fontColor);
+    font-size: 1rem;
+}
+
+.ncb-chatname-heading{
+    color: var(--fontColor);
+    margin: 0;
+}
+
+.ncb-chatname-input{
+    margin-top: 20px;
+    width: 100%;
+    max-width: 300px;
+    height: 40px;
+    background-color: var(--black);
+    border: 1px solid var(--small);
+    padding: 0 5px;
+    color: var(--fontColor);
+    font-family: 'GSM';
+    border-radius: 5px;
+}
+
+.ncb-chatname-input:focus{
+    outline: none;
+    border: 1px solid var(--green);
+}
+
+.ncb-add-btn{
+    height: 40px;
+    padding: 0 20px 5px 20px;
+    font-family: 'GSM';
+    font-size: 1rem;
+    width: fit-content;
+    background-color: var(--green);
+    color: var(--black);
+    border-radius: 5px;
+    border: none;
+}

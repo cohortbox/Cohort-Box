@@ -1,0 +1,60 @@
+:root{
+  --green: #1ff200;
+  --black: #151517;
+  --hover: #2d2d32;
+  --small: #878792;
+  --fontColor: #c5cad3;
+  --searchBoxBg: #56565e;
+}
+
+@font-face {
+  font-family: 'GSM';
+  src: url('../fonts/fonnts.com-Gravesend_Sans_Medium.otf');
+}
+
+@font-face {
+  font-family: 'GSL';
+  src: url('../fonts/fonnts.com-Gravesend_Sans_Light.otf');
+}
+
+@font-face {
+  font-family: 'GSB';
+  src: url('../fonts/fonnts.com-Gravesend_Sans_Bold.otf');
+}
+
+body {
+  margin: 0;
+  font-family: 'GSM';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--black);
+}
+
+code {
+  font-family: 'GSM',
+    monospace;
+}
+
+.spinner-container{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.spinner {
+  border: 1px solid #00000000; /* light gray */
+  border-top: 4px solid var(--fontColor); /* blue */
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 20px 0;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+

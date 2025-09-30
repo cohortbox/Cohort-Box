@@ -1,0 +1,93 @@
+.cn-container{
+    display: flex;
+    flex-direction: column;
+    width: 550px;
+    height: 100%;
+    border: 1px solid var(--small);
+    border-left: none;
+    border-top: none;
+    border-bottom: none;
+    background-color: var(--black);
+    box-sizing: border-box;
+}
+
+.cn-heading-container{
+    height: 50px;
+    width: 100%;
+    background-color: var(--hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--small);
+}
+
+.cn-heading{
+    font-family: 'GSB';
+    color: var(--fontColor);
+}
+
+.cn-body-container{
+    flex: 1;
+    padding: 20px 10px 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.cn-searchbar-container{
+    display: flex;
+    height: 40px;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--searchBoxBg);
+    padding: 5px 30px;
+    box-sizing: border-box;
+    gap: 10px;
+    border-radius: 30px;
+    overflow: hidden;
+}
+
+.cn-search-icon{
+    height: 20px;
+}
+
+.cn-search-input{
+    height: 100%;
+    background-color: inherit;
+    border: none;
+    flex: 1;
+    color: var(--fontColor);
+    font-size: 1rem;
+    font-family: 'GSM';
+}
+
+.cn-search-input:focus{
+    outline: none;
+}
+
+.cn-filter-container{
+    display: flex;
+    gap: 10px;
+}
+
+.cn-filter-btn{
+    font-family: 'GSM';
+    background-color: #000;
+    color: var(--fontColor);
+    border: none;
+    height: 30px;
+    border-radius: 5px;
+}
+
+.active-filter-btn{
+    color: #000;
+    background-color: var(--fontColor);
+}
+
+.cn-chats-container{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+}

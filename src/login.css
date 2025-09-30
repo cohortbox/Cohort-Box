@@ -1,0 +1,116 @@
+.login{
+    height: 100dvh;
+    width: 100vw;
+    margin: 0;
+    background-image: url('./images/login-background.jpg');
+    background-size: 100% 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 0 5%;
+    box-sizing: border-box;
+}
+
+.login-box{
+
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    max-height: 600px;
+    max-width: 450px;
+    height: 100%;
+    width: 100%;
+    padding: 0 4%;
+    background-color: white;
+    border-radius: 10px;
+}
+
+.login-head{
+    font-size: 40px;
+    font-family: 'Roboto';
+    margin: 30px 5px;
+    color: rgb(26, 139, 232);
+}
+
+.login-form{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+    width: 100%;
+}
+
+.inputs-container{
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    width:100%;
+}
+
+.login-input{
+    box-sizing: border-box;
+    border-radius: 5px;
+    height: 35px;
+    width: 100%;
+    padding: 0px 10px;
+    border: 1px solid rgb(205, 205, 205);
+    background-color: rgb(243, 243, 243);
+    font-size: 17px;
+    transition-duration: 0.4s;
+    font-family: 'Roboto';
+}
+
+.login-input:focus{
+    outline: 1px solid black;
+}
+
+.login-btn{
+    height: 38px;
+    width: 100%;
+    padding: 0px 10px;
+    border-radius: 5px;
+    border: none;
+    font-size: 16px;
+    font-family: 'Roboto';
+    font-weight: bold;
+    background-color: rgb(26, 139, 232);
+    color: white;
+    transition-duration: 0.2s;
+}
+
+.login-btn:hover{
+    background-color: rgb(16, 129, 222);
+} 
+
+.invalid-email{
+    display: none;
+}
+
+.invalid-password{
+    display: none;
+}
+
+.email-container{
+    display: flex;
+    gap: 5px;
+    flex-direction: column;
+    color: red;
+    font-family: 'Roboto';
+}
+
+.password-container{
+    display: flex;
+    gap: 5px;
+    flex-direction: column;
+    color: red;
+    font-family: 'Roboto';
+}
+
+.link-to-signup{
+    text-decoration: none;
+    color: rgb(97, 97, 97);
+    font-family: 'Roboto';
+}

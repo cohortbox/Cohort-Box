@@ -1,0 +1,141 @@
+.video-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.video{
+    width: 100%;
+    height: 100%;
+    max-height: 600px;
+    max-width: 600px;
+    object-fit: contain;
+}
+
+/* controls pinned to bottom */
+.video-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    box-sizing: border-box;
+    height: 60px;
+}
+
+.control-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.control-icon {
+    height: 25px;
+    width: 25px;
+}
+
+.time-display {
+    color: white;
+    font-size: 0.8rem;
+    font-family: monospace;
+}
+
+.progress-bar {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 100px;
+  border-radius: 5px;
+  background: transparent; /* let track control colors */
+  outline: none;
+  cursor: pointer;
+}
+
+/* Track (unplayed + played in WebKit browsers) */
+.progress-bar::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 10px;
+  background: linear-gradient(
+    to right,
+    var(--black) 0%,
+    var(--black) var(--progress, 0%),
+    #ddd var(--progress, 0%),
+    #ddd 100%
+  );
+}
+
+/* Thumb */
+.progress-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--black, #000);
+  cursor: pointer;
+  margin-top: -3px; /* center thumb vertically */
+}
+
+.volume-bar {
+    width: 80px;
+    cursor: pointer;
+}
+
+.media-controls-container{
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+}
+
+.media-images-num-container{
+    height: 30px;
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px;
+}
+
+.media-images-num{
+    width: 30px;
+    padding: 5px;
+    background-color: black;
+    color: white;
+    border-radius: 20px;
+    display: grid;
+    place-items: center;
+}
+
+.controls{
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+}
+
+.control{
+    pointer-events: auto;
+    height: 40px;
+    width: 40px;
+    border-radius: 20px;
+    display: grid;
+    place-items: center;
+    background-color: var(--small);
+}
+
+.control img{
+    height: 30px;
+}

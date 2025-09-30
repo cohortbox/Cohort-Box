@@ -1,0 +1,16 @@
+.posts-page{
+    display: flex;
+    background-color: var(--black);
+    width: 100%;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.posts-container{
+    height: 100%;
+    width: 100%;
+    padding: 60px 50px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}

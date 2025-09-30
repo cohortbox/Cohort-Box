@@ -1,0 +1,57 @@
+.am-container{
+    position: relative;
+}
+
+.am-btn{
+    height: 40px;
+    width: 40px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #232326;
+    border: none;
+}
+
+.am-btn:hover{
+    background-color: var(--hover);
+}
+
+.am-btn-img{
+    height: 20px;
+}
+
+.am-menu-container{
+    position: absolute;
+    top: -160px;
+    height: 150px;
+    width: 150px;
+    border: 1px solid var(--small);
+    border-radius: 5px;
+    background-color: var(--black);
+    animation: myAnimation 0.2s ease;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+.custom-file-upload {
+  border: 1px solid #ccc;
+  display: inline-block;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  width: 100%;
+  box-sizing: border-box;
+  color: var(--fontColor);
+}
+
+@keyframes myAnimation{
+    0%{
+        scale: 0;
+    }
+    100%{
+        scale: 1;
+    }
+}

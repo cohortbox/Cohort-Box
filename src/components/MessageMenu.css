@@ -1,0 +1,73 @@
+.mm-container{
+    position: relative;
+    display: flex;
+    align-items: center;
+    z-index: 1;
+    transition: 5ms;
+}
+
+.mm-btn{
+    height: 25px;
+    width: 25px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: inherit;
+    border: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.mm-btn:hover{
+    background-color: rgba(255, 255, 255, 0.178);
+}
+
+.mm-btn-img{
+    height: 20px;
+}
+
+.mm-menu-container{
+    position: absolute;
+    bottom: 0px;
+    height: fit-content;
+    width: 120px;
+    border: 1px solid var(--small);
+    border-radius: 5px;
+    background-color: var(--black);
+    animation: myAnimation 0.2s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 5px 0;
+    box-sizing: border-box;
+}
+
+.mm-inner-btn{
+    display: flex;
+    gap: 10px;
+    color: var(--fontColor);
+    font-family: 'GSM';
+    width: 100%;
+    background-color: inherit;
+    border: none;
+    padding: 5px 5px;
+}
+
+.mm-inner-btn:hover{
+    background-color: var(--hover);
+}
+
+.mm-img{
+    height: 20px;
+}
+
+@keyframes myAnimation{
+    0%{
+        scale: 0;
+    }
+    100%{
+        scale: 1;
+    }
+}
