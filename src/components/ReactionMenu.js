@@ -1,18 +1,19 @@
-import { useState, useEffect} from "react";
-import { useFloating, offset, flip } from "@floating-ui/react";
+import { useState, useEffect } from "react";
+import { useFloating, offset, flip, autoUpdate } from "@floating-ui/react";
 import reactImg from "../images/reaction-fontcolor.png";
 import "./ReactionMenu.css";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 
 function ReactionMenu({ msg }) {
-  const {socket} = useSocket();
+  const { socket } = useSocket();
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
-  
+
   const { refs, floatingStyles } = useFloating({
     placement: "bottom-start",
     middleware: [offset(4), flip()],
+    whileElementsMounted: autoUpdate,
   });
 
   const btnRef = refs.setReference;
@@ -30,7 +31,6 @@ function ReactionMenu({ msg }) {
         setOpen(false);
       }
     }
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open, refs]);
@@ -46,9 +46,14 @@ function ReactionMenu({ msg }) {
 
   const handleReact = (e, emoji) => {
     e.preventDefault();
-    socket.emit('reaction', ({ emoji, msgId: msg._id, userId: user.id, chatId: msg.chatId }))
-    setOpen(false)
-  }
+    socket.emit("reaction", {
+      emoji,
+      msgId: msg._id,
+      userId: user.id,
+      chatId: msg.chatId,
+    });
+    setOpen(false);
+  };
 
   return (
     <div className="rm-container">
@@ -61,12 +66,20 @@ function ReactionMenu({ msg }) {
       </button>
 
       {open && (
-        <div ref={menuRef} style={floatingStyles} className="rm-menu-container">
-            {reactions.map((r) => (
-              <button key={r.label} className="rm-inner-btn" onClick={(e) => handleReact(e, r.emoji)}>
-                {r.emoji}
-              </button>
-            ))}
+        <div
+          ref={menuRef}
+          style={floatingStyles}
+          className="rm-menu-container"
+        >
+          {reactions.map((r) => (
+            <button
+              key={r.label}
+              className="rm-inner-btn"
+              onClick={(e) => handleReact(e, r.emoji)}
+            >
+              {r.emoji}
+            </button>
+          ))}
         </div>
       )}
     </div>

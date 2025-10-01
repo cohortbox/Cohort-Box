@@ -3,6 +3,7 @@
   display: flex;
   align-items: center;
   z-index: 1;
+  height: fit-content;
 }
 
 .rm-btn {
@@ -31,16 +32,12 @@
 }
 
 .rm-menu-container {
-  position: absolute;
-  top: 100%;
-  left: 0;
   display: flex;
   gap: 8px;
   padding: 6px 10px;
   border-radius: 24px;
   background-color: var(--black);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  animation: ease-in-out 0.2s ease;
   border: 1px solid var(--small);
   animation: scaleIn 0.15s ease-out;
 }

@@ -135,6 +135,7 @@
 .my-msg-container{
   display: flex;
   justify-content: right;
+  align-items: center;
   flex-direction: row-reverse;
   gap: 10px;
   margin: 5px 0;
@@ -143,6 +144,7 @@
 .other-msg-container{
   display: flex;
   justify-content: left;
+  align-items: center;
   gap: 10px;
   margin: 5px 0;
 }

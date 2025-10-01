@@ -27,7 +27,7 @@ const io = new Server(server, { cors: {
     origin: 'http://192.168.2.114:5000',
     methods: ['GET', 'POST'],
     credentials: true
-} })
+} });
 
 const authTokenAPI = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -59,6 +59,10 @@ const authTokenSocketIO = (socket, next) => {
 }
 
 io.use(authTokenSocketIO);
+
+app.get(/^(?!\/api|\/socket\.io).*/, (req, res) => {
+  res.sendFile(path.join(buildPath, 'index.html'));
+});
 
 app.get('/api/delete-all', authTokenAPI, async (req, res) => {
     try{

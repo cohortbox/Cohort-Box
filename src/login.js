@@ -58,7 +58,7 @@ function Login(){
 
     return(
         <div className='login'>
-            <title>Login - SwiftCart</title>
+            <title>Login - CohortBox</title>
             <div className='login-box'>
                 <h1 className='login-head'>Login</h1>
                 <form className='login-form' onSubmit={onLogIn}>

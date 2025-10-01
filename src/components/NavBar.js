@@ -25,19 +25,19 @@ function NavBar(){
                     <img src={menuImg} alt="Menu" className="nav-btn-img" />
                 </button>
 
-                <Link to="/">
+                <Link to="/" style={{textDecoration: 'none'}}>
                     <button className="nav-btn">
                         <img src={logoImg} alt="Home" className="nav-btn-img"/>
                         <span>Home</span>
                     </button>
                 </Link>
-                <Link to="/posts">
+                <Link to="/posts" style={{textDecoration: 'none'}}>
                     <button className="nav-btn">
                         <img src={plusImg} alt="New Post" className="nav-btn-img"/>
                         <span>New Post</span>
                     </button>
                 </Link>
-                <Link to="/new-cohort-box">
+                <Link to="/new-cohort-box" style={{textDecoration: 'none'}}>
                     <button className="nav-btn">
                         <img src={peopleImg} alt="Cohort" className="nav-btn-img"/>
                         <span>Cohorts</span>
@@ -46,7 +46,7 @@ function NavBar(){
             </section>
 
             <section className="nav-btn-container">
-                <Link to={user ? `/profile/${user.id}` : '/login'}>
+                <Link to={user ? `/profile/${user.id}` : '/login'} style={{textDecoration: 'none'}}>
                     <button className="nav-btn">
                         <img src={profileImg} alt="Profile" className="nav-btn-img"/>
                         <span>Profile</span>

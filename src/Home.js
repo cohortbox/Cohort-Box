@@ -156,6 +156,7 @@ function Home() {
 
   return (
     <div className="home">
+      <title>Home | CohortBox</title>
       <NavBar />
       <HomeNav users={users} chats={chats} setSelectedChat={setSelectedChat} />
       {selectedChat ? (

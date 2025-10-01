@@ -4,6 +4,7 @@
     align-items: center;
     z-index: 1;
     transition: 5ms;
+    height: fit-content;
 }
 
 .mm-btn{

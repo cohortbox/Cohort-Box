@@ -70,7 +70,7 @@ function SignUp() {
 
   return (
     <div className='SignUp'>
-      <title>Signup - SwiftCart</title>
+      <title>Signup - CohortBox</title>
         <div className='signup-box'>
             <h1 className='signup-head'>Sign Up</h1>
             <form className='signup-form' onSubmit={Signup}>

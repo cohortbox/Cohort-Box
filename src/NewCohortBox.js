@@ -51,6 +51,7 @@ function NewCohortBox(){
 
     return (
         <div className='ncb-container'>
+            <title>Create New CohortBox | CohortBox</title>
             <NavBar/>
             <div className='ncb-body-container'>
                 <h4 className='ncb-heading'>START A NEW COHORT BOX</h4>
