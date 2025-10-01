@@ -56,10 +56,8 @@ function Home() {
 
   useEffect(() => {
     if (!accessToken || loading) return;
-
-    const url = new URL(`${process.env.REACT_APP_API_BASE_URL}/api/return-users`);
-    url.searchParams.set('limit', '80');
-    fetch(url.toString(), {
+    
+    fetch('/api/return-users', {
       method: 'GET',
       headers: { 'authorization': `Bearer ${accessToken}` }
     })

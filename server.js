@@ -11,6 +11,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const { upload } = require('./config/CloudinaryConfig.js');
+const path = require('path');
 const { default: mongoose } = require('mongoose');
 const saltRounds = 10;
 require('dotenv').config()
@@ -22,6 +23,10 @@ app.use(cors({
     origin: 'http://192.168.2.114:5000',
     credentials: true
 }))
+
+const buildPath = path.join(__dirname, 'build'); 
+app.use(express.static(buildPath, { maxAge: '1y', index: false }));
+
 const server = http.createServer(app);
 const io = new Server(server, { cors: {
     origin: 'http://192.168.2.114:5000',
