@@ -742,12 +742,17 @@ setInterval(() => {
         console.log("👥 Online Users:", users.length > 0 ? users.join(", ") : "None");
 }, 10000);
 
-try{
-    connectDB(process.env.MONGO_URI)
-}catch(err){
-    console.log(err)
-}
-
-server.listen(process.env.SERVER_PORT, () => {
-    console.log('Listening on', process.env.SERVER_PORT + '....')
+connectDB(process.env.MONGO_URI)
+  .then(() => {
+    console.log("✅ MongoDB connected");
+    const PORT = process.env.PORT || 5000;
+    server.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
+  })
+  .catch(err => {
+    console.error("❌ DB connection failed:", err);
+    process.exit(1); // stop the app
+  });
+  
+server.listen(process.env.PORT, () => {
+    console.log('Listening on', process.env.PORT + '....')
 })
