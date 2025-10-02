@@ -737,10 +737,10 @@ io.on('connection', (socket) => {
     });
 });
 
-setInterval(() => {
-        const users = Object.values(onlineUsers).map(u => u.username);
-        console.log("👥 Online Users:", users.length > 0 ? users.join(", ") : "None");
-}, 10000);
+// setInterval(() => {
+//         const users = Object.values(onlineUsers).map(u => u.username);
+//         console.log("👥 Online Users:", users.length > 0 ? users.join(", ") : "None");
+// }, 10000);
 
 connectDB(process.env.MONGO_URI)
   .then(() => {
