@@ -15,7 +15,7 @@ function Posts(){
         if (!accessToken) return;
         if(loading) return;
 
-        fetch(`${process.env.REACT_APP_API_BASE_URL}/api/return-posts`, {
+        fetch(`/api/return-posts`, {
             method: 'GET',
             headers: {
                 'authorization': `Bearer ${accessToken}`

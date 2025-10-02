@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         try{
             console.log('Logging Out!')
-            await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/logout`, {
+            await fetch(`api/logout`, {
                 method: 'POST',
                 credentials: 'include'
             }) 
@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
 
     const refreshAccessToken = async () => {
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/refresh`, {
+            const res = await fetch(`/api/refresh`, {
                 method: 'GET',
                 credentials: 'include' // Needed if using HTTP-only cookie for refresh token
             });

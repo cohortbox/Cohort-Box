@@ -26,7 +26,7 @@ function Profile(){
     useEffect(() => {
         if(!user) return;
 
-        fetch(`${process.env.REACT_APP_API_BASE_URL}/api/return-users/${id}`, {
+        fetch(`/api/return-users/${id}`, {
             method: 'GET',
             headers: {
                 'authorization': `Bearer ${accessToken}`
@@ -48,7 +48,7 @@ function Profile(){
     useEffect(() => {
         if(loading) return;
 
-        fetch(`${process.env.REACT_APP_API_BASE_URL}/api/return-user-chats/${id}`, {
+        fetch(`/api/return-user-chats/${id}`, {
             method: 'GET',
             headers: {
                 'authorization': `Bearer ${accessToken}`
@@ -66,7 +66,7 @@ function Profile(){
 
     useEffect(() => {
         if (!accessToken || loading) return;
-        fetch(`${process.env.REACT_APP_API_BASE_URL}/api/return-friend-requests`, {
+        fetch(`/api/return-friend-requests`, {
         method: 'GET',
         headers: { authorization: `Bearer ${accessToken}` },
         credentials: 'include',

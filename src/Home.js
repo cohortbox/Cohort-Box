@@ -23,7 +23,7 @@ function Home() {
   useEffect(() => {
     if (!accessToken || !paramChatId || loading) return;
 
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/api/return-chats/${paramChatId}`, {
+    fetch(`/api/return-chats/${paramChatId}`, {
       method: 'GET',
       headers: { 'authorization': `Bearer ${accessToken}` }
     })
@@ -41,7 +41,7 @@ function Home() {
   useEffect(() => {
     if (!accessToken || loading) return;
 
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/api/return-chats`, {
+    fetch(`/api/return-chats`, {
       method: 'GET',
       headers: { 'authorization': `Bearer ${accessToken}` },
       credentials: 'include'

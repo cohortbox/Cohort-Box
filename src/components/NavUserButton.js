@@ -13,7 +13,7 @@ function NavUserButton({ user, isFriend, sentRequest, gotRequest }) {
   const apiBase = process.env.REACT_APP_API_BASE_URL;
 
   const callApi = async (url, method, body = null) => {
-    const res = await fetch(`${apiBase}${url}`, {
+    const res = await fetch(`${url}`, {
       method,
       headers: {
         'Content-Type': 'application/json',

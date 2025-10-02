@@ -94,7 +94,7 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
             formData.append('media', file)
           }
 
-          fetch(`${process.env.REACT_APP_API_BASE_URL}/api/upload-images`, {
+          fetch(`/api/upload-images`, {
             method: 'POST',
             headers: {
                 'authorization': `Bearer ${accessToken}`
@@ -145,7 +145,7 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
         recorder.stream.getTracks().forEach(track => track.stop());
         const formData = new FormData();
         formData.append('audio', blob);
-        fetch(`${process.env.REACT_APP_API_BASE_URL}/api/upload-audio`, {
+        fetch(`/api/upload-audio`, {
             method: 'POST',
             headers: {
                 'authorization': `Bearer ${accessToken}`

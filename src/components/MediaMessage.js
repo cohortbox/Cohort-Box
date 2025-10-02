@@ -25,7 +25,7 @@ function MediaMessage({ files, setFiles, selectedChat }){
             formData.append('media', file)
           }
 
-          fetch(`${process.env.REACT_APP_API_BASE_URL}/api/upload-images`, {
+          fetch(`/api/upload-images`, {
             method: 'POST',
             headers: {
                 'authorization': `Bearer ${accessToken}`

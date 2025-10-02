@@ -27,7 +27,7 @@ function NewCohortBox(){
             chatNiche
         }
 
-        fetch(`${process.env.REACT_APP_API_BASE_URL}/api/start-chat`, {
+        fetch(`/api/start-chat`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -15,7 +15,7 @@ function ChatsNav({ users, chats, setSelectedChat }) {
 
   useEffect(() => {
     if (!accessToken || loading) return;
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/api/return-friends`, {
+    fetch(`/api/return-friends`, {
       method: 'GET',
       headers: { authorization: `Bearer ${accessToken}` },
       credentials: 'include',
@@ -36,7 +36,7 @@ function ChatsNav({ users, chats, setSelectedChat }) {
 
   useEffect(() => {
     if (!accessToken || loading) return;
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/api/return-friend-requests`, {
+    fetch(`/api/return-friend-requests`, {
       method: 'GET',
       headers: { authorization: `Bearer ${accessToken}` },
       credentials: 'include',
