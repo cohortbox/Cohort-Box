@@ -212,7 +212,7 @@
 
 .sender-name{
   color: var(--black);
-  margin: 0;
+  margin: 0 0 3px 0;
 }
 
 .name-menu-container{
@@ -239,27 +239,22 @@
 }
 
 .my-media-msg{
-  padding: 2px;
+  padding: 4px;
   background-color: var(--green);
   border-radius: 5px;
   position: relative;
-  max-width: 300px;
   min-width: 100px;
-  display: grid;
 }
 
 .other-media-msg{
-  padding: 2px;
+  padding: 4px;
   background-color: var(--searchBoxBg);
   border-radius: 5px;
   position: relative;
-  max-width: 300px;
   min-width: 100px;
-  display: grid;
-  place-items: center;
 }
 
-.other-media-msg .msg-text{
+.other-media-msg .msg-text, .other-media-msg .sender-name{
   color: var(--fontColor);
 }
 
@@ -377,6 +372,21 @@
   border: 1px solid var(--small);
   background-color: var(--hover);
   color: var(--fontColor);
+}
+
+.recording-indicator{
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--small);
+  background-color: var(--black);
+  color: var(--fontColor);
+  display: flex;
+  gap: 5px;
+}
+
+.recording-img{
+  height: 10px;
 }
 
 .msg-send-btn {

@@ -17,7 +17,7 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers }){
 
     function handleSearch(e){
         e.preventDefault();
-        fetch(`${process.env.REACT_APP_API_BASE_URL}/api/return-users?q=${encodeURIComponent(query)}`, {
+        fetch(`/api/return-users?q=${encodeURIComponent(query)}`, {
             method: 'GET',
             headers: {
                 'authorization': `Bearer ${accessToken}`

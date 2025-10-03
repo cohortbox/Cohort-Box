@@ -1,97 +1,130 @@
 import './MediaMessage.css';
-import { useState } from 'react';
-import closeImg from '../images/close-gray.png';
-import sendImg from '../images/send.png'
-import { useAuth } from '../context/AuthContext';
-import { useSocket } from '../context/SocketContext';
+import MessageMenu from './MessageMenu.js';
+import ReactionMenu from './ReactionMenu.js';
+import AudioPlayer from './AudioPlayer.js';
+import playIcon from '../images/play.png';
+import { useAuth } from '../context/AuthContext.js';
 
-function MediaMessage({ files, setFiles, selectedChat }){
-    const { socket } = useSocket();
-    const filesArr = Array.from(files);
-    const [message, setMessage] = useState('');
-    const [index, setIndex] = useState(0);
-    const { user, accessToken } = useAuth();
+export default function MediaMessage({ msg, sender, setMessages, setClickedMedia }){
+    const { user } = useAuth();
 
-    function handleClose() {
-        setFiles([]); // clear selected files
-        setIndex(0);
+    function groupReactions(reactions = []) {
+        const map = {};
+        for (let r of reactions) {
+            if (!map[r.emoji]) map[r.emoji] = 0;
+        }
+        return Object.entries(map).map(([emoji, count]) => ({ emoji, count }));
     }
 
-    function sendMessage(e) {
-        e.preventDefault();
-        if(!message.trim()) return;
-        const formData = new FormData();
-          for(const file of files){
-            formData.append('media', file)
-          }
-
-          fetch(`/api/upload-images`, {
-            method: 'POST',
-            headers: {
-                'authorization': `Bearer ${accessToken}`
-            },
-            body: formData
-          }).then(response => {
-            if(!response.ok){
-                throw new Error('Request Failed!')
-            }
-            return response.json();
-          }).then(data => {
-            const media = data.media;
-            console.log(media)
-            const newMessage = {
-              from: user.id,
-              chatId: selectedChat._id,
-              type: 'media',
-              message: message.trim(),
-              media,
-            }
-            socket.emit("message", newMessage);
-            setMessage("");
-            setIndex(0);
-            setFiles([]);
-          })
-    }
-
-
-    // ---------- Media Message = mmsg ---------- 
-    return (
-        <div className='mmsg-container'>
-            <div className='mmsg-close-btn-container'>
-                <button className='mmsg-close-btn'><img src={closeImg} className='mmsg-close-img' onClick={handleClose}/></button>
-            </div>
-            <div className='mmsg-main-media-container'>
-                {
-                    files[index].type.startsWith('image/') ? (
-                        <img src={URL.createObjectURL(files[index])} className='mmsg-main-media'/>
-                    ) : (
-                        <video src={URL.createObjectURL(files[index])} className='mmsg-main-media' controls/>
-                    )
+    return(
+        <div className={user.id === msg.from ? 'my-msg-container' : 'other-msg-container'}>
+                { msg.media.length > 0 && msg.media.length <= 2 ? (
+                    <div className={ msg.from === user.id ? "my-media-msg" : "other-media-msg" }>
+                      <div className='name-menu-container'>
+                        { msg.from !== user.id && sender && (
+                          <h4 className='sender-name'>{sender.firstName + ' ' + sender.lastName }</h4>
+                        ) }
+                      </div>
+                      <div className={'msg-media-wrapper' + (msg.media[0].type === 'audio' ? ' audio-msg-wrapper' : '')} onClick={msg.media[0].type === 'audio' ? () => {return} : () => setClickedMedia(msg.media)}>
+                        {msg.media.map((mediaItem, index) => (
+                          mediaItem.type === "image" ? (
+                              <div className='msg-media-container'>
+                                <img key={index} src={mediaItem.url} className='msg-media' />
+                              </div>
+                            
+                          ) : (
+                              <div className='msg-media-container'>
+                                <div className='video-icon'>
+                                  <img src={playIcon}/>
+                                </div>
+                                <video key={index} src={mediaItem.url} className='msg-media' />
+                              </div>
+                          )
+                        ))}
+                      </div>
+                      { msg.text !== ' ' && <span className="msg-text">{msg.message}</span>}
+                      {msg.reactions?.length > 0 && (
+                        <div className={msg.from === user.id ? "my-reactions" : "other-reactions"}>
+                          <span className="reaction-bubble">
+                            {groupReactions(msg.reactions)[0].emoji} {groupReactions(msg.reactions)[1]?.emoji} {msg.reactions.length > 1 && <span className="reaction-count">{msg.reactions.length}</span>}
+                          </span>
+                        </div>
+                      )}
+                    </div>    
+                  ) : msg.media.length === 3 ? (
+                    <div className={user.id === msg.from ? 'my-msg-container' : 'other-msg-container'}>
+                      <div className={msg.from === user.id ? "my-media-msg" : "other-media-msg"}>
+                        <div className='name-menu-container'>
+                          { msg.from !== user.id && sender && (
+                            <h4 className='sender-name'>{sender.firstName + ' ' + sender.lastName }</h4>
+                          ) }
+                        </div>
+                        <div className='msg-media-wrapper-3' onClick={() => setClickedMedia(msg.media)}>
+                          {msg.media.map((mediaItem, index) => (
+                            mediaItem.type === "image" ? (
+                                <div className='msg-media-container'>
+                                  <img key={index} src={mediaItem.url} className='msg-media' />
+                                </div>
+                              
+                            ) : (
+                                <div className='msg-media-container'>
+                                  <div className='video-icon'>
+                                    <img src={playIcon}/>
+                                  </div>
+                                  <video key={index} src={mediaItem.url} className='msg-media' />
+                                </div>
+                            )
+                          ))}
+                        </div> 
+                        { msg.text !== ' ' && <span className="msg-text">{msg.message}</span>}
+                        {msg.reactions?.length > 0 && (
+                          <div className={msg.from === user.id ? "my-reactions" : "other-reactions"}>
+                            <span className="reaction-bubble">
+                              {groupReactions(msg.reactions)[0].emoji} {groupReactions(msg.reactions)[1]?.emoji} {msg.reactions.length > 1 && <span className="reaction-count">{msg.reactions.length}</span>}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={user.id === msg.from ? 'my-msg-container' : 'other-msg-container'}>
+                      <div className={msg.from === user.id ? "my-media-msg" : "other-media-msg"}>
+                        <div className='name-menu-container'>
+                          { msg.from !== user.id && sender && (
+                            <h4 className='sender-name'>{sender.firstName + ' ' + sender.lastName }</h4>
+                          ) }
+                        </div>
+                        <div className='msg-media-wrapper-4' onClick={() => setClickedMedia(msg.media)}>
+                          {msg.media.map((mediaItem, index) => (
+                            mediaItem.type === "image" ? (
+                                <div className='msg-media-container'>
+                                  <img key={index} src={mediaItem.url} className='msg-media' />
+                                </div>
+                              
+                            ) : (
+                                <div className='msg-media-container'>
+                                  <div className='video-icon'>
+                                    <img src={playIcon}/>
+                                  </div>
+                                  <video key={index} src={mediaItem.url} className='msg-media' />
+                                </div>
+                            )
+                          ))}
+                        </div>
+                        { msg.text !== ' ' && <span className="msg-text">{msg.message}</span>}
+                        {msg.reactions?.length > 0 && (
+                          <div className={msg.from === user.id ? "my-reactions" : "other-reactions"}>
+                            <span className="reaction-bubble">
+                              {groupReactions(msg.reactions)[0].emoji} {groupReactions(msg.reactions)[1]?.emoji} {msg.reactions.length > 1 && <span className="reaction-count">{msg.reactions.length}</span>}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )    
                 }
+                <MessageMenu msg={msg} setMessages={setMessages}/>
+                <ReactionMenu msg={msg}/>
             </div>
-            <div className='mmsg-preview-container'>
-                {
-                    filesArr.map((file, index) => {
-                        return file.type.startsWith('image/') ? (
-                            <img key={index} src={URL.createObjectURL(file)} className='mmsg-preview' onClick={() => setIndex(index)}/>
-                        ) : (
-                            <video key={index} src={URL.createObjectURL(file)} className='mmsg-preview' onClick={() => setIndex(index)}/>
-                        )
-                    })
-                }
-            </div>
-            <form className='msg-input-form' onSubmit={sendMessage}>
-                <input
-                type="text"
-                value={message}
-                placeholder="Type a caption"
-                onChange={(e) => setMessage(e.target.value)}
-                className='msg-input'
-                />
-                <button className='msg-send-btn' onClick={(e) => sendMessage(e)}><img className='msg-send-img' src={sendImg}/></button>
-            </form>
-        </div>
     )
 }
-
-export default MediaMessage

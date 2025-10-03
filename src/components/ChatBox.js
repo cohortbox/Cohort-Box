@@ -4,17 +4,21 @@ import { useAuth } from '../context/AuthContext';
 import ChatInfo from './ChatInfo';
 import AttachmentMenu from './AttachmentMenu';
 import MessageMenu from './MessageMenu.js';
-import ReactionMenu from './ReactionMenu.js'
+import ReactionMenu from './ReactionMenu.js';
 import dotsImg from '../images/dots.png';
 import closeImg from '../images/close-gray.png';
 import sendImg from '../images/send.png';
 import micImg from '../images/microphone.png';
 import playIcon from '../images/play.png';
+import recordingIcon from '../images/voice.png';
 import { useNavigate } from 'react-router-dom';
 import MediaView from './MediaView.js';
-import MediaMessage from './MediaMessage.js';
+import MediaMessagePreview from './MediaMessagePreview.js';
 import { useSocket } from '../context/SocketContext.js';
 import AudioPlayer from './AudioPlayer.js';
+import TextMessage from './TextMessage.js';
+import MediaMessage from './MediaMessage.js';
+import AudioMessage from './AudioMessage.js';
 
 function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMessages, typingUsers }){
   const { socket } = useSocket();
@@ -161,7 +165,7 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
           const newMessage = {
             from: user.id,
             chatId: selectedChat._id,
-            type: 'media',
+            type: 'audio',
             message: ' ',
             media,
           }
@@ -180,7 +184,7 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
 
   return (
     <div className="chat-box">
-      { files.length > 0 && <MediaMessage files={files} setFiles={setFiles} selectedChat={selectedChat}/> }
+      { files.length > 0 && <MediaMessagePreview files={files} setFiles={setFiles} selectedChat={selectedChat}/> }
       {clickedMedia && <MediaView media={clickedMedia} setClickedMedia={setClickedMedia}/>}
       { selectedChat && <ChatInfo selectedChat={selectedChat} chatInfoClass={chatInfoClass} setChatInfoClass={setChatInfoClass} setMessages={setMessages}/> }
       { selectedChat &&
@@ -207,151 +211,32 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
           
           const sender = selectedChat.participants.find( p => p._id === msg.from );
           
-          return msg.type === 'text' ? (          
-            <div key={index} className={msg.from === user.id ? "my-msg-container" : "other-msg-container"}>
-              <div className={msg.from === user.id ? "my-msg" : "other-msg"}>
-                { msg.from !== user.id && sender && (
-                  <h4 className='sender-name'>{sender.firstName + ' ' + sender.lastName }</h4>
-                ) }
-                <span className="msg-text">{msg.message}</span>
-                {msg.reactions?.length > 0 && (
-                  <div className={msg.from === user.id ? "my-reactions" : "other-reactions"}>
-                    <span className="reaction-bubble">
-                      {groupReactions(msg.reactions)[0].emoji} {groupReactions(msg.reactions)[1]?.emoji} {msg.reactions.length > 1 && <span className="reaction-count">{msg.reactions.length}</span>}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <MessageMenu msg={msg} setMessages={setMessages}/>
-              <ReactionMenu msg={msg}/>
-            </div>              
-          ) : msg.type === 'media' && msg.media.length > 0 && (
-            <div className={user.id === msg.from ? 'my-msg-container' : 'other-msg-container'}>
-                { msg.media.length > 0 && msg.media.length <= 2 ? (
-                    <div className={ msg.from === user.id ? "my-media-msg" : "other-media-msg" }>
-                      <div className='name-menu-container'>
-                        { msg.from !== user.id && sender && (
-                          <h4 className='sender-name'>{sender.firstName + ' ' + sender.lastName }</h4>
-                        ) }
-                      </div>
-                      <div className={'msg-media-wrapper' + (msg.media[0].type === 'audio' ? ' audio-msg-wrapper' : '')} onClick={msg.media[0].type === 'audio' ? () => {return} : () => setClickedMedia(msg.media)}>
-                        {msg.media.map((mediaItem, index) => (
-                          mediaItem.type === "image" ? (
-                              <div className='msg-media-container'>
-                                <img key={index} src={mediaItem.url} className='msg-media' />
-                              </div>
-                            
-                          ) : mediaItem.type === 'video' ? (
-                              <div className='msg-media-container'>
-                                <div className='video-icon'>
-                                  <img src={playIcon}/>
-                                </div>
-                                <video key={index} src={mediaItem.url} className='msg-media' />
-                              </div>
-                          ) : mediaItem.type === 'audio' && (
-                            <div className='audio-container'>
-                              <AudioPlayer src={mediaItem.url}/>
-                            </div>
-                          )
-                        ))}
-                      </div>
-                      { msg.text !== ' ' && msg.media[0].type !== 'audio' && <span className="msg-text">{msg.message}</span>}
-                      {msg.reactions?.length > 0 && (
-                        <div className={msg.from === user.id ? "my-reactions" : "other-reactions"}>
-                          <span className="reaction-bubble">
-                            {groupReactions(msg.reactions)[0].emoji} {groupReactions(msg.reactions)[1]?.emoji} {msg.reactions.length > 1 && <span className="reaction-count">{msg.reactions.length}</span>}
-                          </span>
-                        </div>
-                      )}
-                    </div>    
-                  ) : msg.media.length === 3 ? (
-                    <div className={user.id === msg.from ? 'my-msg-container' : 'other-msg-container'}>
-                      <div className={msg.from === user.id ? "my-media-msg" : "other-media-msg"}>
-                        <div className='name-menu-container'>
-                          { msg.from !== user.id && sender && (
-                            <h4 className='sender-name'>{sender.firstName + ' ' + sender.lastName }</h4>
-                          ) }
-                        </div>
-                        <div className='msg-media-wrapper-3' onClick={() => setClickedMedia(msg.media)}>
-                          {msg.media.map((mediaItem, index) => (
-                            mediaItem.type === "image" ? (
-                                <div className='msg-media-container'>
-                                  <img key={index} src={mediaItem.url} className='msg-media' />
-                                </div>
-                              
-                            ) : (
-                                <div className='msg-media-container'>
-                                  <div className='video-icon'>
-                                    <img src={playIcon}/>
-                                  </div>
-                                  <video key={index} src={mediaItem.url} className='msg-media' />
-                                </div>
-                            )
-                          ))}
-                        </div> 
-                        { msg.text !== ' ' && <span className="msg-text">{msg.message}</span>}
-                        {msg.reactions?.length > 0 && (
-                          <div className={msg.from === user.id ? "my-reactions" : "other-reactions"}>
-                            <span className="reaction-bubble">
-                              {groupReactions(msg.reactions)[0].emoji} {groupReactions(msg.reactions)[1]?.emoji} {msg.reactions.length > 1 && <span className="reaction-count">{msg.reactions.length}</span>}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={user.id === msg.from ? 'my-msg-container' : 'other-msg-container'}>
-                      <div className={msg.from === user.id ? "my-media-msg" : "other-media-msg"}>
-                        <div className='name-menu-container'>
-                          { msg.from !== user.id && sender && (
-                            <h4 className='sender-name'>{sender.firstName + ' ' + sender.lastName }</h4>
-                          ) }
-                        </div>
-                        <div className='msg-media-wrapper-4' onClick={() => setClickedMedia(msg.media)}>
-                          {msg.media.map((mediaItem, index) => (
-                            mediaItem.type === "image" ? (
-                                <div className='msg-media-container'>
-                                  <img key={index} src={mediaItem.url} className='msg-media' />
-                                </div>
-                              
-                            ) : (
-                                <div className='msg-media-container'>
-                                  <div className='video-icon'>
-                                    <img src={playIcon}/>
-                                  </div>
-                                  <video key={index} src={mediaItem.url} className='msg-media' />
-                                </div>
-                            )
-                          ))}
-                        </div>
-                        { msg.text !== ' ' && <span className="msg-text">{msg.message}</span>}
-                        {msg.reactions?.length > 0 && (
-                          <div className={msg.from === user.id ? "my-reactions" : "other-reactions"}>
-                            <span className="reaction-bubble">
-                              {groupReactions(msg.reactions)[0].emoji} {groupReactions(msg.reactions)[1]?.emoji} {msg.reactions.length > 1 && <span className="reaction-count">{msg.reactions.length}</span>}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )    
-                }
-                <MessageMenu msg={msg} setMessages={setMessages} socket={socket}/>
-                <ReactionMenu socket={socket} msg={msg}/>
-            </div>
-          ) 
+          return msg.type === 'text' ? (               
+            <TextMessage key={index} msg={msg} sender={sender} setMessages={setMessages}/>      
+          ) : ( msg.type === 'media' && msg.media.length > 0 ) ? (
+            <MediaMessage msg={msg} sender={sender} setMessages={setMessages} setClickedMedia={setClickedMedia}/>
+          ) : msg.type === 'audio' && (
+            <AudioMessage msg={msg} setMessages={setMessages} sender={sender}/>
+          )
         })}
       </div>  
       { selectedChat && (
         <form className='msg-input-form' onSubmit={sendMessage}>
           <AttachmentMenu setFiles={setFiles}/>
-          <input
-            type="text"
-            value={message}
-            placeholder="Type a message..."
-            onChange={(e) => handleInputChange(e)}
-            className='msg-input'
-          />
+          { recording ? (
+            <div className='recording-indicator'>
+              <img src={recordingIcon} className='recoding-img'/>
+              Recording......
+            </div>
+          ) : (
+            <input
+              type="text"
+              value={message}
+              placeholder="Type a message..."
+              onChange={(e) => handleInputChange(e)}
+              className='msg-input'
+            /> )
+          }
           { !!message ? (
               <button className='msg-send-btn' onClick={sendMessage}><img className='msg-send-img' src={sendImg}/></button> 
             ) : (
