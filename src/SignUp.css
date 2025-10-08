@@ -30,7 +30,7 @@
 
 .signup-head{
     font-size: 40px;
-    font-family: 'GSM';
+    font-family: 'GB';
     margin: 20px 5px;
     color: var(--green);
 }
@@ -60,7 +60,7 @@
     font-size: 17px;
     color: var(--fontColor);
     transition-duration: 0.4s;
-    font-family: 'GSM';
+    font-family: 'GM';
 }
 
 .signup-input:focus{
@@ -75,7 +75,7 @@
     border-radius: 5px;
     border: none;
     font-size: 16px;
-    font-family: 'GSM';
+    font-family: 'GM';
     font-weight: bold;
     background-color: var(--green);
     color: var(--black);
@@ -90,7 +90,7 @@
 .link-to-login{
     text-decoration: none;
     color: rgb(97, 97, 97);
-    font-family: 'GSM';
+    font-family: 'GM';
     text-align: center;
 }
 

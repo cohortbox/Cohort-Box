@@ -10,7 +10,7 @@
     flex-direction: column;
     padding: 0 5%;
     box-sizing: border-box;
-    font-family: "GSM";
+    font-family: "GB";
 }
 
 .login-box{
@@ -78,7 +78,7 @@
     background-color: var(--green);
     color: var(--black);
     transition-duration: 0.2s;
-    font-family: 'GSM'
+    font-family: 'GM'
 }
 
 .invalid-email{

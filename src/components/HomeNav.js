@@ -7,7 +7,7 @@ import NavUserButton from './NavUserButton';
 import { useAuth } from '../context/AuthContext';
 import { useSocketEvent } from '../context/SocketContext';
 
-function ChatsNav({ users, chats, setSelectedChat }) {
+function ChatsNav({ users, chats, selectedChat, setSelectedChat }) {
   const { user, accessToken, loading } = useAuth();
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);

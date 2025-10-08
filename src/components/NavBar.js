@@ -25,22 +25,25 @@ function NavBar(){
                     <img src={menuImg} alt="Menu" className="nav-btn-img" />
                 </button>
 
-                <Link to="/" style={{textDecoration: 'none'}}>
+                <Link to="/" style={{textDecoration: 'none'}} onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = "/";
+                }}>
                     <button className="nav-btn">
                         <img src={logoImg} alt="Home" className="nav-btn-img"/>
-                        <span>Home</span>
+                        <span>HOME</span>
                     </button>
                 </Link>
                 <Link to="/posts" style={{textDecoration: 'none'}}>
                     <button className="nav-btn">
                         <img src={plusImg} alt="New Post" className="nav-btn-img"/>
-                        <span>New Post</span>
+                        <span>NEW POST</span>
                     </button>
                 </Link>
                 <Link to="/new-cohort-box" style={{textDecoration: 'none'}}>
                     <button className="nav-btn">
                         <img src={peopleImg} alt="Cohort" className="nav-btn-img"/>
-                        <span>Cohorts</span>
+                        <span>COHORTS</span>
                     </button>
                 </Link>
             </section>
@@ -49,12 +52,12 @@ function NavBar(){
                 <Link to={user ? `/profile/${user.id}` : '/login'} style={{textDecoration: 'none'}}>
                     <button className="nav-btn">
                         <img src={profileImg} alt="Profile" className="nav-btn-img"/>
-                        <span>Profile</span>
+                        <span>PROFILE</span>
                     </button>
                 </Link>
                 <button className="nav-btn">
                     <img src={settingsImg} alt="Settings" className="nav-btn-img"/>
-                    <span>Settings</span>
+                    <span>SETTINGS</span>
                 </button>
             </section>
         </nav>

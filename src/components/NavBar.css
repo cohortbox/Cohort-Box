@@ -23,6 +23,10 @@
     padding-left: 10px;
 }
 
+.nav-container.open .nav-btn {
+  justify-content: flex-start; /* move icons to the left */
+}
+
 /* Toggle button at the very top */
 .nav-toggle {
     height: 50px;
@@ -50,7 +54,7 @@
     height: 50px;
     width: 100%; /* expands with sidebar */
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
     background-color: inherit;
     border: none;
@@ -58,7 +62,7 @@
     gap: 15px;
     padding: 0 10px;
     cursor: pointer;
-    font-family: 'GSM';
+    font-family: 'GR';
 }
 
 .nav-btn:hover {
@@ -66,14 +70,14 @@
 }
 
 .nav-btn-img {
-    height: 30px;
+    height: 25px;
     flex-shrink: 0;
 }
 
 /* Labels */
 .nav-btn span {
     color: white;
-    font-size: 14px;
+    font-size: 0.8rem;
     white-space: nowrap;
 }
 

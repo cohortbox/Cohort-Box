@@ -338,6 +338,16 @@ app.get('/api/return-user-chats/:id', authTokenAPI, async (req, res) => {
     }
 });
 
+app.get('/api/return-messages/:chatId', authTokenAPI, async (req, res) => {
+    try{
+        const chatId = req.params.chatId;
+        const msgs = await Message.find({ chatId }).sort({timestamp: 1});
+        res.status(200).json({ msgs })
+    }catch(err){
+        res.status(500).json({message: 'Server Error!'});
+    }
+});
+
 app.post('/api/start-chat', authTokenAPI, async (req, res) => {
     try{
         console.log('\n start-chat Request! \n')
@@ -470,6 +480,7 @@ app.delete('/api/friends/:userId', authTokenAPI, async (req, res) => {
 });
 
 let onlineUsers = {};
+const liveViewers = new Map();
 
 io.on('connection', (socket) => {
     console.log("A user connected:", socket.user);
@@ -483,23 +494,47 @@ io.on('connection', (socket) => {
         console.log(userID, "is online with socket", socket.id);     
     });
 
-    socket.on("chatOpened", async (selectedChatId) => {
-        const currUserId = socket.user.id;
-        const msgs = await Message.find({ chatId: selectedChatId }).sort({timestamp: 1});
-        socket.emit("returnMessages", msgs);
+    socket.on('joinChat', async ({ chatId, userId }) => {
+        console.log('hello jc')
+        socket.join(chatId);
+        socket.chatId = chatId;
+        socket.userId = userId;
+
+        if (!liveViewers.has(chatId)) liveViewers.set(chatId, new Set());
+        liveViewers.get(chatId).add(userId);
+
+        const viewerCount = liveViewers.get(chatId).size;
+
+        io.to(chatId).emit('liveViewerCount', { chatId, count: viewerCount });
+    });
+
+    socket.on('leaveChat', () => {
+        const { chatId, userId } = socket;
+        if (chatId && liveViewers.has(chatId)) {
+            liveViewers.get(chatId).delete(userId);
+            const count = liveViewers.get(chatId).size;
+            io.to(chatId).emit('liveViewerCount', { chatId, count });
+            socket.leave(chatId);
+        }
+    });
+
+    socket.on("chatOpenedByParticipant", async ({chatId, userId}) => {
+        console.log('hello cobp')
+        // const msgs = await Message.find({ chatId }).sort({timestamp: 1});
+        // socket.emit("returnMessages", msgs);
 
         await Message.updateMany(
-            { chatId: selectedChatId, from: { $ne: currUserId }, read: false },
+            { chatId, from: { $ne: userId }, read: false },
             { $set: { read: true } }
         );
 
-        const chat = await Chat.findById(selectedChatId);
+        const chat = await Chat.findById(chatId);
         chat.participants.forEach((participant) => {
-            if(onlineUsers[participant] && participant.toString() !== currUserId.toString()){
+            if(onlineUsers[participant] && participant.toString() !== userId.toString()){
                 const recieverSocketId = onlineUsers[participant].socketID;
                 io.to(recieverSocketId).emit('messagesRead', {
-                    chatId: selectedChatId,
-                    reader: currUserId
+                    chatId,
+                    reader: userId
                 })
             }
         })
@@ -532,6 +567,8 @@ io.on('connection', (socket) => {
                 }
             }
 
+            io.to(chatId).emit('message', newMessage)
+
             socket.emit('messageSent', newMessage);
 
         } catch (err) {
@@ -563,8 +600,8 @@ io.on('connection', (socket) => {
 
             // Push the new reaction
             await Message.updateOne(
-            { _id: msgId },
-            { $push: { reactions: { userId: new mongoose.Types.ObjectId(userId), emoji } } }
+                { _id: msgId },
+                { $push: { reactions: { userId: new mongoose.Types.ObjectId(userId), emoji } } }
             );
             const chat = await Chat.findById(chatId);
             let receiverSockets = [];
@@ -578,6 +615,7 @@ io.on('connection', (socket) => {
                     io.to(receiverSocket.socketID).emit('reaction', data);
                 }
             }
+            io.to(chatId).emit('reaction', data);
         }catch(err){
             console.log(err);
         }
@@ -745,7 +783,7 @@ io.on('connection', (socket) => {
 connectDB(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB connected");
-    const PORT = process.env.PORT || 5000;
+    const PORT = process.env.SERVER_PORT || 5000;
     server.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
   })
   .catch(err => {

@@ -87,6 +87,8 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0 10px 10px 10px;
+  scrollbar-color: var(--small) var(--black); /* thumb, track */
+  scrollbar-width: thin;
 }
 
 .typing-indicator {
@@ -164,8 +166,8 @@
   width: fit-content;
   background-color: var(--green);
   color: var(--black);
-  padding: 3px 25px 3px 8px;
-  border-radius: 5px 5px 0px 5px;
+  padding: 2px 8px;
+  border-radius: 5px;
   max-width: 300px;
 }
 
@@ -176,11 +178,10 @@
   width: fit-content;
   background-color: var(--searchBoxBg);
   color: var(--fontColor);
-  padding: 3px 25px 3px 8px;
-  border-radius: 5px 5px 5px 0px;
+  padding: 5px 8px;
+  border-radius: 5px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
   max-width: 300px;
 }
 
@@ -211,6 +212,7 @@
 }
 
 .sender-name{
+  font-family: 'RM';
   color: var(--black);
   margin: 0 0 3px 0;
 }
@@ -235,7 +237,7 @@
   font-size: 1rem;
   line-height: 1.4;
   margin: 2px 0;
-
+  font-family: 'RR';
 }
 
 .my-media-msg{

@@ -20,7 +20,10 @@ function Profile(){
     const [showChats, setShowChats] = useState(true);
     const [friends, setFriends] = useState([]);
     const [friendRequests, setFriendRequests] = useState([]);
-    const isMe = id === user.id;
+    const isMe = useMemo(() => {
+        if (!user || !id) return false;
+        return String(id) === String(user.id);
+    }, [user, id]);
     const navigate = useNavigate();
     
     useEffect(() => {

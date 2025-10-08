@@ -1,0 +1,28 @@
+.feed-ad-container {
+  width: 500px;
+  margin: 1rem 2rem;
+  padding: 10px;
+  background-color: var(--black);
+  border: 1px solid var(--small);
+  border-radius: 10px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.feed-ad-label {
+  width: 100%;
+  text-align: left;
+  color: var(--small);
+  font-size: 0.8rem;
+  margin: 0;
+  padding-left: 8px;
+  letter-spacing: 0.3px;
+}
+
+.feed-ad-container:hover {
+  background-color: var(--hover);
+  transition: background-color 0.2s ease;
+}

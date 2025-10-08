@@ -5,6 +5,7 @@ import testImg from '../images/sample2.png'
 import testImgii from '../images/test.jpg'
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import FeedAd from './FeedAd.js';
 
 function Posts(){
 
@@ -41,9 +42,22 @@ function Posts(){
         <div className='posts-page'>
             <div className='posts-container'>
                 {
-                    posts.map((post, index) => (
-                        <Post key={index} post={post}/>
-                    ))
+                    posts.map((post, index) => {
+                        const showAd = index > 0 && index % 5 === 0;
+
+                        if (showAd) {
+                        // 🟩 Return ad first, then the next post
+                        return (
+                            <>
+                                <FeedAd key={`ad-${index}`} />
+                                <Post key={post._id} post={post} />
+                            </>
+                        );
+                        }
+
+                        // 🟦 Otherwise just show a post
+                        return <Post key={post._id} post={post} />;
+                    })
                 }
                 
             </div>

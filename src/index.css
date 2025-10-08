@@ -8,30 +8,46 @@
 }
 
 @font-face {
-  font-family: 'GSM';
-  src: url('../fonts/fonnts.com-Gravesend_Sans_Medium.otf');
+  font-family: 'GR';
+  src: url('../fonts/Gabarito-Regular.ttf');
 }
 
 @font-face {
-  font-family: 'GSL';
-  src: url('../fonts/fonnts.com-Gravesend_Sans_Light.otf');
+  font-family: 'GM';
+  src: url('../fonts/Gabarito-Medium.ttf');
 }
 
 @font-face {
-  font-family: 'GSB';
-  src: url('../fonts/fonnts.com-Gravesend_Sans_Bold.otf');
+  font-family: 'GB';
+  src: url('../fonts/Gabarito-Bold.ttf');
+}
+
+@font-face {
+  font-family: 'RR';
+  src: url('../fonts/Roboto/Roboto-Regular.ttf');
+}
+
+@font-face {
+  font-family: 'RM';
+  src: url('../fonts/Roboto/Roboto-Medium.ttf');
+}
+
+@font-face {
+  font-family: 'RB';
+  src: url('../fonts/Roboto/Roboto-Bold.ttf');
 }
 
 body {
   margin: 0;
-  font-family: 'GSM';
+  font-family: 'GM';
+  letter-spacing: 0.05rem;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--black);
 }
 
 code {
-  font-family: 'GSM',
+  font-family: 'GM',
     monospace;
 }
 

@@ -22,7 +22,7 @@
 }
 
 .cn-heading{
-    font-family: 'GSB';
+    font-family: 'GB';
     color: var(--fontColor);
 }
 
@@ -59,7 +59,7 @@
     flex: 1;
     color: var(--fontColor);
     font-size: 1rem;
-    font-family: 'GSM';
+    font-family: 'GM';
 }
 
 .cn-search-input:focus{
@@ -72,7 +72,7 @@
 }
 
 .cn-filter-btn{
-    font-family: 'GSM';
+    font-family: 'GM';
     background-color: #000;
     color: var(--fontColor);
     border: none;

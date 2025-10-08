@@ -22,7 +22,7 @@
 
 .profile-heading{
     font-size: 1.5rem;
-    font-family: 'GSB';
+    font-family: 'GB';
     color: var(--fontColor);
 }
 
@@ -52,6 +52,7 @@
 .profile-username{
     color: var(--fontColor);
     font-size: 2rem;
+    letter-spacing: 0.05rem;
 }
 
 .profile-img-container{
@@ -71,7 +72,8 @@
 
 .profile-logout-btn{
     border: 1px solid var(--green);
-    font-family: 'GSB';
+    font-size: 1rem;
+    font-family: 'GM';
     border-radius: 5px;
     background-color: var(--black);
     color: var(--fontColor);
@@ -115,8 +117,6 @@
     height: 14px;
 }
 
-
-
 .profile-nav-container{
     width: 100%;
     flex: 1;
@@ -135,8 +135,9 @@
 
 .profile-nav-btn{
     margin-right: 10px;
-    font-family: 'GSM';
-    font-size: 1.1rem;
+    font-family: 'GB';
+    letter-spacing: 0.05rem;
+    font-size: 1.3rem;
     height: 100%;
     background-color: inherit;
     border: none;
@@ -167,7 +168,7 @@
 .profile-chats-heading{
     margin: 0;
     color: var(--fontColor);
-    font-size: 20px;
+    font-size: 1.2rem;
 }
 
 .no-cohort-boxes{

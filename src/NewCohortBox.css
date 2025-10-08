@@ -43,7 +43,7 @@
     color: var(--fontColor);
     border: 1px solid var(--green);
     background-color: var(--black);
-    font-family: 'GSB';
+    font-family: 'GB';
     border-radius: 5px;
     font-size: 1rem;
     padding: 0 10px;
@@ -74,7 +74,7 @@
     border: 1px solid var(--small);
     padding: 0 5px;
     color: var(--fontColor);
-    font-family: 'GSM';
+    font-family: 'GM';
     border-radius: 5px;
 }
 
@@ -85,8 +85,8 @@
 
 .ncb-add-btn{
     height: 40px;
-    padding: 0 20px 5px 20px;
-    font-family: 'GSM';
+    padding: 0 20px;
+    font-family: 'GM';
     font-size: 1rem;
     width: fit-content;
     background-color: var(--green);

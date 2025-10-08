@@ -1,5 +1,5 @@
 import './ChatBox.css';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ChatInfo from './ChatInfo';
 import AttachmentMenu from './AttachmentMenu';
@@ -32,16 +32,31 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
   const chunksRef = useRef([]);
   const navigate = useNavigate();
 
-  function groupReactions(reactions = []) {
-    const map = {};
+  useEffect(() => {
+    if(!selectedChat) return;
 
-    for (let r of reactions) {
-      if (!map[r.emoji]) map[r.emoji] = 0;
+    fetch(`/api/return-messages/${encodeURIComponent(selectedChat._id)}`, {
+      method: 'GET',
+      headers: {
+        'authorization': `Bearer ${accessToken}` 
+      }
+    }).then(response => {
+      if(!response.ok){
+        throw new Error('Request Failed!');
+      }
+      return response.json();
+    }).then(data => {
+      setMessages(data.msgs);
+    })
+
+    //Notifying server that user has opened a chat
+    const isParticipant = selectedChat.participants.some(p => p._id === user.id)
+    if(isParticipant){
+      socket.emit('chatOpenedByParticipant', { chatId: selectedChat._id, userId: user.id })
+    }else{
+      socket.emit('joinChat', { chatId: selectedChat._id, userId: user.id })
     }
-
-    return Object.entries(map).map(([emoji, count]) => ({ emoji, count }));
-  }
-
+  }, [selectedChat])
 
   function handleCloseChat(e){
       e.preventDefault();

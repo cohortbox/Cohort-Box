@@ -156,7 +156,7 @@ function Home() {
     <div className="home">
       <title>Home | CohortBox</title>
       <NavBar />
-      <HomeNav users={users} chats={chats} setSelectedChat={setSelectedChat} />
+      <HomeNav users={users} chats={chats} selectedChat={selectedChat} setSelectedChat={setSelectedChat} />
       {selectedChat ? (
         <ChatBox
           paramChatId={paramChatId}

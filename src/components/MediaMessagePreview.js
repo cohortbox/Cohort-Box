@@ -1,5 +1,5 @@
 import './MediaMessagePreview.css';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import closeImg from '../images/close-gray.png';
 import sendImg from '../images/send.png'
 import { useAuth } from '../context/AuthContext';
