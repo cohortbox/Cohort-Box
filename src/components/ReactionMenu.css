@@ -17,6 +17,7 @@
   border: none;
   opacity: 0;
   transition: opacity 0.2s ease;
+  font-family: 'GM';
 }
 
 .rm-container:hover .rm-btn {

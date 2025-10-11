@@ -5,8 +5,9 @@ import AudioPlayer from './AudioPlayer.js';
 import playIcon from '../images/play.png';
 import { useAuth } from '../context/AuthContext.js';
 
-export default function MediaMessage({ msg, sender, setMessages, setClickedMedia }){
+export default function MediaMessage({ msg, sender, setMessages, setClickedMedia, selectedChat }){
     const { user } = useAuth();
+    const senderColors = ['#c76060', '#c79569', '#c7c569', '#6ec769', '#69c2c7', '#6974c7', '#9769c7', '#c769bf']
 
     function groupReactions(reactions = []) {
         const map = {};
@@ -16,13 +17,17 @@ export default function MediaMessage({ msg, sender, setMessages, setClickedMedia
         return Object.entries(map).map(([emoji, count]) => ({ emoji, count }));
     }
 
+    const senderIndex = sender 
+    ? selectedChat.participants.findIndex(p => p._id === sender._id)
+    : 0;
+
     return(
         <div className={user.id === msg.from ? 'my-msg-container' : 'other-msg-container'}>
                 { msg.media.length > 0 && msg.media.length <= 2 ? (
                     <div className={ msg.from === user.id ? "my-media-msg" : "other-media-msg" }>
                       <div className='name-menu-container'>
                         { msg.from !== user.id && sender && (
-                          <h4 className='sender-name'>{sender.firstName + ' ' + sender.lastName }</h4>
+                          <h4 className='sender-name' style={{color: `${senderColors[senderIndex]}`}}>{sender.firstName + ' ' + sender.lastName }</h4>
                         ) }
                       </div>
                       <div className={'msg-media-wrapper' + (msg.media[0].type === 'audio' ? ' audio-msg-wrapper' : '')} onClick={msg.media[0].type === 'audio' ? () => {return} : () => setClickedMedia(msg.media)}>
@@ -56,7 +61,7 @@ export default function MediaMessage({ msg, sender, setMessages, setClickedMedia
                       <div className={msg.from === user.id ? "my-media-msg" : "other-media-msg"}>
                         <div className='name-menu-container'>
                           { msg.from !== user.id && sender && (
-                            <h4 className='sender-name'>{sender.firstName + ' ' + sender.lastName }</h4>
+                            <h4 className='sender-name' style={{color: `${senderColors[senderIndex]}`}}>{sender.firstName + ' ' + sender.lastName }</h4>
                           ) }
                         </div>
                         <div className='msg-media-wrapper-3' onClick={() => setClickedMedia(msg.media)}>
@@ -91,7 +96,7 @@ export default function MediaMessage({ msg, sender, setMessages, setClickedMedia
                       <div className={msg.from === user.id ? "my-media-msg" : "other-media-msg"}>
                         <div className='name-menu-container'>
                           { msg.from !== user.id && sender && (
-                            <h4 className='sender-name'>{sender.firstName + ' ' + sender.lastName }</h4>
+                            <h4 className='sender-name' style={{color: `${senderColors[senderIndex]}`}}>{sender.firstName + ' ' + sender.lastName }</h4>
                           ) }
                         </div>
                         <div className='msg-media-wrapper-4' onClick={() => setClickedMedia(msg.media)}>

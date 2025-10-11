@@ -3,19 +3,16 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import ChatInfo from './ChatInfo';
 import AttachmentMenu from './AttachmentMenu';
-import MessageMenu from './MessageMenu.js';
-import ReactionMenu from './ReactionMenu.js';
+import eyeIcon from '../images/eye.png';
 import dotsImg from '../images/dots.png';
 import closeImg from '../images/close-gray.png';
 import sendImg from '../images/send.png';
 import micImg from '../images/microphone.png';
-import playIcon from '../images/play.png';
 import recordingIcon from '../images/voice.png';
 import { useNavigate } from 'react-router-dom';
 import MediaView from './MediaView.js';
 import MediaMessagePreview from './MediaMessagePreview.js';
-import { useSocket } from '../context/SocketContext.js';
-import AudioPlayer from './AudioPlayer.js';
+import { useSocket, useSocketEvent } from '../context/SocketContext.js';
 import TextMessage from './TextMessage.js';
 import MediaMessage from './MediaMessage.js';
 import AudioMessage from './AudioMessage.js';
@@ -25,12 +22,20 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
   const [files, setFiles] = useState([]);
   const [chatInfoClass, setChatInfoClass] = useState(' hidden');
   const [message, setMessage] = useState('');
+  const [chatLiveCount, setChatLiveCount] = useState(0);
   const { user, accessToken } = useAuth();
   const [clickedMedia, setClickedMedia] = useState(null);
   const [recording, setRecording] = useState(false);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const navigate = useNavigate();
+
+  useSocketEvent('liveViewerCount', ({chatId, count}) => {
+    if(chatId === selectedChat._id){
+      console.log('hi from liveViewerCount');
+      setChatLiveCount(count);
+    }
+  })
 
   useEffect(() => {
     if(!selectedChat) return;
@@ -56,6 +61,14 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
     }else{
       socket.emit('joinChat', { chatId: selectedChat._id, userId: user.id })
     }
+
+    return () => {
+      if (selectedChat && socket) {
+        socket.emit('leaveChat', selectedChat._id);
+        console.log('left chat:', selectedChat._id);
+      }
+    };
+
   }, [selectedChat])
 
   function handleCloseChat(e){
@@ -63,6 +76,7 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
       setSelectedChat(null);
       setMessages([]);
       setMessage('');
+      setChatLiveCount(0);
       if(paramChatId){
         navigate('/')
       }
@@ -126,7 +140,6 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
             return response.json();
           }).then(data => {
             const media = data.media;
-            console.log(media)
             const newMessage = {
               from: user.id,
               chatId: selectedChat._id,
@@ -201,10 +214,11 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
     <div className="chat-box">
       { files.length > 0 && <MediaMessagePreview files={files} setFiles={setFiles} selectedChat={selectedChat}/> }
       {clickedMedia && <MediaView media={clickedMedia} setClickedMedia={setClickedMedia}/>}
-      { selectedChat && <ChatInfo selectedChat={selectedChat} chatInfoClass={chatInfoClass} setChatInfoClass={setChatInfoClass} setMessages={setMessages}/> }
+      { selectedChat && <ChatInfo selectedChat={selectedChat} setSelectedChat={setSelectedChat} chatInfoClass={chatInfoClass} setChatInfoClass={setChatInfoClass} setMessages={setMessages}/> }
       { selectedChat &&
         (<div className='chat-heading-and-btns-container'>
             <h3 className='chat-box-heading'>{selectedChat.chatName}</h3>
+            <p className='chat-live-count'><img className='chat-live-count-img' src={eyeIcon}/> {chatLiveCount}</p>
             <div className='chat-btns-container'>
               <button className='chat-info-btn' onClick={() => setChatInfoClass('')}><img className='chat-info-img' src={dotsImg}/></button>
               <button className='chat-close-btn' onClick={handleCloseChat}><img className='chat-close-img' src={closeImg}/></button>
@@ -227,38 +241,38 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
           const sender = selectedChat.participants.find( p => p._id === msg.from );
           
           return msg.type === 'text' ? (               
-            <TextMessage key={index} msg={msg} sender={sender} setMessages={setMessages}/>      
+            <TextMessage key={index} msg={msg} sender={sender} setMessages={setMessages} selectedChat={selectedChat}/>      
           ) : ( msg.type === 'media' && msg.media.length > 0 ) ? (
-            <MediaMessage msg={msg} sender={sender} setMessages={setMessages} setClickedMedia={setClickedMedia}/>
+            <MediaMessage msg={msg} sender={sender} setMessages={setMessages} setClickedMedia={setClickedMedia} selectedChat={selectedChat}/>
           ) : msg.type === 'audio' && (
-            <AudioMessage msg={msg} setMessages={setMessages} sender={sender}/>
+            <AudioMessage msg={msg} setMessages={setMessages} sender={sender} selectedChat={selectedChat}/>
           )
         })}
       </div>  
-      { selectedChat && (
-        <form className='msg-input-form' onSubmit={sendMessage}>
-          <AttachmentMenu setFiles={setFiles}/>
-          { recording ? (
-            <div className='recording-indicator'>
-              <img src={recordingIcon} className='recoding-img'/>
-              Recording......
-            </div>
-          ) : (
-            <input
-              type="text"
-              value={message}
-              placeholder="Type a message..."
-              onChange={(e) => handleInputChange(e)}
-              className='msg-input'
-            /> )
-          }
-          { !!message ? (
-              <button className='msg-send-btn' onClick={sendMessage}><img className='msg-send-img' src={sendImg}/></button> 
+      { selectedChat && selectedChat.participants.some(p => p._id === user.id) && (
+          <form className='msg-input-form' onSubmit={sendMessage}>
+            <AttachmentMenu setFiles={setFiles}/>
+            { recording ? (
+              <div className='recording-indicator'>
+                <img src={recordingIcon} className='recoding-img'/>
+                Recording......
+              </div>
             ) : (
-              <button className='audio-msg-btn' onClick={handleAudioMessage}><img className='audio-btn-img' src={micImg}/></button>
-            )
-          }
-        </form> )
+              <input
+                type="text"
+                value={message}
+                placeholder="Type a message..."
+                onChange={(e) => handleInputChange(e)}
+                className='msg-input'
+              /> )
+            }
+            { !!message ? (
+                <button className='msg-send-btn' onClick={sendMessage}><img className='msg-send-img' src={sendImg}/></button> 
+              ) : (
+                <button className='audio-msg-btn' onClick={handleAudioMessage}><img className='audio-btn-img' src={micImg}/></button>
+              )
+            }
+          </form> )
       }
     </div>
   )

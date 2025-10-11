@@ -1,5 +1,5 @@
 import './MediaMessagePreview.css';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import closeImg from '../images/close-gray.png';
 import sendImg from '../images/send.png'
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,21 @@ function MediaMessage({ files, setFiles, selectedChat }){
     const [message, setMessage] = useState('');
     const [index, setIndex] = useState(0);
     const { user, accessToken } = useAuth();
+
+    useEffect(() => {
+        function handleKeydown(e){
+            if(e.key === 'ArrowRight'){
+                setIndex(prev => Math.min(prev + 1, filesArr.length - 1));
+            }else if(e.key === 'ArrowLeft'){
+                setIndex(prev => Math.max(prev - 1, 0));
+            }
+        }
+        document.addEventListener('keydown', handleKeydown)
+
+        return () => {
+            document.removeEventListener('keydown', handleKeydown)
+        }
+    }, [])
 
     function handleClose() {
         setFiles([]); // clear selected files

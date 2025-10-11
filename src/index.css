@@ -1,10 +1,19 @@
 :root{
   --green: #1ff200;
-  --black: #151517;
+  --tempBlack: #151517;
+  --tempSmall: #878792;
+  --chatBoxBg: #171718;
+  --otherMsgBg: #28282f;
+  --black: #111112;
   --hover: #2d2d32;
   --small: #878792;
+  --borderColor: #3f3f3f;
   --fontColor: #c5cad3;
   --searchBoxBg: #56565e;
+  --triadColor1: #F25C00;
+  --triadColor2: #1300F2;
+  --triadColor1Pastel: #9D5D34;
+  --triadColor2Pastel: #3D349D;
 }
 
 @font-face {

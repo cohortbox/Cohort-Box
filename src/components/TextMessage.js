@@ -3,8 +3,9 @@ import MessageMenu from './MessageMenu.js';
 import ReactionMenu from './ReactionMenu.js';
 import { useAuth } from '../context/AuthContext.js';
 
-export default function TextMessage({ msg, sender, setMessages }){
+export default function TextMessage({ msg, sender, setMessages, selectedChat }){
     const { user } = useAuth();
+    const senderColors = ['#c76060', '#c79569', '#c7c569', '#6ec769', '#69c2c7', '#6974c7', '#9769c7', '#c769bf']
 
     function groupReactions(reactions = []) {
         const map = {};
@@ -14,11 +15,15 @@ export default function TextMessage({ msg, sender, setMessages }){
         return Object.entries(map).map(([emoji, count]) => ({ emoji, count }));
     }
 
+    const senderIndex = sender 
+    ? selectedChat.participants.findIndex(p => p._id === sender._id)
+    : 0;
+
     return(
         <div className={msg.from === user.id ? "my-msg-container" : "other-msg-container"}>
             <div className={msg.from === user.id ? "my-msg" : "other-msg"}>
                 { msg.from !== user.id && sender && (
-                <h4 className='sender-name'>{sender.firstName + ' ' + sender.lastName }</h4>
+                <h4 className='sender-name' style={{color: `${senderColors[senderIndex]}`}}>{sender.firstName + ' ' + sender.lastName }</h4>
                 ) }
                 <span className="msg-text">{msg.message}</span>
                 {msg.reactions?.length > 0 && (

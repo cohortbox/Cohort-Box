@@ -11,19 +11,70 @@
     border-radius: 10px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 1.2rem;
     color: var(--fontColor);
     border: 1px solid var(--small);
+}
+
+.participants-heading-container{
+    display: flex;
+    justify-content: space-between;
 }
 
 .participants-heading{
     margin: 0;
 }
 
+.add-participant-btn{
+    border-radius: 1.1rem;
+    height: 35px;
+    padding: 2px;
+    transition: .1s ease;
+    width: 35px;
+    background: transparent;
+    border: none;
+}
+
+.add-participant-btn:hover{
+    background-color: var(--hover);
+}
+
+.add-participant-btn img{
+    height: 25px;
+    width: 25px;
+}
+
 .participant-names-container{
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 1rem;
+    padding: 0 5px;
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-color: var(--small) var(--black); /* thumb, track */
+    scrollbar-width: thin;
+}
+
+.chat-info-participant-container{
+    display: flex;
+    justify-content: space-between;
+}
+
+.participant-remove-btn{
+    height: 1.7rem;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-family: 'GR';
+    color: var(--fontColor);
+    background-color: var(--black);
+    border: 1px solid var(--green);
+    transition: 0.1s ease;
+}
+
+.participant-remove-btn:hover{
+    background-color: var(--green);
+    color: var(--black);
+    border: none;
 }
 
 p{
@@ -31,6 +82,7 @@ p{
 }
 
 .admin{
+    font-size: 0.9rem;
     color: var(--small);
 }
 
@@ -38,12 +90,38 @@ p{
     margin: 0;
 }
 
+.leave-chat-btn{
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    width: fit-content;
+    padding: 5px 9px;
+    transition: 0.1s ease;
+    background: none;
+    border: none;
+    border-radius: 5px;
+}
+
+.leave-chat-btn:hover{
+    background-color: var(--hover);
+}
+
+.leave-chat-btn img{
+    height: 20px;
+}
+
+.leave-chat-btn p{
+    color: var(--fontColor);
+    font-size: 1rem;
+    font-family: 'GM';
+}
+
 .delete-chat-msgs-btn{
     width: fit-content;
     font-size: 1rem;
     height: 30px;
-    color: white;
-    background-color: #007bff;
+    color: var(--black);
+    background-color: var(--green);
     border: none;
     border-radius: 5px;
 }

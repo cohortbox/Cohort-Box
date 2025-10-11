@@ -13,9 +13,12 @@ const cookieParser = require('cookie-parser');
 const { upload } = require('./config/CloudinaryConfig.js');
 const path = require('path');
 const { default: mongoose } = require('mongoose');
+const { error } = require('console');
 const saltRounds = 10;
 require('dotenv').config()
 
+
+const liveViewers = new Map();
 const app = express();
 app.use(express.json());
 app.use(cookieParser())
@@ -299,11 +302,16 @@ app.get('/api/return-chats', authTokenAPI, async (req, res) => {
     }
 
     try{
-        const chats = await Chat.find(filter).sort({ _id: -1 }).populate('participants', '_id firstName lastName').limit(limit);
+        const chats = await Chat.find(filter).sort({ _id: -1 }).populate('participants', '_id firstName lastName').limit(limit).lean();
         if(chats.length === 0){
             return res.status(404).json({ message: 'No chats found!' });
         }
-        res.status(200).json({ chats });
+        const chatsWithViewers = chats.map(chat => {
+            const count = liveViewers.has(chat._id.toString()) ? liveViewers.get(chat._id.toString()).size : 0;
+            return { ...chat, liveViewerCount: count };
+        });
+
+        res.status(200).json({ chats: chatsWithViewers });
     }catch(err){
         res.status(500).json({message: 'Server Error!'});
     }
@@ -314,11 +322,12 @@ app.get('/api/return-chats/:id', authTokenAPI, async (req, res) => {
     console.log('return-chats:id')
     try{
         console.log('\n return-chats Request!')
-        const chat = await Chat.findById(id).populate('participants', '_id firstName lastName');
+        const chat = await Chat.findById(id).populate('participants', '_id firstName lastName').lean();
         if(!chat){
             return res.status(404).json({ message: 'No chats found!' });
         }
-        res.status(200).json({ chat });
+        const count = liveViewers.has(chat._id.toString()) ? liveViewers.get(chat._id.toString()).size : 0;
+        res.status(200).json({ chat: { ...chat, liveViewerCount: count } });
     }catch(err){
         console.log(err)
         res.status(500).json({message: 'Server Error!'});
@@ -378,7 +387,7 @@ app.post('/api/upload-images', authTokenAPI, upload.array('media', 10), (req, re
         console.log(err);
         res.status(500).json({ message: 'Server Error!' })
     }
-})
+});
 
 app.post('/api/upload-audio', authTokenAPI, upload.single('audio'), (req, res) => {
     try{
@@ -390,6 +399,26 @@ app.post('/api/upload-audio', authTokenAPI, upload.single('audio'), (req, res) =
     }catch(err){
         console.log(err);
         res.status(500).json({ message: 'Server Error!' })
+    }
+});
+
+app.delete('/api/chat/participant/:userId/:chatId', authTokenAPI, async (req, res) => {
+    try{
+        const chatId = req.params.chatId;
+        const userId = req.params.userId;
+        const updatedChat = await Chat.updateOne(
+            { _id: chatId },
+            { $pull: { participants: userId } }
+        )
+
+        if(updatedChat.modifiedCount === 0){
+            return res.status(404).json({ message: 'Participant not found or already removed!' });
+        }
+
+        return res.status(200).json({ message: 'Participant removed Successfully!' });
+    }catch(err){
+        console.log(err);
+        res.status(500).json({ message: 'Internal Server Error!' });
     }
 })
 
@@ -480,7 +509,6 @@ app.delete('/api/friends/:userId', authTokenAPI, async (req, res) => {
 });
 
 let onlineUsers = {};
-const liveViewers = new Map();
 
 io.on('connection', (socket) => {
     console.log("A user connected:", socket.user);
@@ -508,13 +536,15 @@ io.on('connection', (socket) => {
         io.to(chatId).emit('liveViewerCount', { chatId, count: viewerCount });
     });
 
-    socket.on('leaveChat', () => {
-        const { chatId, userId } = socket;
+    socket.on('leaveChat', (chatId) => {
+        console.log('leaveChat')
+        const { userId } = socket;
+        socket.chatId = null
         if (chatId && liveViewers.has(chatId)) {
+            socket.leave(chatId);
             liveViewers.get(chatId).delete(userId);
             const count = liveViewers.get(chatId).size;
             io.to(chatId).emit('liveViewerCount', { chatId, count });
-            socket.leave(chatId);
         }
     });
 
@@ -769,6 +799,10 @@ io.on('connection', (socket) => {
             if (onlineUsers[userID].socketID === socket.id) {
                 console.log(userID, "disconnected");
                 delete onlineUsers[userID];
+                const chatId = socket.chatId;
+                if(chatId && liveViewers.has(chatId)){
+                    liveViewers.get(chatId).delete(userID);
+                }
                 break;
             }
         }

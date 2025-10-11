@@ -6,13 +6,23 @@ import settingsImg from '../images/settings.png';
 import profileImg from '../images/profile-user.png';
 import peopleImg from '../images/group.png';
 import logoImg from '../images/logo.png';
-import menuImg from '../images/menu.png'; // hamburger/menu icon
+import menuImg from '../images/menu.png';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 
-function NavBar(){
-
+function NavBar({ selectedChat }){
+    const { socket } = useSocket();
     const { user } = useAuth();
     const [open, setOpen] = useState(false);
+
+    function handleHomeClick(e) {
+        e.preventDefault();
+        if (socket && selectedChat?._id) {
+            socket.emit("leaveChat", selectedChat._id);
+            console.log("Emitted leaveChat for:", selectedChat._id);
+        }
+        window.location.href = "/";
+    }
 
     return (
         <nav className={`nav-container ${open ? 'open' : ''}`}>
@@ -25,10 +35,7 @@ function NavBar(){
                     <img src={menuImg} alt="Menu" className="nav-btn-img" />
                 </button>
 
-                <Link to="/" style={{textDecoration: 'none'}} onClick={(e) => {
-                    e.preventDefault();
-                    window.location.href = "/";
-                }}>
+                <Link to="/" style={{textDecoration: 'none'}} onClick={handleHomeClick}>
                     <button className="nav-btn">
                         <img src={logoImg} alt="Home" className="nav-btn-img"/>
                         <span>HOME</span>

@@ -47,9 +47,10 @@
 
 .mm-inner-btn{
     display: flex;
+    align-items: center;
     gap: 10px;
     color: var(--fontColor);
-    font-family: 'GSM';
+    font-family: 'GM';
     width: 100%;
     background-color: inherit;
     border: none;

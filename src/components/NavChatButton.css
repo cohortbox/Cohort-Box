@@ -7,6 +7,15 @@
     border-radius: 5px;
     padding: 0px 5px;
     box-sizing: border-box;
+    justify-content: space-between;
+}
+
+.ncbs-img-heading-container{
+    display: flex;
+    align-items: center;
+    height: 100%;
+    gap: 10px;
+    box-sizing: border-box;
 }
 
 .ncbs-container:hover{
@@ -38,4 +47,15 @@
 .ncbs-sub-heading{
     margin: 0;
     color: var(--small);
+}
+
+.ncbs-live-count-container{
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--fontColor);
+}
+
+.ncbs-live-count-container img{
+    height: 20px;
 }

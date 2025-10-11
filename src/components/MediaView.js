@@ -1,11 +1,26 @@
 import './MediaView.css';
 import closeImg from '../images/close-gray.png'
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // ---------- media-view === mv ----------
 function MediaView({ media, setClickedMedia }){
 
     const [index, setIndex] = useState(0)
+
+    useEffect(() => {
+        function handleKeydown(e){
+            if(e.key === 'ArrowRight'){
+                setIndex(prev => Math.min(prev + 1, media.length - 1));
+            }else if(e.key === 'ArrowLeft'){
+                setIndex(prev => Math.max(prev - 1, 0));
+            }
+        }
+        document.addEventListener('keydown', handleKeydown)
+
+        return () => {
+            document.removeEventListener('keydown', handleKeydown)
+        }
+    }, [])
 
     return (
         <div className='mv-container'>
