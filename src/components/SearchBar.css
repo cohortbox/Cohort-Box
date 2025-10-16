@@ -11,7 +11,6 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 80%;
     max-width: 600px;
     height: auto;
     z-index: 7;
@@ -41,7 +40,7 @@
     border: none;
     background-color: var(--searchBoxBg);
     color: var(--fontColor);
-    font-family: "GSM";
+    font-family: "GM";
     transition: 0.5s;
     z-index: 7;
     box-sizing: border-box;
@@ -178,6 +177,14 @@
     height: 15px;
 }
 
+.search-bar-add-participant-btn{
+    width: 100%;
+    border-radius: 5px;
+    color: var(--black);
+    background-color: var(--green);
+    font-family: 'GM';
+}
+
 .search-background{
     position: fixed;
     top: 0;
@@ -185,7 +192,7 @@
     height: 100%;
     width: 100%;
     background-color: #2d2d3254;
-    z-index: 4;
+    z-index: 5;
     transition: 200ms;
 }
 

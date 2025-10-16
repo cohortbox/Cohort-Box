@@ -5,7 +5,7 @@ import './NewCohortBox.css';
 import { useAuth } from './context/AuthContext';
 
 function NewCohortBox(){
-    const [searchBarClass, setSearchBarClass] = useState(' hidden')
+    const [searchBarClass, setSearchBarClass] = useState(' hidden');
     const [members, setMembers] = useState([]);
     const [chatName, setChatName] = useState('');
     const [chatNiche, setChatNiche] = useState('');
@@ -57,7 +57,7 @@ function NewCohortBox(){
                 <h4 className='ncb-heading'>START A NEW COHORT BOX</h4>
                 <div className='ncb-options-container'>
                     <div className='ncb-select-members'>
-                        <SearchBar searchBarClass={searchBarClass} setSearchBarClass={setSearchBarClass} members={members} setMembers={setMembers}/>
+                        <SearchBar searchBarClass={searchBarClass} setSearchBarClass={setSearchBarClass} members={members} setMembers={setMembers} chatId={null} addParticipant={false}/>
                         <button className='ncb-select-members-btn' onClick={() => setSearchBarClass('')}>SELECT MEMBERS FOR YOUR COHORT BOX</button>
                         {
                             members.length > 0 ? (

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers }){
+function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, chatId, addParticipant }){
     const navigate = useNavigate();
     const [users, setUsers] = useState([])
     const [query, setQuery] = useState('');
@@ -50,9 +50,45 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers }){
         setMembers(prev => prev.filter(member => member._id !== id));
     }
 
+    function handleAddParticipants(e){
+        e.preventDefault();
+
+        if(members.length === 0) return;
+
+        const participants = [];
+
+        for(let member of members){
+            participants.push(member._id);
+        }
+
+        const body = {
+            participants,
+            chatId
+        }
+
+        fetch('api/chat/participant', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'authorization': `Bearer ${accessToken}`
+            },
+            credentials: 'include',
+            body: JSON.stringify(body)
+        }).then(response => {
+            if(!response.ok){
+                throw new Error('Request Failed!');
+            }else{
+                setMembers([]);
+                setSearchBarClass(' hidden');
+            }
+        }).catch(err => {
+            console.error(err);
+        })
+    }
+
     return (
         <div className={'search-bar' + searchBarClass}>
-            <div className={'form-usersbox-container' + searchBarClass}>
+            <div className={'form-usersbox-container' + searchBarClass} style={{width: `${addParticipant ? '100%' : '80%'}`}}>
                 <form onSubmit={handleSearch} className='search-bar-form'>
                     <input className={'search-input' + searchBarClass} placeholder='Search' onChange={(e) => setQuery(e.target.value)}/>
                 </form>
@@ -66,11 +102,12 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers }){
                                 </div>
                             )
                         ) : (
-                            <p>NO USERS SELECTED</p>
+                            <p>No Users Selected</p>
                         )
                     }
                 </div>
                 <div className={'users-box' + searchBarClass}>
+                    <div>
                         {
                             users.length > 0 ? 
                                 users.map((u, index) => {
@@ -88,11 +125,13 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers }){
                                         </div>
                                         )
                                 }) 
-                            : (
-                                <p className={'no-user-paragraph' + searchBarClass}>No users found!</p>
-                            )
-                        }
-                    </div> 
+                        
+                        : (
+                            <p className={'no-user-paragraph' + searchBarClass}>No users found!</p>
+                        )}
+                    </div>
+                </div> 
+                { addParticipant && <button className='search-bar-add-participant-btn' onClick={handleAddParticipants}>Add</button> }
             </div>
             <div className={'search-background' + searchBarClass} onClick={HideSearch}></div>
             {/* <button className='search-btn' onClick={() => { setSearchBarClass('') }}><img className='search-img' src= {searchImg} alt='Search Icon' /></button> */}

@@ -351,6 +351,7 @@ app.get('/api/return-messages/:chatId', authTokenAPI, async (req, res) => {
     try{
         const chatId = req.params.chatId;
         const msgs = await Message.find({ chatId }).sort({timestamp: 1});
+        console.log(msgs)
         res.status(200).json({ msgs })
     }catch(err){
         res.status(500).json({message: 'Server Error!'});
@@ -421,6 +422,30 @@ app.delete('/api/chat/participant/:userId/:chatId', authTokenAPI, async (req, re
         res.status(500).json({ message: 'Internal Server Error!' });
     }
 })
+
+app.put('/api/chat/participant', authTokenAPI, async (req, res) => {
+    try{
+        const { participants, chatId } = req.body;
+
+        if (!participants || !chatId) {
+            return res.status(400).json({ message: 'Missing participants or chatId!' });
+        }
+
+        const updatedChat = await Chat.updateOne(
+            { _id: chatId },
+            { $addToSet: { participants: { $each: participants } }}
+        )
+
+        if(updatedChat.modifiedCount === 0){
+            return res.status(404).json({ message: 'Participants not found or already added!' });
+        }
+
+        return res.status(200).json({ message: 'Participants Added Successfully!' });
+    }catch(err){
+        console.log(err);
+        res.status(500).json({ message: 'Internal Server Error!' });
+    }
+});
 
 app.post('/api/friends/request/:userId', authTokenAPI, async (req, res) => {
   try {
@@ -568,6 +593,35 @@ io.on('connection', (socket) => {
                 })
             }
         })
+    });
+
+    socket.on('participantRemoved', async ({userId, chatId}) => {
+        console.log('Received particpantRemoved');
+        const removedUser = await User.findById(userId)
+        const chat = await Chat.findById(chatId);
+        const newMessage = await Message.create({
+            from: chat.chatAdmin,
+            chatId,
+            message: `Admin Removed ${removedUser.firstName + ' ' + removedUser.lastName}`,
+            type: 'chatInfo',
+            media: [],
+            reactions: []
+        });
+        console.log(newMessage);
+        const receiverSockets = [];
+        for(let participant of chat.participants){
+            if(onlineUsers[participant]){
+                receiverSockets.push(onlineUsers[participant]);
+            }
+        }
+        for(let receiverSocket of receiverSockets){
+            io.to(receiverSocket.socketID).emit('participantRemoved', {userId, chatId, msg: newMessage});
+        }
+        io.to(chatId).emit('participantRemoved', { userId, chatId, msg: newMessage });
+    })
+
+    socket.on('participantLeft', ({userId, chatId}) => {
+        
     })
 
     socket.on('message', async ({ chatId, type, message, media }) => {

@@ -71,6 +71,22 @@ function Home() {
     return [...filtered, { userId: data.userId, emoji: data.emoji }];
   };
 
+  useSocketEvent('participantRemoved', ({userId, chatId, msg}) => {
+    setChats(prev => prev.map(chat => {
+      if (chat._id === chatId) {
+        const updatedChat = {
+          ...chat,
+          participants: chat.participants.filter(p => p._id !== userId),
+        };
+        return updatedChat;
+      }
+      return chat;
+    }));
+    if(selectedChat._id === chatId){
+      setMessages(prev => [...prev, msg]);
+    }
+  })
+
   useSocketEvent("returnMessages", (msgs) => {
     setMessages(msgs);
   }, []);

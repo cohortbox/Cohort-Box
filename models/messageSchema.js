@@ -19,7 +19,7 @@ const messageSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["text", "media", "file", "audio"],
+    enum: ["text", "media", "file", "audio", "chatInfo"],
     default: "text",
   },
   media: [mediaSchema],

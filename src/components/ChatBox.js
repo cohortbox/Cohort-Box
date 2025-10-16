@@ -16,6 +16,7 @@ import { useSocket, useSocketEvent } from '../context/SocketContext.js';
 import TextMessage from './TextMessage.js';
 import MediaMessage from './MediaMessage.js';
 import AudioMessage from './AudioMessage.js';
+import ChatInfoMessage from './ChatInfoMessage.js';
 
 function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMessages, typingUsers }){
   const { socket } = useSocket();
@@ -51,6 +52,7 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
       }
       return response.json();
     }).then(data => {
+      console.log(data.msgs)
       setMessages(data.msgs);
     })
 
@@ -244,8 +246,10 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
             <TextMessage key={index} msg={msg} sender={sender} setMessages={setMessages} selectedChat={selectedChat}/>      
           ) : ( msg.type === 'media' && msg.media.length > 0 ) ? (
             <MediaMessage msg={msg} sender={sender} setMessages={setMessages} setClickedMedia={setClickedMedia} selectedChat={selectedChat}/>
-          ) : msg.type === 'audio' && (
+          ) : msg.type === 'audio' ? (
             <AudioMessage msg={msg} setMessages={setMessages} sender={sender} selectedChat={selectedChat}/>
+          ) : msg.type === 'chatInfo' && (
+            <ChatInfoMessage msg={msg}/>
           )
         })}
       </div>  
