@@ -5,9 +5,10 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useState } from 'react';
 import SearchBar from './SearchBar';
+import addPhoto from '../images/add-photo.png'
 
 function ChatInfo({selectedChat, setSelectedChat, chatInfoClass, setChatInfoClass, setMessages}){
-    
+    console.log(selectedChat);
     const { user, accessToken } = useAuth();
     const { socket } = useSocket();
 
@@ -69,6 +70,15 @@ function ChatInfo({selectedChat, setSelectedChat, chatInfoClass, setChatInfoClas
     return (
         <div className={'chat-info-background-container' + chatInfoClass}>
             <div className={'chat-info-container' + chatInfoClass}>
+                <div className='chat-info-heading'>
+                    <div className='chat-img-container'>
+                        <img className='chat-img' src={selectedChat.dp}/>
+                        <div className='photo-change-btn'>
+                            <img className='photo-change-img' src={addPhoto}/>
+                        </div>
+                    </div>
+                    <h4 className='chatname'>{selectedChat.chatName}</h4>
+                </div>
                 <div className='participants-heading-container'>
                     <h3 className={'participants-heading' + chatInfoClass}>Participants: </h3>
                     {

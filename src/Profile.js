@@ -9,6 +9,7 @@ import NavChatButton from './components/NavChatButton';
 import NavUserButton from './components/NavUserButton';
 import accept from './images/check-gray.png';
 import cancel from './images/close-gray.png';
+import addPhoto from './images/add-photo.png'
 
 function Profile(){
     
@@ -136,7 +137,10 @@ function Profile(){
                         <div className='profile-info-heading-container'>
                             <div className='profile-info-heading'>
                                 <div className='profile-img-container'>
-                                    <img className='profile-img' src={userImg}/>
+                                    <img className='profile-img' src={userObj.dp}/>
+                                    <div className='photo-change-btn'>
+                                        <img className='photo-change-img' onClick={() => navigate('/profile-picture')} src={addPhoto}/>
+                                    </div>
                                 </div>
                                 <h4 className='profile-username'>{userObj.firstName + ' ' + userObj.lastName}</h4>
                             </div>

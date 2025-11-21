@@ -16,6 +16,23 @@
     border: 1px solid var(--small);
 }
 
+.chat-info-heading{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
+.chat-info-container .chat-img-container{
+    display: grid;
+    place-items: center;
+    position: relative;
+}
+
+.chat-img{
+    height: 100%;
+}
+
 .participants-heading-container{
     display: flex;
     justify-content: space-between;

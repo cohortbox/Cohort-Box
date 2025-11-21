@@ -42,11 +42,13 @@
 .ncbs-heading{
     margin: 0;
     color: var(--fontColor);
+    font-size: 0.8rem;
 }
 
 .ncbs-sub-heading{
     margin: 0;
     color: var(--small);
+    font-size: 0.75rem;
 }
 
 .ncbs-live-count-container{

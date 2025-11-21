@@ -34,7 +34,6 @@ function MediaMessage({ files, setFiles, selectedChat }){
 
     function sendMessage(e) {
         e.preventDefault();
-        if(!message.trim()) return;
         const formData = new FormData();
           for(const file of files){
             formData.append('media', file)

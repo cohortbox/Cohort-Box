@@ -13,6 +13,7 @@
     justify-content: center;
     width: fit-content;
     background-color: var(--searchBoxBg);
+    color: var(--fontColor);
     border-radius: 5px;
 }
 

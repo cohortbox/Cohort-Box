@@ -86,7 +86,7 @@ function NavUserButton({ user, isFriend, sentRequest, gotRequest }) {
     <div className="nub-container">
       <div className="nub-name-img-container">
         <div className="nub-img-container">
-          <img className="nub-img" src={sampleImg} alt="profile" />
+          <img className="nub-img" src={user.dp} alt="profile" />
         </div>
         <div className="nub-name-container">
           <h4 className="nub-name">{user.firstName + ' ' + user.lastName}</h4>

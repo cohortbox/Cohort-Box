@@ -59,15 +59,37 @@
     height: 100px;
     width: 100px;
     border-radius: 50px;
-    overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
     border: 2px solid var(--green);
+    position: relative;
+}
+
+.photo-change-btn{
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    height: 35px;
+    width: 35px;
+    border-radius: 35px;
+    background-color: var(--hover);
+    display: grid;
+    place-items: center;
+    transition: 0.2s ease-in-out;
+}
+
+.photo-change-btn:hover{
+    background-color: #34343a;
+}
+
+.photo-change-img{
+    width: 20px;
 }
 
 .profile-img{
     height: 100px;
+    border-radius: 50px;
 }
 
 .profile-logout-btn{

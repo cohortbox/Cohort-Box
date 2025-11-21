@@ -9,8 +9,10 @@ const FriendRequest = require('./models/friendRequestSchema.js')
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 const cookieParser = require('cookie-parser');
-const { upload } = require('./config/CloudinaryConfig.js');
+const { upload, uploadUserDp, uploadChatDp } = require('./config/CloudinaryConfig.js');
 const path = require('path');
 const { default: mongoose } = require('mongoose');
 const { error } = require('console');
@@ -43,9 +45,12 @@ const authTokenAPI = (req, res, next) => {
 
     if (!token) return res.status(401).json({ message: 'No token provided' });
 
-    jwt.verify(token, process.env.ACCESS_TOKEN_KEY, (err, user) => {
+    jwt.verify(token, process.env.ACCESS_TOKEN_KEY, async (err, user) => {
         if(err) return res.status(403).json({ message: 'Invalid Token' })
         
+        const userDB = await User.findById(user.id).select('isVerified');
+        // if(!userDB.isVerified) return res.status(403).json({ message: 'User not Verified', isVerified: false })
+
         req.user = user;
         next();
     })
@@ -84,15 +89,43 @@ app.get('/api/delete-all', authTokenAPI, async (req, res) => {
 
 app.post('/api/signup', async (req, res) => {
     console.log(req.body)
-    const user = {
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
-        email: req.body.email,
-        password_hash: await bcrypt.hash(req.body.password, saltRounds)
-    };
-    
     try {
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+
+        const user = {
+            firstName: req.body.firstName,
+            lastName: req.body.lastName,
+            email: req.body.email,
+            password_hash: await bcrypt.hash(req.body.password, saltRounds),
+            verificationToken,
+            verificationExpires: Date.now() + 1000 * 60 * 60,
+        };
+
         const userDB = await User.create(user);
+
+        const link = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        })
+
+        const mailOptions = {
+            from: '"Cohort-Box" <no-reply@cohortbox.com>',
+            to: user.email,
+            subject: 'CohortBox - Verify your email',
+            html: `
+                <h3>Welcome to Cohort-Box!</h3>
+                <p>Click below to verify your email:</p>
+                <a href="${link}">${link}</a>
+                <p>This link expires in 1 hour.</p>
+            `,
+        };  
+
+        await transporter.sendMail(mailOptions);
 
         const payload = {
             id: userDB._id,
@@ -189,7 +222,7 @@ app.post('/api/login', async (req, res) => {
         console.log(err);
         res.status(500).json({message: 'Server Error!'})
     }
-})
+});
 
 app.post('/api/logout', (req, res) => {
     res.clearCookie('refreshToken', {
@@ -199,7 +232,26 @@ app.post('/api/logout', (req, res) => {
         path: '/'
     })
     return res.status(200).json({ message: 'Logged out successfully' });
-})
+});
+
+app.get('/api/verify/:token', async (req, res) => {
+    try{
+        const user = await User.findOne({
+            verificationToken: req.params.token,
+            verificationExpires: { $gt: Date.now() },
+        });
+        if (!user) return res.status(400).json({ message: 'Invalid or expired token.', verified: false });
+
+        user.isVerified = true;
+        user.verificationToken = undefined;
+        user.verificationExpires = undefined;
+        await user.save();
+
+        res.json({ message: 'Email verified!', verified: true });
+    }catch(err){
+        res.status(500).json({message: 'Internal Server Error!', verified: false})
+    }
+});
 
 app.get('/api/return-users', authTokenAPI, async (req, res) => {
   try {
@@ -215,7 +267,7 @@ app.get('/api/return-users', authTokenAPI, async (req, res) => {
     };
 
     const users = await User.find(filter)
-      .select('_id firstName lastName')
+      .select('_id firstName lastName dp')
       .limit(limit)
       .lean();
 
@@ -390,6 +442,34 @@ app.post('/api/upload-images', authTokenAPI, upload.array('media', 10), (req, re
     }
 });
 
+app.post('/api/upload-user-dp', authTokenAPI, uploadUserDp.single('image'), async (req, res) => {
+    try{
+        if (!req.file) {
+            return res.status(400).json({ message: 'No image received' });
+        }
+        const url = req.file.secure_url || req.file.path;
+        await User.findByIdAndUpdate(req.user.id, { dp: url });
+        return res.status(200).json({ url });
+    }catch(err){
+        console.log(err);
+        res.status(500).json({ message: 'Server Error!' });
+    }
+});
+
+app.post('/api/upload-chat-dp', authTokenAPI, uploadChatDp.single('image'), async (req, res) => {
+    try{
+        if (!req.file) {
+            return res.status(400).json({ message: 'No image received' });
+        }
+        const url = req.file.secure_url || req.file.path;
+        await User.findByIdAndUpdate(req.user.id, { dp: url });
+        return res.status(200).json({ url });
+    }catch(err){
+        console.log(err);
+        res.status(500).json({ message: 'Server Error!' });
+    }
+});
+
 app.post('/api/upload-audio', authTokenAPI, upload.single('audio'), (req, res) => {
     try{
         const media = {
@@ -539,7 +619,9 @@ io.on('connection', (socket) => {
     console.log("A user connected:", socket.user);
 
     socket.on('register', async (userID) => {
-        const userDB = await User.findById(userID).select('firstName lastName'); 
+        if(!userID) return;
+        const userDB = await User.findById(userID).select('firstName lastName');
+        if(!userDB) return; 
         onlineUsers[userID] = {
             socketID: socket.id,
             username: `${userDB.firstName} ${userDB.lastName}`

@@ -62,7 +62,10 @@ function Home() {
       headers: { 'authorization': `Bearer ${accessToken}` }
     })
       .then(r => { if (!r.ok) throw new Error('Request failed: ' + r.status); return r.json(); })
-      .then(data => setUsers(data.users || []))
+      .then(data => {
+        console.log(data.users)
+        setUsers(data.users || []);
+      })
       .catch(console.error);
   }, [accessToken, loading]);
 

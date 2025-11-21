@@ -5,7 +5,9 @@ import Signup from './SignUp'
 import Login from './login'
 import Posts from './login';
 import Profile from './Profile';
-import NewCohortBox from './NewCohortBox'
+import NewCohortBox from './NewCohortBox';
+import VerifyEmail from './VerifyEmail';
+import ProfilePhotoStep from './ProfilePhotoStep';
 import FriendRequestPopup from './components/FriendRequestPopup'
 
 function App() {
@@ -19,6 +21,8 @@ function App() {
         <Route path='/posts' element={<Posts/>}/>
         <Route path='/profile/:id' element={<Profile/>}/>
         <Route path='/new-cohort-box' element={<NewCohortBox/>}/>
+        <Route path='/verify-email/:token' element={<VerifyEmail/>}/>
+        <Route path='/profile-picture' element={<ProfilePhotoStep/>}/>
       </Routes>
     </Router>
   );
