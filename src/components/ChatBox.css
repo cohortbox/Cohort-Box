@@ -374,6 +374,17 @@
   flex-shrink: 0;
 }
 
+.emoji-btn{
+  height: 40px;
+  width: 40px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #232326;
+  border: none;
+}
+
 .img-input{
   height: 40px;
   width: 40px;

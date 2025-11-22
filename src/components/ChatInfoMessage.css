@@ -13,11 +13,11 @@
     justify-content: center;
     width: fit-content;
     background-color: var(--searchBoxBg);
-    color: var(--fontColor);
     border-radius: 5px;
 }
 
 .chat-info-msg-text{
     font-size: 1rem;
     font-family: 'RR';
+    color: var(--fontColor);
 }

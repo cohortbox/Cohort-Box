@@ -1,5 +1,7 @@
 import './ChatBox.css';
 import { useState, useRef, useEffect } from 'react';
+import EmojiPicker from 'emoji-picker-react';
+import { useFloating, offset, autoUpdate, flip } from '@floating-ui/react';
 import { useAuth } from '../context/AuthContext';
 import ChatInfo from './ChatInfo';
 import AttachmentMenu from './AttachmentMenu';
@@ -22,6 +24,7 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
   const { socket } = useSocket();
   const [files, setFiles] = useState([]);
   const [chatInfoClass, setChatInfoClass] = useState(' hidden');
+  const [showEmoji, setShowEmoji] = useState(false);
   const [message, setMessage] = useState('');
   const [chatLiveCount, setChatLiveCount] = useState(0);
   const { user, accessToken } = useAuth();
@@ -29,6 +32,11 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
   const [recording, setRecording] = useState(false);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
+  const { refs, floatingStyles } = useFloating({
+    placement: "top-start",
+    middleware: [offset(4), flip()],
+    whileElementsMounted: autoUpdate
+  });
   const navigate = useNavigate();
 
   useSocketEvent('liveViewerCount', ({chatId, count}) => {
@@ -212,6 +220,10 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
     }
   }
 
+  function onEmojiClick(emojiData) {
+    setMessage(prev => prev + emojiData.emoji);
+  }
+
   return (
     <div className="chat-box">
       { files.length > 0 && <MediaMessagePreview files={files} setFiles={setFiles} selectedChat={selectedChat}/> }
@@ -256,6 +268,14 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
       { selectedChat && selectedChat.participants.some(p => p._id === user.id) && (
           <form className='msg-input-form' onSubmit={sendMessage}>
             <AttachmentMenu setFiles={setFiles}/>
+            <button className='emoji-btn' ref={refs.setReference} onClick={() => setShowEmoji(v => !v)}>😊</button>
+
+            {showEmoji && (
+              <div ref={refs.setFloating} style={floatingStyles}>
+                <EmojiPicker onEmojiClick={onEmojiClick} theme='dark' defaultSkinTone='white'/>
+              </div>
+            )}
+
             { recording ? (
               <div className='recording-indicator'>
                 <img src={recordingIcon} className='recoding-img'/>
