@@ -1,0 +1,30 @@
+.np-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 450px;
+    height: 100vh;
+    background-color: var(--black);
+    transform-origin: left;
+    transform: translateX(100%);
+    z-index: 1;
+    animation: myMove 0.3s ease forwards;
+    box-sizing: border-box;
+    padding: 10px 10px;
+    border-left: 1px solid var(--small);
+    border-right: 1px solid var(--small);
+}
+
+.np-container h1{
+    font-size: 1rem;
+    color: var(--fontColor);
+}
+
+@keyframes myMove {
+    from {
+        width: 0%;
+    }
+    to {
+        width: 410px;
+    }
+}

@@ -1,12 +1,14 @@
 import './NavBar.css';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import NotificationPanel from './NotificationPanel';
 import plusImg from '../images/plus.png';
 import settingsImg from '../images/settings.png';
 import profileImg from '../images/profile-user.png';
 import peopleImg from '../images/group.png';
 import logoImg from '../images/logo.png';
 import menuImg from '../images/menu.png';
+import notificationImg from '../images/notification.png';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 
@@ -14,6 +16,7 @@ function NavBar({ selectedChat }){
     const { socket } = useSocket();
     const { user } = useAuth();
     const [open, setOpen] = useState(false);
+    const [openNotification, setOpenNotification] = useState(false)
 
     function handleHomeClick(e) {
         e.preventDefault();
@@ -22,6 +25,12 @@ function NavBar({ selectedChat }){
             console.log("Emitted leaveChat for:", selectedChat._id);
         }
         window.location.href = "/";
+    }
+
+    function handleNotificationClick(e){
+        e.preventDefault();
+        setOpenNotification(v => !v);
+        console.log('hello')
     }
 
     return (
@@ -53,6 +62,10 @@ function NavBar({ selectedChat }){
                         <span>COHORTS</span>
                     </button>
                 </Link>
+                <button className="nav-btn" onClick={handleNotificationClick}>
+                    <img src={notificationImg} alt="Cohort" className="nav-btn-img"/>
+                    <span>NOTIFICATIONS</span>
+                </button>
             </section>
 
             <section className="nav-btn-container">
@@ -67,6 +80,9 @@ function NavBar({ selectedChat }){
                     <span>SETTINGS</span>
                 </button>
             </section>
+            {
+                openNotification && <NotificationPanel/>
+            }
         </nav>
     );
 }
