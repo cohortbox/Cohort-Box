@@ -399,6 +399,8 @@
   border: 1px solid var(--small);
   background-color: var(--hover);
   color: var(--fontColor);
+  display: flex;
+  align-items: center;
 }
 
 .recording-indicator{

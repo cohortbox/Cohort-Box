@@ -5,7 +5,8 @@ const connectDB = require('./db/connect.js');
 const User = require('./models/userSchema.js');
 const Chat = require('./models/chatSchema.js');
 const Message = require('./models/messageSchema.js');
-const FriendRequest = require('./models/friendRequestSchema.js')
+const FriendRequest = require('./models/friendRequestSchema.js');
+const Notification = require('./models/notificationSchema.js');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -621,6 +622,7 @@ io.on('connection', (socket) => {
     socket.on('register', async (userID) => {
         if(!userID) return;
         const userDB = await User.findById(userID).select('firstName lastName');
+        Notification.updateMany( {}, {$set: { chatDp: 'https://res.cloudinary.com/dzhvgedcy/image/upload/v1763410012/group_sfs2cr.png' }} )
         if(!userDB) return; 
         onlineUsers[userID] = {
             socketID: socket.id,

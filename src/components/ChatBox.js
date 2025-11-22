@@ -96,8 +96,8 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
   const isTypingRef = useRef(false);
 
   function handleInputChange(e) {
-    setMessage(e.target.value);
-
+    //setMessage(e.target.value);
+    setMessage(e.target.innerText);
     if (socket && selectedChat) {
       if (!isTypingRef.current) {
         // only emit once when typing starts
@@ -282,13 +282,18 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
                 Recording......
               </div>
             ) : (
-              <input
-                type="text"
-                value={message}
-                placeholder="Type a message..."
-                onChange={(e) => handleInputChange(e)}
-                className='msg-input'
-              /> )
+              // <input
+              //   type="text"
+              //   value={message}
+              //   placeholder="Type a message..."
+              //   onChange={(e) => handleInputChange(e)}
+              //   className='msg-input'
+              // /> 
+
+                <div contentEditable="true" className='msg-input' onInput={(e) => handleInputChange(e)}>
+                  {message}
+                </div>
+              )
             }
             { !!message ? (
                 <button className='msg-send-btn' onClick={sendMessage}><img className='msg-send-img' src={sendImg}/></button> 

@@ -94,3 +94,9 @@
     border-radius: 5px;
     border: none;
 }
+
+.editable{
+    color: var(--fontColor);
+    height: 30px;
+    border: 1px solid var(--small);
+}
