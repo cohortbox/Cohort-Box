@@ -245,7 +245,9 @@
   font-size: 1rem;
   line-height: 1.4;
   margin: 2px 0;
-  font-family: 'RR';
+  font-family:
+      'RR',
+      'Emoji';
   color: var(--fontColor);
 }
 
@@ -399,8 +401,12 @@
   border: 1px solid var(--small);
   background-color: var(--hover);
   color: var(--fontColor);
-  display: flex;
-  align-items: center;
+  font-family:
+      'RR',
+      'Emoji';
+  height: 22px;
+  font-size: 1rem;
+  resize: none;
 }
 
 .recording-indicator{

@@ -46,6 +46,11 @@
   src: url('../fonts/Roboto/Roboto-Bold.ttf');
 }
 
+@font-face {
+  font-family: 'Emoji';
+  src: url('../fonts/NotoColorEmoji-Regular.ttf');
+}
+
 body {
   margin: 0;
   font-family: 'GM';

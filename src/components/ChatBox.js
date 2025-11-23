@@ -4,6 +4,7 @@ import EmojiPicker from 'emoji-picker-react';
 import { useFloating, offset, autoUpdate, flip } from '@floating-ui/react';
 import { useAuth } from '../context/AuthContext';
 import ChatInfo from './ChatInfo';
+import twemoji from 'twemoji';
 import AttachmentMenu from './AttachmentMenu';
 import eyeIcon from '../images/eye.png';
 import dotsImg from '../images/dots.png';
@@ -32,6 +33,9 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
   const [recording, setRecording] = useState(false);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
+  const emojiPickerRef = useRef(null);
+  const msgRef = useRef(null);
+  const caretPosRef = useRef(0);
   const { refs, floatingStyles } = useFloating({
     placement: "top-start",
     middleware: [offset(4), flip()],
@@ -45,6 +49,26 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
       setChatLiveCount(count);
     }
   })
+
+  useEffect(() => {
+
+    function handleClickOutside(e) {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(e.target)
+      ) {
+        setShowEmoji(false)
+      }
+    }
+
+    if (showEmoji) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showEmoji])
 
   useEffect(() => {
     if(!selectedChat) return;
@@ -96,8 +120,9 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
   const isTypingRef = useRef(false);
 
   function handleInputChange(e) {
-    //setMessage(e.target.value);
-    setMessage(e.target.innerText);
+    const text = e.target.value; 
+    setMessage(text);
+
     if (socket && selectedChat) {
       if (!isTypingRef.current) {
         // only emit once when typing starts
@@ -221,7 +246,27 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
   }
 
   function onEmojiClick(emojiData) {
-    setMessage(prev => prev + emojiData.emoji);
+    const emoji = emojiData.emoji;
+    const pos = caretPosRef.current;
+
+    const newText =
+      message.slice(0, pos) + emoji + message.slice(pos);
+
+    const newCaretPos = pos + emoji.length;
+    caretPosRef.current = newCaretPos
+
+    setTimeout(() => {
+    if (msgRef.current) {
+      msgRef.current.selectionStart = newCaretPos;
+      msgRef.current.selectionEnd = newCaretPos;
+      msgRef.current.focus();
+    }}, 0)
+
+    setMessage(newText);
+  }
+
+  function saveCaret(e){
+    caretPosRef.current = e.target.selectionStart;
   }
 
   return (
@@ -268,10 +313,13 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
       { selectedChat && selectedChat.participants.some(p => p._id === user.id) && (
           <form className='msg-input-form' onSubmit={sendMessage}>
             <AttachmentMenu setFiles={setFiles}/>
-            <button className='emoji-btn' ref={refs.setReference} onClick={() => setShowEmoji(v => !v)}>😊</button>
+            <button type='button' className='emoji-btn' ref={refs.setReference} onMouseDown={(e) => e.preventDefault()} onClick={() => setShowEmoji(v => !v)}>😊</button>
 
             {showEmoji && (
-              <div ref={refs.setFloating} style={floatingStyles}>
+              <div ref={(el) => {
+                refs.setFloating(el);
+                emojiPickerRef.current = el;
+              }} style={floatingStyles}>
                 <EmojiPicker onEmojiClick={onEmojiClick} theme='dark' defaultSkinTone='white'/>
               </div>
             )}
@@ -282,17 +330,15 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
                 Recording......
               </div>
             ) : (
-              // <input
-              //   type="text"
-              //   value={message}
-              //   placeholder="Type a message..."
-              //   onChange={(e) => handleInputChange(e)}
-              //   className='msg-input'
-              // /> 
-
-                <div contentEditable="true" className='msg-input' onInput={(e) => handleInputChange(e)}>
-                  {message}
-                </div>
+              <textarea
+                ref={msgRef}
+                className="msg-input"
+                value={message}
+                onChange={handleInputChange}
+                onClick={saveCaret}
+                onKeyUp={saveCaret}
+                spellCheck='false'
+              />
               )
             }
             { !!message ? (
