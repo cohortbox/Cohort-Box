@@ -20,7 +20,7 @@
     margin: 5px 10px;
 }
 
-.chat-img-container{
+.post-chat-img-container{
     height: 30px;
     width: 30px;
     border-radius: 15px;
@@ -31,7 +31,7 @@
     border: 1px solid var(--green);
 }
 
-.chat-img{
+.post-chat-img{
     height: 30px;
 }
 

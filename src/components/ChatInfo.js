@@ -1,6 +1,7 @@
 import './ChatInfo.css';
 import addUserIcon from '../images/add-user.png';
 import leaveIcon from '../images/logout.png';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useState } from 'react';
@@ -8,7 +9,7 @@ import SearchBar from './SearchBar';
 import addPhoto from '../images/add-photo.png'
 
 function ChatInfo({selectedChat, setSelectedChat, chatInfoClass, setChatInfoClass, setMessages}){
-    console.log(selectedChat);
+    const navigate = useNavigate();
     const { user, accessToken } = useAuth();
     const { socket } = useSocket();
 
@@ -72,9 +73,9 @@ function ChatInfo({selectedChat, setSelectedChat, chatInfoClass, setChatInfoClas
             <div className={'chat-info-container' + chatInfoClass}>
                 <div className='chat-info-heading'>
                     <div className='chat-img-container'>
-                        <img className='chat-img' src={selectedChat.dp}/>
+                        <img className='chat-img' src={selectedChat.chatDp}/>
                         <div className='photo-change-btn'>
-                            <img className='photo-change-img' src={addPhoto}/>
+                            <img className='photo-change-img' onClick={() => navigate(`/change-dp/cohortbox/${selectedChat._id}`)} src={addPhoto}/>
                         </div>
                     </div>
                     <h4 className='chatname'>{selectedChat.chatName}</h4>

@@ -336,7 +336,7 @@ app.get('/api/return-posts', authTokenAPI, async (req, res) => {
         filter._id = { $lt: new mongoose.Types.ObjectId(lastId) }
     }
     try{
-        const posts = await Message.find(filter).sort({ _id: -1 }).populate('from', '_id firstName lastName').populate('chatId', '_id chatName').limit(limit);
+        const posts = await Message.find(filter).sort({ _id: -1 }).populate('from', '_id firstName lastName').populate('chatId', '_id chatName chatDp').limit(limit);
         if(posts.length === 0){
             return res.status(404).json({ message: 'No posts found!' });
         }
@@ -355,7 +355,11 @@ app.get('/api/return-chats', authTokenAPI, async (req, res) => {
     }
 
     try{
-        const chats = await Chat.find(filter).sort({ _id: -1 }).populate('participants', '_id firstName lastName').limit(limit).lean();
+        await Chat.updateMany(
+            { chatDp: { $exists: false } },
+            { $set: { chatDp: 'https://res.cloudinary.com/dzhvgedcy/image/upload/v1763410012/group_sfs2cr.png' } }
+        );
+        const chats = await Chat.find(filter).sort({ _id: -1 }).populate('participants', '_id firstName lastName').limit(limit).lean({defaults: true});
         if(chats.length === 0){
             return res.status(404).json({ message: 'No chats found!' });
         }
@@ -404,7 +408,6 @@ app.get('/api/return-messages/:chatId', authTokenAPI, async (req, res) => {
     try{
         const chatId = req.params.chatId;
         const msgs = await Message.find({ chatId }).sort({timestamp: 1});
-        console.log(msgs)
         res.status(200).json({ msgs })
     }catch(err){
         res.status(500).json({message: 'Server Error!'});
@@ -463,7 +466,7 @@ app.post('/api/upload-chat-dp', authTokenAPI, uploadChatDp.single('image'), asyn
             return res.status(400).json({ message: 'No image received' });
         }
         const url = req.file.secure_url || req.file.path;
-        await User.findByIdAndUpdate(req.user.id, { dp: url });
+        await Chat.findByIdAndUpdate(req.body.chatId, { chatDp: url });
         return res.status(200).json({ url });
     }catch(err){
         console.log(err);

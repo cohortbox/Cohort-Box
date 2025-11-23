@@ -1,9 +1,11 @@
-import './ProfilePhotoStep.css';
+import './PhotoStep.css';
 import { useState, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from './context/AuthContext';
 
 export default function ProfilePhotoStep() {
+  const { method, id } = useParams();
   const { accessToken } = useAuth();
   const [preview, setPreview] = useState(null);
 
@@ -25,8 +27,12 @@ export default function ProfilePhotoStep() {
     if (!preview) return alert('Please select a photo!');
     const formData = new FormData();
     formData.append('image', document.querySelector('input[type="file"]').files[0]);
+    if(method !== 'profile'){
+      formData.append('chatId', id);
+    }
 
-    const res = await fetch('/api/upload-user-dp', {
+    const apiUrl = method === 'profile' ? '/api/upload-user-dp' : '/api/upload-chat-dp'
+    const res = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         authorization: `Bearer ${accessToken}`,

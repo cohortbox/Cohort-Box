@@ -1,5 +1,4 @@
 import './NavChatButton.css';
-import sampleImg from '../images/sample.png';
 import eyeImg from '../images/eye.png';
 
 function NavChatButton({ chat, setSelectedChat }){
@@ -10,7 +9,7 @@ function NavChatButton({ chat, setSelectedChat }){
         <div className='ncbs-container' onClick={() => setSelectedChat(chat)}>
             <div className='ncbs-img-heading-container'>
                 <div className='ncbs-img-container'>
-                    <img className='ncbs-img' src={sampleImg}/>
+                    <img className='ncbs-img' src={chat.chatDp}/>
                 </div>
                 <div className='ncbs-heading-container'>
                     <h4 className='ncbs-heading'>{chat.chatName}</h4>

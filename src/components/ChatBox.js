@@ -4,7 +4,6 @@ import EmojiPicker from 'emoji-picker-react';
 import { useFloating, offset, autoUpdate, flip } from '@floating-ui/react';
 import { useAuth } from '../context/AuthContext';
 import ChatInfo from './ChatInfo';
-import twemoji from 'twemoji';
 import AttachmentMenu from './AttachmentMenu';
 import eyeIcon from '../images/eye.png';
 import dotsImg from '../images/dots.png';

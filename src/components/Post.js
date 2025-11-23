@@ -12,8 +12,8 @@ function Post({ post }) {
     return (
         <div className='post-container'>
             <div className='post-heading-container'>
-                <div className='chat-img-container'>
-                    <img className='chat-img' src={userImg} alt="user"/>
+                <div className='post-chat-img-container'>
+                    <img className='post-chat-img' src={post.chatId.chatDp} alt="user"/>
                 </div>
                 <div className='post-names-container'>
                     <h3 className='chat-name'><Link to={'/'+post.chatId._id.toString()} style={{textDecoration: 'none', color: '#c5cad3'}}>{post.chatId.chatName}</Link></h3>

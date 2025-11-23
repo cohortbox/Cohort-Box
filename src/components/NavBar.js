@@ -1,6 +1,6 @@
 import './NavBar.css';
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import NotificationPanel from './NotificationPanel';
 import plusImg from '../images/plus.png';
 import settingsImg from '../images/settings.png';
@@ -16,6 +16,7 @@ function NavBar({ selectedChat }){
     const { socket } = useSocket();
     const { user } = useAuth();
     const [open, setOpen] = useState(false);
+    const notificationBtnRef = useRef(null)
     const [openNotification, setOpenNotification] = useState(false)
 
     function handleHomeClick(e) {
@@ -62,7 +63,7 @@ function NavBar({ selectedChat }){
                         <span>COHORTS</span>
                     </button>
                 </Link>
-                <button className="nav-btn" onClick={handleNotificationClick}>
+                <button ref={notificationBtnRef} className="nav-btn" onClick={handleNotificationClick}>
                     <img src={notificationImg} alt="Cohort" className="nav-btn-img"/>
                     <span>NOTIFICATIONS</span>
                 </button>
@@ -81,7 +82,7 @@ function NavBar({ selectedChat }){
                 </button>
             </section>
             {
-                openNotification && <NotificationPanel/>
+                openNotification && <NotificationPanel notificationBtnRef={notificationBtnRef} openNotification={openNotification} setOpenNotification={setOpenNotification}/>
             }
         </nav>
     );

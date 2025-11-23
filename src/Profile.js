@@ -139,7 +139,7 @@ function Profile(){
                                 <div className='profile-img-container'>
                                     <img className='profile-img' src={userObj.dp}/>
                                     <div className='photo-change-btn'>
-                                        <img className='photo-change-img' onClick={() => navigate('/profile-picture')} src={addPhoto}/>
+                                        <img className='photo-change-img' onClick={() => navigate('/change-dp/profile')} src={addPhoto}/>
                                     </div>
                                 </div>
                                 <h4 className='profile-username'>{userObj.firstName + ' ' + userObj.lastName}</h4>

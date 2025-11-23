@@ -20,17 +20,27 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 10px;
+    gap: 16px;
 }
 
-.chat-info-container .chat-img-container{
+.chat-info-heading .chat-img-container{
     display: grid;
     place-items: center;
     position: relative;
+    height: 65px;
+    width: 65px;
+    border: 1px solid var(--green);
+    border-radius: 70px;
 }
 
 .chat-img{
     height: 100%;
+    width: 100%;
+    border-radius: 70px;
+}
+
+.chatname{
+    font-size: 1.5rem;
 }
 
 .participants-heading-container{
