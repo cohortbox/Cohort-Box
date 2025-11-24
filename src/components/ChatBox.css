@@ -17,6 +17,19 @@
   flex-shrink: 0;
 }
 
+.chatName-chatDp-container{
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.chatDp{
+  height: 40px;
+  width: 40px;
+  border-radius: 70px;
+  border: 1px solid var(--green);
+}
+
 .chat-live-count{
   color: var(--fontColor);
   font-size: 0.8rem;

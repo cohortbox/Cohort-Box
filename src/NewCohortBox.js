@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import NavBar from './components/NavBar'
 import SearchBar from './components/SearchBar';
 import './NewCohortBox.css';
 import { useAuth } from './context/AuthContext';
+import Toast from './components/Toast';
 
 function NewCohortBox(){
     const [searchBarClass, setSearchBarClass] = useState(' hidden');
@@ -10,9 +12,54 @@ function NewCohortBox(){
     const [chatName, setChatName] = useState('');
     const [chatNiche, setChatNiche] = useState('');
     const { user, accessToken } = useAuth();
+    const [preview, setPreview] = useState(null);
+    const [dpFile, setDpFile] = useState(null);
+    const [toastMsg, setToastMsg] = useState('');
+    const [showToast, setShowToast] = useState(false);
 
-    function handleCreate(e){
+    function showAlert(msg){
+        setToastMsg(msg);
+        setShowToast(true);
+    }
+
+    const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+
+    const onDrop = useCallback((acceptedFiles) => {
+        const file = acceptedFiles[0];
+        if (file) {
+            setPreview(URL.createObjectURL(file));
+            setDpFile(file);
+        }
+    }, []);
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop,
+        accept: { "image/*": [] },
+        maxFiles: 1,
+        maxSize: MAX_SIZE,
+        onDropRejected: (rejections) => {
+            rejections.forEach((rej) => {
+                if (rej.errors[0].code === "file-too-large") {
+                    showAlert("Your image is larger than 2MB. Pick a smaller file.");
+                } else {
+                    showAlert("Invalid file selected.");
+                }
+            });
+        }
+    });
+
+    async function handleCreate(e){
         e.preventDefault();
+
+          if (!chatName.trim()) {
+            showAlert("Please enter a name for the Cohort Box.");
+            return;
+        }
+
+        if (!dpFile) {
+            showAlert("Please select a chat display picture.");
+            return;
+        }
 
         let participants = [user.id];
 
@@ -20,11 +67,28 @@ function NewCohortBox(){
             participants.push(member._id);
         }
 
+        const formData = new FormData();
+        formData.append('image', dpFile);
+
+        const res = await fetch('/api/upload-chat-dp', {
+            method: 'POST',
+            headers: {
+                authorization: `Bearer ${accessToken}`,
+            },
+            body: formData,
+        });
+        if(!res.ok){
+            showAlert("Image couldn't be uploaded! Try again.");
+            return;
+        }
+        const data = await res.json();
+
         const body = {
             participants,
             chatAdmin: user.id,
             chatName,
-            chatNiche
+            chatNiche,
+            chatDp: data.url
         }
 
         fetch(`/api/start-chat`, {
@@ -75,9 +139,32 @@ function NewCohortBox(){
                         <h4 className='ncb-chatname-heading'>SELECT COHORT BOX CHAT NICHE</h4>
                         <input className='ncb-chatname-input' type='text' placeholder='ENTER CHAT NICHE' onChange={e => setChatNiche(e.target.value)}/>
                     </div>
+                    <h4 className='ncb-chatname-heading'>CHAT DISPLAY PICTURE</h4>
+                    <div {...getRootProps({ className: 'ncb-dropzone' })}>
+                        <input {...getInputProps()} />
+                        {isDragActive ? (
+                            <p>Drop the photo here...</p>
+                        ) : (
+                            <p>Drag & drop a photo, or click to select one</p>
+                        )}
+                    </div>
+
+                    {preview && (
+                        <div className="preview-container">
+                            <img src={preview} alt="Preview" className="preview-image" />
+                        </div>
+                    )}
+
+                    <p className='ncb-note'>Note: Your image should be under 2MB.</p>
+
                     <button className='ncb-add-btn' onClick={handleCreate}>CREATE</button>
                 </div>
             </div>
+            <Toast
+                message={toastMsg}
+                show={showToast}
+                onClose={() => setShowToast(false)}
+            />
         </div>
     )
 }

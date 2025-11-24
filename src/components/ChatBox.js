@@ -275,7 +275,10 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
       { selectedChat && <ChatInfo selectedChat={selectedChat} setSelectedChat={setSelectedChat} chatInfoClass={chatInfoClass} setChatInfoClass={setChatInfoClass} setMessages={setMessages}/> }
       { selectedChat &&
         (<div className='chat-heading-and-btns-container'>
-            <h3 className='chat-box-heading'>{selectedChat.chatName}</h3>
+            <div className='chatName-chatDp-container'>
+              <img className='chatDp' src={selectedChat.chatDp}/>
+              <h3 className='chat-box-heading'>{selectedChat.chatName}</h3>
+            </div>
             <p className='chat-live-count'><img className='chat-live-count-img' src={eyeIcon}/> {chatLiveCount}</p>
             <div className='chat-btns-container'>
               <button className='chat-info-btn' onClick={() => setChatInfoClass('')}><img className='chat-info-img' src={dotsImg}/></button>

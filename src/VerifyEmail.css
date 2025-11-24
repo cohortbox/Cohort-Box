@@ -1,3 +1,37 @@
-.verify-email-container{
+.verify-email-wrapper{
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background-color: var(--black);
+    height: 100vh;
+}
+
+.verify-email-container{
+    border: 1px solid var(--small);
+    border-radius: 19px;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    padding: 49px;
+    justify-content: center;
+    width: 350px;
+    gap: 10px;
+}
+
+.verify-email-p{
+    color: var(--fontColor);
+    font-size: 1rem;
+}
+
+.verify-email-input{
+    box-sizing: border-box;
+    border-radius: 5px;
+    height: 35px;
+    width: 100%;
+    padding: 0px 10px;
+    border: 1px solid var(--small);
+    background-color: var(--searchBoxBg);
+    font-size: 17px;
+    transition-duration: 0.4s;
+    color: var(--fontColor);
 }

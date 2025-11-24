@@ -91,7 +91,7 @@ app.get('/api/delete-all', authTokenAPI, async (req, res) => {
 app.post('/api/signup', async (req, res) => {
     console.log(req.body)
     try {
-        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
 
         const user = {
             firstName: req.body.firstName,
@@ -117,14 +117,17 @@ app.post('/api/signup', async (req, res) => {
         const mailOptions = {
             from: '"Cohort-Box" <no-reply@cohortbox.com>',
             to: user.email,
-            subject: 'CohortBox - Verify your email',
+            subject: 'Your CohortBox Verification Code',
             html: `
                 <h3>Welcome to Cohort-Box!</h3>
-                <p>Click below to verify your email:</p>
-                <a href="${link}">${link}</a>
-                <p>This link expires in 1 hour.</p>
+                <p>Your verification code is:</p>
+
+                <h2 style="font-size: 32px; letter-spacing: 4px;">${verificationCode}</h2>
+
+                <p>This code expires in 1 hour.</p>
+                <p>If you didn't request this, just ignore this email.</p>
             `,
-        };  
+        };
 
         await transporter.sendMail(mailOptions);
 
@@ -153,6 +156,60 @@ app.post('/api/signup', async (req, res) => {
         return res.status(500).json({ message: 'Server error' });
     }    
     
+})
+
+app.get('/api/update-verification-token', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        user.verificationCode = verificationCode;
+        user.verificationExpires = Date.now() + 1000 * 60 * 10;
+
+        await user.save();
+
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        // Email content
+        const mailOptions = {
+            from: '"Cohort-Box" <no-reply@cohortbox.com>',
+            to: email,
+            subject: "Your New CohortBox Verification Code",
+            html: `
+                <h2>Your New Verification Code</h2>
+                <h1 style="font-size: 40px; font-weight: bold; letter-spacing: 6px;">${verificationCode}</h1>
+                <p>This code will expire in 10 minutes.</p>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+
+        return res.status(200).json({
+            message: "Verification code sent successfully",
+            codeSent: true
+        });
+
+    } catch (err) {
+        console.log(err)
+        return res.status(500).json({ message: 'Server error' });
+    }
 })
 
 app.get('/api/refresh', (req, res) => {
@@ -466,7 +523,9 @@ app.post('/api/upload-chat-dp', authTokenAPI, uploadChatDp.single('image'), asyn
             return res.status(400).json({ message: 'No image received' });
         }
         const url = req.file.secure_url || req.file.path;
-        await Chat.findByIdAndUpdate(req.body.chatId, { chatDp: url });
+        if(req.body.chatId){
+            await Chat.findByIdAndUpdate(req.body.chatId, { chatDp: url });
+        }
         return res.status(200).json({ url });
     }catch(err){
         console.log(err);

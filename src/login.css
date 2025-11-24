@@ -39,14 +39,14 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 30px;
+    gap: 20px;
     width: 100%;
 }
 
 .inputs-container{
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    gap: 15px;
     width:100%;
 }
 
@@ -78,7 +78,8 @@
     background-color: var(--green);
     color: var(--black);
     transition-duration: 0.2s;
-    font-family: 'GM'
+    font-family: 'GM';
+    cursor: pointer;
 }
 
 .invalid-email{
@@ -94,6 +95,16 @@
     gap: 5px;
     flex-direction: column;
     color: red;
+}
+
+.forgot-password-btn{
+    color: var(--small);
+    font-size: 0.8rem;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
 }
 
 .password-container{

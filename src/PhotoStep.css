@@ -36,6 +36,11 @@
   object-fit: cover;
 }
 
+.profile-photo-step-note{
+  font-size: 0.8rem;
+  color: var(--small);
+}
+
 .upload-btn {
   background: var(--green);
   color: var(--black);

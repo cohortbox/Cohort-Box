@@ -22,9 +22,9 @@
 
 @keyframes myMove {
     from {
-        width: 0%;
+        right: 490px;
     }
     to {
-        width: 410px;
+        right: 0px;
     }
 }

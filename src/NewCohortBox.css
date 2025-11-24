@@ -83,6 +83,29 @@
     border: 1px solid var(--green);
 }
 
+.ncb-dropzone{
+    border: 2px dashed var(--green);
+    border-radius: 12px;
+    cursor: pointer;
+    padding: 2rem;
+    text-align: center;
+    transition: border-color .3s ease;
+    width: 380px;
+    height: 150px;
+    display: grid;
+    place-items: center;
+    color: var(--fontColor);
+}
+
+.ncb-dropzone:hover{
+    border-color: var(--hover);
+}
+
+.ncb-note{
+    font-size: 0.8rem;
+    color: var(--small);
+}
+
 .ncb-add-btn{
     height: 40px;
     padding: 0 20px;
@@ -93,4 +116,10 @@
     color: var(--black);
     border-radius: 5px;
     border: none;
+    transition: 0.2s ease;
+}
+
+.ncb-add-btn:hover{
+    background-color: var(--hover);
+    color: var(--fontColor);
 }
