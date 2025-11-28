@@ -30,13 +30,34 @@
   border: 1px solid var(--green);
 }
 
+.subscribe-btn{
+  height: 30px;
+  font-size: 0.9rem;
+  background-color: var(--green);
+  color: var(--black);
+  border: none;
+  border-radius: 5px;
+}
+
+.unsubscribe-btn{
+  border-radius: 5px;
+  height: 30px;
+  font-size: 0.9rem;
+  background-color: var(--black);
+  color: var(--green);
+  border: 1px solid var(--green);
+}
+
 .chat-live-count{
   color: var(--fontColor);
-  font-size: 0.8rem;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .chat-live-count-img{
-  height: 35px;
+  height: 25px;
 }
 
 .chat-btns-container{

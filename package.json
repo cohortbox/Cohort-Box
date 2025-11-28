@@ -25,6 +25,7 @@
     "react-dom": "^19.1.1",
     "react-dropzone": "^14.3.8",
     "react-easy-crop": "^5.5.3",
+    "react-player": "^3.4.0",
     "react-router-dom": "^7.8.1",
     "react-scripts": "^5.0.1",
     "socket.io": "^4.8.1",

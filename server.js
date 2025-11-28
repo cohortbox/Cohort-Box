@@ -30,15 +30,17 @@ app.use(cors({
     credentials: true
 }))
 
-const buildPath = path.join(__dirname, 'build'); 
+const buildPath = path.join(__dirname, 'build');
 app.use(express.static(buildPath, { maxAge: '1y', index: false }));
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: {
-    origin: true,
-    methods: ['GET', 'POST'],
-    credentials: true
-} });
+const io = new Server(server, {
+    cors: {
+        origin: true,
+        methods: ['GET', 'POST'],
+        credentials: true
+    }
+});
 
 const authTokenAPI = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -47,8 +49,8 @@ const authTokenAPI = (req, res, next) => {
     if (!token) return res.status(401).json({ message: 'No token provided' });
 
     jwt.verify(token, process.env.ACCESS_TOKEN_KEY, async (err, user) => {
-        if(err) return res.status(403).json({ message: 'Invalid Token' })
-        
+        if (err) return res.status(403).json({ message: 'Invalid Token' })
+
         const userDB = await User.findById(user.id).select('isVerified');
         // if(!userDB.isVerified) return res.status(403).json({ message: 'User not Verified', isVerified: false })
 
@@ -65,7 +67,7 @@ const authTokenSocketIO = (socket, next) => {
 
     jwt.verify(token, process.env.ACCESS_TOKEN_KEY, (err, user) => {
         if (err) {
-        return next(new Error("Invalid Token"));
+            return next(new Error("Invalid Token"));
         }
         socket.user = user; // attach user info to socket
         next();
@@ -75,14 +77,14 @@ const authTokenSocketIO = (socket, next) => {
 io.use(authTokenSocketIO);
 
 app.get(/^(?!\/api|\/socket\.io).*/, (req, res) => {
-  res.sendFile(path.join(buildPath, 'index.html'));
+    res.sendFile(path.join(buildPath, 'index.html'));
 });
 
 app.get('/api/delete-all', authTokenAPI, async (req, res) => {
-    try{
+    try {
         await Message.deleteMany({});
         res.status(200).json({ message: 'Deleted all Succssfully' })
-    }catch(err){
+    } catch (err) {
         console.error(err);
         return res.status(400).json({ message: 'Request Failed!' })
     }
@@ -91,20 +93,20 @@ app.get('/api/delete-all', authTokenAPI, async (req, res) => {
 app.post('/api/signup', async (req, res) => {
     console.log(req.body)
     try {
-        const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
         const user = {
             firstName: req.body.firstName,
             lastName: req.body.lastName,
             email: req.body.email,
             password_hash: await bcrypt.hash(req.body.password, saltRounds),
-            verificationToken,
+            verificationCode,
             verificationExpires: Date.now() + 1000 * 60 * 60,
         };
 
         const userDB = await User.create(user);
 
-        const link = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+        const link = `${process.env.CLIENT_URL}/verify-email/${verificationCode}`;
 
         const transporter = nodemailer.createTransport({
             service: 'gmail',
@@ -137,7 +139,7 @@ app.post('/api/signup', async (req, res) => {
             firstName: user.firstName,
             lastName: user.lastName
         }
-        
+
         const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_KEY, { expiresIn: "10m" });
         const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_KEY, { expiresIn: "7d" });
 
@@ -154,8 +156,8 @@ app.post('/api/signup', async (req, res) => {
             return res.status(400).json({ message: 'Email already exists' });
         }
         return res.status(500).json({ message: 'Server error' });
-    }    
-    
+    }
+
 })
 
 app.get('/api/update-verification-token', async (req, res) => {
@@ -213,37 +215,37 @@ app.get('/api/update-verification-token', async (req, res) => {
 })
 
 app.get('/api/refresh', (req, res) => {
-  console.log("Access Token refresh request!");
-  const refreshToken = req.cookies.refreshToken;
+    console.log("Access Token refresh request!");
+    const refreshToken = req.cookies.refreshToken;
 
-  if (!refreshToken) {
-    console.log("Refresh Token not found!");
-    return res.status(401).json({ message: 'No refresh token' });
-  }
+    if (!refreshToken) {
+        console.log("Refresh Token not found!");
+        return res.status(401).json({ message: 'No refresh token' });
+    }
 
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_KEY, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Invalid refresh token' });
+    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_KEY, (err, user) => {
+        if (err) return res.status(403).json({ message: 'Invalid refresh token' });
 
-    // remove exp and iat from the decoded user object
-    const { exp, iat, ...payload } = user;
+        // remove exp and iat from the decoded user object
+        const { exp, iat, ...payload } = user;
 
-    const accessToken = jwt.sign(
-      payload,
-      process.env.ACCESS_TOKEN_KEY,
-      { expiresIn: "10m" }
-    );
+        const accessToken = jwt.sign(
+            payload,
+            process.env.ACCESS_TOKEN_KEY,
+            { expiresIn: "10m" }
+        );
 
-    res.json({ accessToken });
-  });
+        res.json({ accessToken });
+    });
 });
 
 app.post('/api/login', async (req, res) => {
-    try{
+    try {
         const user = await User.findOne({
             email: req.body.email
         })
 
-        if(!user){
+        if (!user) {
             return res.status(404).json({ message: "No user found against this email!" })
         }
 
@@ -259,7 +261,7 @@ app.post('/api/login', async (req, res) => {
 
         const isMatch = await bcrypt.compare(req.body.password, user.password_hash);
 
-        if(isMatch){
+        if (isMatch) {
             res.cookie("refreshToken", refreshToken, {
                 httpOnly: true,
                 secure: false,
@@ -273,12 +275,12 @@ app.post('/api/login', async (req, res) => {
 
             return res.status(200).json({ accessToken });
 
-        }else{
-            res.status(401).json({message: 'Invalid Credentials!'})
+        } else {
+            res.status(401).json({ message: 'Invalid Credentials!' })
         }
-    }catch(err){
+    } catch (err) {
         console.log(err);
-        res.status(500).json({message: 'Server Error!'})
+        res.status(500).json({ message: 'Server Error!' })
     }
 });
 
@@ -292,78 +294,83 @@ app.post('/api/logout', (req, res) => {
     return res.status(200).json({ message: 'Logged out successfully' });
 });
 
-app.get('/api/verify/:token', async (req, res) => {
-    try{
-        const user = await User.findOne({
-            verificationToken: req.params.token,
-            verificationExpires: { $gt: Date.now() },
-        });
+app.post('/api/verify-code', async (req, res) => {
+    try {
+        const {email, code} = req.body;
+        console.log(`Email: ${email} \nCode: ${code} \n`)
+        if (!email || !code) {
+            return res.status(400).json({
+                message: "Email & code are required",
+                verified: false
+            });
+        }
+        const user = await User.findOne({ email: email, verificationCode: code, verificationExpires: { $gt: Date.now() } });
         if (!user) return res.status(400).json({ message: 'Invalid or expired token.', verified: false });
 
         user.isVerified = true;
-        user.verificationToken = undefined;
+        user.verificationCode = undefined;
         user.verificationExpires = undefined;
         await user.save();
 
         res.json({ message: 'Email verified!', verified: true });
-    }catch(err){
-        res.status(500).json({message: 'Internal Server Error!', verified: false})
+    } catch (err) {
+        res.status(500).json({ message: 'Internal Server Error!', verified: false })
     }
 });
 
 app.get('/api/return-users', authTokenAPI, async (req, res) => {
-  try {
-    const query = (req.query.q || '').trim();
-    const limit = Math.min(Number(req.query.limit) || 80, 200);
+    try {
+        const query = (req.query.q || '').trim();
+        const limit = Math.min(Number(req.query.limit) || 80, 200);
 
-    const filter = {
-      _id: { $ne: req.user.id },
-      $or: [
-        { firstName: { $regex: query, $options: 'i' } },
-        { lastName:  { $regex: query,  $options: 'i' } }
-      ]
-    };
+        const filter = {
+            _id: { $ne: req.user.id },
+            $or: [
+                { firstName: { $regex: query, $options: 'i' } },
+                { lastName: { $regex: query, $options: 'i' } }
+            ]
+        };
 
-    const users = await User.find(filter)
-      .select('_id firstName lastName dp')
-      .limit(limit)
-      .lean();
+        const users = await User.find(filter)
+            .select('_id firstName lastName dp')
+            .limit(limit)
+            .lean();
 
-    res.status(200).json({ users });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server Error!' });
-  }
+        res.status(200).json({ users });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Error!' });
+    }
 });
 
 app.get('/api/return-users/:userId', async (req, res) => {
-    try{
+    try {
         const userId = req.params.userId;
         const userDB = await User.findById(userId).populate('friends', '_id firstName lastName').lean();
         console.log(userDB)
         return res.status(200).json({ userDB });
-    }catch(err){
-        res.status(500).json({message: 'Server Error!'});
+    } catch (err) {
+        res.status(500).json({ message: 'Server Error!' });
     }
 });
 
 app.get('/api/return-friends', authTokenAPI, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).populate('friends', '_id firstName lastName').lean();
-    res.json({ friends: user.friends });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
-  }
+    try {
+        const user = await User.findById(req.user.id).populate('friends', '_id firstName lastName').lean();
+        res.json({ friends: user.friends });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 app.get('/api/return-friends/:id', authTokenAPI, async (req, res) => {
-  try {
-    const id = req.params.id;
-    const user = await User.findById(id).populate('friends', '_id firsName lastName').lean();
-    res.json({ friends: user.friends });
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
-  }
+    try {
+        const id = req.params.id;
+        const user = await User.findById(id).populate('friends', '_id firsName lastName').lean();
+        res.json({ friends: user.friends });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 app.get('/api/return-friend-requests', authTokenAPI, async (req, res) => {
@@ -371,12 +378,12 @@ app.get('/api/return-friend-requests', authTokenAPI, async (req, res) => {
         const userId = req.user.id;
 
         const requests = await FriendRequest.find({
-        $or: [{ from: userId }, { to: userId }]
+            $or: [{ from: userId }, { to: userId }]
         })
-        .sort({ createdAt: -1 })
-        .populate('from', '_id firstName lastName')
-        .populate('to',   '_id firstName lastName')
-        .lean();
+            .sort({ createdAt: -1 })
+            .populate('from', '_id firstName lastName')
+            .populate('to', '_id firstName lastName')
+            .lean();
 
         res.status(200).json({ requests });
     } catch (err) {
@@ -386,38 +393,34 @@ app.get('/api/return-friend-requests', authTokenAPI, async (req, res) => {
 });
 
 app.get('/api/return-posts', authTokenAPI, async (req, res) => {
-    const {lastId} = req.query;
+    const { lastId } = req.query;
     const limit = 30;
-    let filter ={ type: 'media' }
-    if(lastId){
+    let filter = { type: 'media' }
+    if (lastId) {
         filter._id = { $lt: new mongoose.Types.ObjectId(lastId) }
     }
-    try{
+    try {
         const posts = await Message.find(filter).sort({ _id: -1 }).populate('from', '_id firstName lastName').populate('chatId', '_id chatName chatDp').limit(limit);
-        if(posts.length === 0){
+        if (posts.length === 0) {
             return res.status(404).json({ message: 'No posts found!' });
         }
         res.status(200).json({ posts })
-    }catch(err){
+    } catch (err) {
         res.status(500).json({ message: 'Server Error!' })
     }
 })
 
 app.get('/api/return-chats', authTokenAPI, async (req, res) => {
-    const {lastId} = req.query;
+    const { lastId } = req.query;
     const limit = 35;
-    let filter ={}
-    if(lastId){
+    let filter = {}
+    if (lastId) {
         filter._id = { $lt: lastId }
     }
 
-    try{
-        await Chat.updateMany(
-            { chatDp: { $exists: false } },
-            { $set: { chatDp: 'https://res.cloudinary.com/dzhvgedcy/image/upload/v1763410012/group_sfs2cr.png' } }
-        );
-        const chats = await Chat.find(filter).sort({ _id: -1 }).populate('participants', '_id firstName lastName').limit(limit).lean({defaults: true});
-        if(chats.length === 0){
+    try {
+        const chats = await Chat.find(filter).sort({ _id: -1 }).populate('participants', '_id firstName lastName').limit(limit).lean({ defaults: true });
+        if (chats.length === 0) {
             return res.status(404).json({ message: 'No chats found!' });
         }
         const chatsWithViewers = chats.map(chat => {
@@ -426,53 +429,53 @@ app.get('/api/return-chats', authTokenAPI, async (req, res) => {
         });
 
         res.status(200).json({ chats: chatsWithViewers });
-    }catch(err){
-        res.status(500).json({message: 'Server Error!'});
+    } catch (err) {
+        res.status(500).json({ message: 'Server Error!' });
     }
 });
 
 app.get('/api/return-chats/:id', authTokenAPI, async (req, res) => {
     const id = req.params.id;
     console.log('return-chats:id')
-    try{
+    try {
         console.log('\n return-chats Request!')
         const chat = await Chat.findById(id).populate('participants', '_id firstName lastName').lean();
-        if(!chat){
+        if (!chat) {
             return res.status(404).json({ message: 'No chats found!' });
         }
         const count = liveViewers.has(chat._id.toString()) ? liveViewers.get(chat._id.toString()).size : 0;
         res.status(200).json({ chat: { ...chat, liveViewerCount: count } });
-    }catch(err){
+    } catch (err) {
         console.log(err)
-        res.status(500).json({message: 'Server Error!'});
+        res.status(500).json({ message: 'Server Error!' });
     }
 });
 
 app.get('/api/return-user-chats/:id', authTokenAPI, async (req, res) => {
     const id = req.params.id;
-    try{
+    try {
         const chats = await Chat.find({ chatAdmin: id });
-        if(!chats){
+        if (!chats) {
             return res.status(404).json({ message: 'No chats found!' });
         }
         res.status(200).json({ chats });
-    }catch(err){
-        res.status(500).json({message: 'Server Error!'});
+    } catch (err) {
+        res.status(500).json({ message: 'Server Error!' });
     }
 });
 
 app.get('/api/return-messages/:chatId', authTokenAPI, async (req, res) => {
-    try{
+    try {
         const chatId = req.params.chatId;
-        const msgs = await Message.find({ chatId }).sort({timestamp: 1});
+        const msgs = await Message.find({ chatId }).sort({ timestamp: 1 });
         res.status(200).json({ msgs })
-    }catch(err){
-        res.status(500).json({message: 'Server Error!'});
+    } catch (err) {
+        res.status(500).json({ message: 'Server Error!' });
     }
 });
 
 app.post('/api/start-chat', authTokenAPI, async (req, res) => {
-    try{
+    try {
         console.log('\n start-chat Request! \n')
         console.log(req.body)
         const friend = await User.findById(req.body.userID);
@@ -482,14 +485,14 @@ app.post('/api/start-chat', authTokenAPI, async (req, res) => {
         await newChat.populate('participants', '_id firstName lastName')
 
         res.status(200).json({ newChat });
-    }catch(err){
+    } catch (err) {
         console.log(err)
-        res.status(500).json({message: 'Server Error!'})
+        res.status(500).json({ message: 'Server Error!' })
     }
 });
 
 app.post('/api/upload-images', authTokenAPI, upload.array('media', 10), (req, res) => {
-    try{
+    try {
         const media = req.files.map((media_, index) => {
             return {
                 url: media_.path,
@@ -497,57 +500,57 @@ app.post('/api/upload-images', authTokenAPI, upload.array('media', 10), (req, re
             };
         });
         return res.status(200).json({ media });
-    }catch(err){
+    } catch (err) {
         console.log(err);
         res.status(500).json({ message: 'Server Error!' })
     }
 });
 
 app.post('/api/upload-user-dp', authTokenAPI, uploadUserDp.single('image'), async (req, res) => {
-    try{
+    try {
         if (!req.file) {
             return res.status(400).json({ message: 'No image received' });
         }
         const url = req.file.secure_url || req.file.path;
         await User.findByIdAndUpdate(req.user.id, { dp: url });
         return res.status(200).json({ url });
-    }catch(err){
+    } catch (err) {
         console.log(err);
         res.status(500).json({ message: 'Server Error!' });
     }
 });
 
 app.post('/api/upload-chat-dp', authTokenAPI, uploadChatDp.single('image'), async (req, res) => {
-    try{
+    try {
         if (!req.file) {
             return res.status(400).json({ message: 'No image received' });
         }
         const url = req.file.secure_url || req.file.path;
-        if(req.body.chatId){
+        if (req.body.chatId) {
             await Chat.findByIdAndUpdate(req.body.chatId, { chatDp: url });
         }
         return res.status(200).json({ url });
-    }catch(err){
+    } catch (err) {
         console.log(err);
         res.status(500).json({ message: 'Server Error!' });
     }
 });
 
 app.post('/api/upload-audio', authTokenAPI, upload.single('audio'), (req, res) => {
-    try{
+    try {
         const media = {
             url: req.file.path,
-            type: 'audio', 
+            type: 'audio',
         };
         return res.status(200).json({ media });
-    }catch(err){
+    } catch (err) {
         console.log(err);
         res.status(500).json({ message: 'Server Error!' })
     }
 });
 
 app.delete('/api/chat/participant/:userId/:chatId', authTokenAPI, async (req, res) => {
-    try{
+    try {
         const chatId = req.params.chatId;
         const userId = req.params.userId;
         const updatedChat = await Chat.updateOne(
@@ -555,19 +558,19 @@ app.delete('/api/chat/participant/:userId/:chatId', authTokenAPI, async (req, re
             { $pull: { participants: userId } }
         )
 
-        if(updatedChat.modifiedCount === 0){
+        if (updatedChat.modifiedCount === 0) {
             return res.status(404).json({ message: 'Participant not found or already removed!' });
         }
 
         return res.status(200).json({ message: 'Participant removed Successfully!' });
-    }catch(err){
+    } catch (err) {
         console.log(err);
         res.status(500).json({ message: 'Internal Server Error!' });
     }
 })
 
 app.put('/api/chat/participant', authTokenAPI, async (req, res) => {
-    try{
+    try {
         const { participants, chatId } = req.body;
 
         if (!participants || !chatId) {
@@ -576,104 +579,146 @@ app.put('/api/chat/participant', authTokenAPI, async (req, res) => {
 
         const updatedChat = await Chat.updateOne(
             { _id: chatId },
-            { $addToSet: { participants: { $each: participants } }}
+            { $addToSet: { participants: { $each: participants } } }
         )
 
-        if(updatedChat.modifiedCount === 0){
+        if (updatedChat.modifiedCount === 0) {
             return res.status(404).json({ message: 'Participants not found or already added!' });
         }
 
         return res.status(200).json({ message: 'Participants Added Successfully!' });
-    }catch(err){
+    } catch (err) {
         console.log(err);
         res.status(500).json({ message: 'Internal Server Error!' });
     }
 });
 
+app.patch('/api/chat/subscribe', authTokenAPI, async (req, res) => {
+    try {
+        console.log('Hello FROM SUB');
+        const { chatId } = req.body;
+        const userId = req.user.id;
+        if(!chatId){
+            return res.status(400).json({ message: 'Chat ID is required!' })
+        }
+        const updatedChat = await Chat.findByIdAndUpdate(chatId, { $addToSet: { subscribers: userId }}, { new: true }).select('subscribers');
+
+        if(!updatedChat){
+            return res.status(404).json({message: 'Chat not found!'})
+        }
+
+        return res.status(200).json({ message: 'Subscribed', subscribers: updatedChat.subscribers })
+
+    } catch (err) {
+        res.status(500).json({ message: 'Internal Server Error!' })
+    } 
+});
+
+app.patch('/api/chat/unsubscribe', authTokenAPI, async (req, res) => {
+    try {
+        console.log('Hello FROM SUB');
+        const { chatId } = req.body;
+        const userId = req.user.id;
+        if(!chatId){
+            return res.status(400).json({ message: 'Chat ID is required!' })
+        }
+        const updatedChat = await Chat.findByIdAndUpdate(chatId, { $pull: { subscribers: userId } }, {new: true}).select('subscribers');
+
+        if(!updatedChat){
+            return res.status(404).json({message: 'Chat not found!'})
+        }
+
+        return res.status(200).json({ message: 'Unsubscribed', subscribers: updatedChat.subscribers })
+
+    } catch (err) {
+        res.status(500).json({ message: 'Internal Server Error!' })
+    } 
+});
+
 app.post('/api/friends/request/:userId', authTokenAPI, async (req, res) => {
-  try {
-    const fromUserId = req.user.id;
-    const toUserId = req.params.userId;
+    try {
+        const fromUserId = req.user.id;
+        const toUserId = req.params.userId;
 
-    const request = await FriendRequest.create({ from: fromUserId, to: toUserId });
+        const request = await FriendRequest.create({ from: fromUserId, to: toUserId });
 
-    const populated = await FriendRequest.findById(request._id)
-      .populate('from', '_id firstName lastName')
-      .populate('to', '_id firstName lastName')
-      .lean();
+        const populated = await FriendRequest.findById(request._id)
+            .populate('from', '_id firstName lastName')
+            .populate('to', '_id firstName lastName')
+            .lean();
 
-    res.status(201).json(populated);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to send friend request', details: err.message });
-  }
+        res.status(201).json(populated);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to send friend request', details: err.message });
+    }
 });
 
 app.delete('/api/friends/request/:userId', authTokenAPI, async (req, res) => {
-  try {
-    const fromUserId = req.user.id;
-    const toUserId = req.params.userId;
+    try {
+        const fromUserId = req.user.id;
+        const toUserId = req.params.userId;
 
-    const deleted = await FriendRequest.findOneAndDelete({ from: fromUserId, to: toUserId })
-    .populate('from', '_id firstName lastName')
-    .populate('to', '_id firstName lastName');
+        const deleted = await FriendRequest.findOneAndDelete({ from: fromUserId, to: toUserId })
+            .populate('from', '_id firstName lastName')
+            .populate('to', '_id firstName lastName');
 
-    res.json(deleted);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to cancel friend request', details: err.message });
-  }
+        res.json(deleted);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to cancel friend request', details: err.message });
+    }
 });
 
 app.post('/api/friends/accept/:userId', authTokenAPI, async (req, res) => {
-  try {
-    const fromUserId = req.params.userId;
-    const toUserId = req.user.id;
+    try {
+        const fromUserId = req.params.userId;
+        const toUserId = req.user.id;
 
-    const from = await User.findById(fromUserId);
-    const to = await User.findById(toUserId);
+        const from = await User.findById(fromUserId);
+        const to = await User.findById(toUserId);
 
-    if (!from || !to) return res.status(404).json({ error: 'User not found' });
+        if (!from || !to) return res.status(404).json({ error: 'User not found' });
 
-    from.friends.push(toUserId);
-    to.friends.push(fromUserId);
+        from.friends.push(toUserId);
+        to.friends.push(fromUserId);
 
-    await from.save();
-    await to.save();
+        await from.save();
+        await to.save();
 
-    await FriendRequest.deleteOne({ from: fromUserId, to: toUserId });
+        await FriendRequest.deleteOne({ from: fromUserId, to: toUserId });
 
-    res.json({ success: true, from: fromUserId, to: toUserId });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to accept friend request', details: err.message });
-  }
+        res.json({ success: true, from: fromUserId, to: toUserId });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to accept friend request', details: err.message });
+    }
 });
 
 app.post('/api/friends/reject/:userId', authTokenAPI, async (req, res) => {
-  try {
-    const fromUserId = req.params.userId;
-    const toUserId = req.user.id;
+    try {
+        const fromUserId = req.params.userId;
+        const toUserId = req.user.id;
 
-    await FriendRequest.deleteOne({ from: fromUserId, to: toUserId });
+        await FriendRequest.deleteOne({ from: fromUserId, to: toUserId });
 
-    res.json({ success: true, from: fromUserId, to: toUserId });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to reject friend request', details: err.message });
-  }
+        res.json({ success: true, from: fromUserId, to: toUserId });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to reject friend request', details: err.message });
+    }
 });
 
 app.delete('/api/friends/:userId', authTokenAPI, async (req, res) => {
-  try {
-    const userId = req.user.id;        
-    const friendId = req.params.userId; 
+    try {
+        const userId = req.user.id;
+        const friendId = req.params.userId;
 
-    await User.findByIdAndUpdate(userId,   { $pull: { friends: friendId } });
-    await User.findByIdAndUpdate(friendId, { $pull: { friends: userId } });
+        await User.findByIdAndUpdate(userId, { $pull: { friends: friendId } });
+        await User.findByIdAndUpdate(friendId, { $pull: { friends: userId } });
 
-    const removedFriend = await User.findById(friendId).select('_id firstName lastName');
+        const removedFriend = await User.findById(friendId).select('_id firstName lastName');
 
-    res.json({ removedFriend });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to Unfriend', details: err.message });
-  }
+        res.json({ removedFriend });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to Unfriend', details: err.message });
+    }
 });
 
 let onlineUsers = {};
@@ -682,15 +727,15 @@ io.on('connection', (socket) => {
     console.log("A user connected:", socket.user);
 
     socket.on('register', async (userID) => {
-        if(!userID) return;
+        if (!userID) return;
         const userDB = await User.findById(userID).select('firstName lastName');
-        Notification.updateMany( {}, {$set: { chatDp: 'https://res.cloudinary.com/dzhvgedcy/image/upload/v1763410012/group_sfs2cr.png' }} )
-        if(!userDB) return; 
+        Notification.updateMany({}, { $set: { chatDp: 'https://res.cloudinary.com/dzhvgedcy/image/upload/v1763410012/group_sfs2cr.png' } })
+        if (!userDB) return;
         onlineUsers[userID] = {
             socketID: socket.id,
             username: `${userDB.firstName} ${userDB.lastName}`
         };
-        console.log(userID, "is online with socket", socket.id);     
+        console.log(userID, "is online with socket", socket.id);
     });
 
     socket.on('joinChat', async ({ chatId, userId }) => {
@@ -719,7 +764,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on("chatOpenedByParticipant", async ({chatId, userId}) => {
+    socket.on("chatOpenedByParticipant", async ({ chatId, userId }) => {
         console.log('hello cobp')
         // const msgs = await Message.find({ chatId }).sort({timestamp: 1});
         // socket.emit("returnMessages", msgs);
@@ -731,7 +776,7 @@ io.on('connection', (socket) => {
 
         const chat = await Chat.findById(chatId);
         chat.participants.forEach((participant) => {
-            if(onlineUsers[participant] && participant.toString() !== userId.toString()){
+            if (onlineUsers[participant] && participant.toString() !== userId.toString()) {
                 const recieverSocketId = onlineUsers[participant].socketID;
                 io.to(recieverSocketId).emit('messagesRead', {
                     chatId,
@@ -741,7 +786,7 @@ io.on('connection', (socket) => {
         })
     });
 
-    socket.on('participantRemoved', async ({userId, chatId}) => {
+    socket.on('participantRemoved', async ({ userId, chatId }) => {
         console.log('Received particpantRemoved');
         const removedUser = await User.findById(userId)
         const chat = await Chat.findById(chatId);
@@ -755,28 +800,28 @@ io.on('connection', (socket) => {
         });
         console.log(newMessage);
         const receiverSockets = [];
-        for(let participant of chat.participants){
-            if(onlineUsers[participant]){
+        for (let participant of chat.participants) {
+            if (onlineUsers[participant]) {
                 receiverSockets.push(onlineUsers[participant]);
             }
         }
-        for(let receiverSocket of receiverSockets){
-            io.to(receiverSocket.socketID).emit('participantRemoved', {userId, chatId, msg: newMessage});
+        for (let receiverSocket of receiverSockets) {
+            io.to(receiverSocket.socketID).emit('participantRemoved', { userId, chatId, msg: newMessage });
         }
         io.to(chatId).emit('participantRemoved', { userId, chatId, msg: newMessage });
     })
 
-    socket.on('participantLeft', ({userId, chatId}) => {
-        
+    socket.on('participantLeft', ({ userId, chatId }) => {
+
     })
 
     socket.on('message', async ({ chatId, type, message, media }) => {
         const from = socket.user.id;
         const chat = await Chat.findById(chatId);
         const receiverSockets = [];
-        for(let participant of chat.participants){
-            if(participant.toString() !== from.toString()){
-                if(onlineUsers[participant]){
+        for (let participant of chat.participants) {
+            if (participant.toString() !== from.toString()) {
+                if (onlineUsers[participant]) {
                     receiverSockets.push(onlineUsers[participant])
                 }
             }
@@ -790,8 +835,8 @@ io.on('connection', (socket) => {
                 type: type || undefined,
                 reactions: []
             });
-                
-            for (let receiverSocket of receiverSockets){
+
+            for (let receiverSocket of receiverSockets) {
                 if (receiverSocket) {
                     io.to(receiverSocket.socketID).emit('message', newMessage);
                 }
@@ -806,24 +851,24 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('privateMessageRead', async ({msgId, to, chatId}) => {
-        try{
+    socket.on('privateMessageRead', async ({ msgId, to, chatId }) => {
+        try {
             const receiverSocket = onlineUsers[to];
             await Message.updateOne({ _id: msgId }, { $set: { read: true } })
-            if(receiverSocket){
-                io.to(receiverSocket.socketID).emit('messagesRead', ({chatId, reader: socket.user.id}))
+            if (receiverSocket) {
+                io.to(receiverSocket.socketID).emit('messagesRead', ({ chatId, reader: socket.user.id }))
             }
-        }catch(err){
+        } catch (err) {
             console.log(err);
         }
     });
 
     socket.on('reaction', async (data) => {
-        try{
+        try {
 
-            let {msgId, userId, chatId, emoji} = data;
+            let { msgId, userId, chatId, emoji } = data;
 
-             await Message.updateOne(
+            await Message.updateOne(
                 { _id: msgId },
                 { $pull: { reactions: { userId: new mongoose.Types.ObjectId(userId) } } }
             );
@@ -835,18 +880,18 @@ io.on('connection', (socket) => {
             );
             const chat = await Chat.findById(chatId);
             let receiverSockets = [];
-            for(let p of chat.participants){
-                if(onlineUsers[p]){
+            for (let p of chat.participants) {
+                if (onlineUsers[p]) {
                     receiverSockets.push(onlineUsers[p])
                 }
             }
-            for (let receiverSocket of receiverSockets){
+            for (let receiverSocket of receiverSockets) {
                 if (receiverSocket) {
                     io.to(receiverSocket.socketID).emit('reaction', data);
                 }
             }
             io.to(chatId).emit('reaction', data);
-        }catch(err){
+        } catch (err) {
             console.log(err);
         }
     });
@@ -878,129 +923,129 @@ io.on('connection', (socket) => {
     });
 
     socket.on('friendRequest', async (request) => {
-    try {
-        socket.emit('friendRequestSent', request);
-        const receiverSocket = onlineUsers[request.to._id];
-        if (receiverSocket) {
-            io.to(receiverSocket.socketID).emit('friendRequestReceived', request);
+        try {
+            socket.emit('friendRequestSent', request);
+            const receiverSocket = onlineUsers[request.to._id];
+            if (receiverSocket) {
+                io.to(receiverSocket.socketID).emit('friendRequestReceived', request);
+            }
+        } catch (err) {
+            console.log(err);
         }
-    } catch (err) {
-        console.log(err);
-    }
     });
 
     socket.on('cancelFriendRequest', async (request) => {
-    try {
-        socket.emit('friendRequestCanceled', { to: request.to._id, from: request.from._id });
-        const receiverSocket = onlineUsers[request.to._id];
-        console.log(receiverSocket);
-        if (receiverSocket) {
-        io.to(receiverSocket.socketID).emit('friendRequestCanceled', {
-            from: socket.user.id,
-            to: request.to._id
-        });
+        try {
+            socket.emit('friendRequestCanceled', { to: request.to._id, from: request.from._id });
+            const receiverSocket = onlineUsers[request.to._id];
+            console.log(receiverSocket);
+            if (receiverSocket) {
+                io.to(receiverSocket.socketID).emit('friendRequestCanceled', {
+                    from: socket.user.id,
+                    to: request.to._id
+                });
+            }
+        } catch (err) {
+            console.log(err);
         }
-    } catch (err) {
-        console.log(err);
-    }
     });
 
     socket.on('acceptFriendRequest', async (userId) => {
-    try {
-        const fromUserId = userId;
-        const fromUser = await User.findById(fromUserId).select('_id firstName lastName');
-        const fromFriendObj = {
-            _id: fromUser._id,
-            firstName: fromUser.firstName,
-            lastName: fromUser.lastName
-        };
-        const toUserId = socket.user.id;
-        socket.emit('friendRequestAccepted', { to: toUserId, from: fromUserId, friendObj: fromFriendObj });
-        const toUser = await User.findById(toUserId).select('_id firstName lastName');
-        const toFriendObj = {
-            _id: toUser._id,
-            firstName: toUser.firstName,
-            lastName: toUser.lastName
-        };
-        const receiverSocket = onlineUsers[userId];
-        if (receiverSocket) {
-        io.to(receiverSocket.socketID).emit('friendRequestAccepted', {
-            from: fromUserId,
-            to: toUserId,
-            friendObj: toFriendObj
-        });
+        try {
+            const fromUserId = userId;
+            const fromUser = await User.findById(fromUserId).select('_id firstName lastName');
+            const fromFriendObj = {
+                _id: fromUser._id,
+                firstName: fromUser.firstName,
+                lastName: fromUser.lastName
+            };
+            const toUserId = socket.user.id;
+            socket.emit('friendRequestAccepted', { to: toUserId, from: fromUserId, friendObj: fromFriendObj });
+            const toUser = await User.findById(toUserId).select('_id firstName lastName');
+            const toFriendObj = {
+                _id: toUser._id,
+                firstName: toUser.firstName,
+                lastName: toUser.lastName
+            };
+            const receiverSocket = onlineUsers[userId];
+            if (receiverSocket) {
+                io.to(receiverSocket.socketID).emit('friendRequestAccepted', {
+                    from: fromUserId,
+                    to: toUserId,
+                    friendObj: toFriendObj
+                });
+            }
+        } catch (err) {
+            console.log(err);
         }
-    } catch (err) {
-        console.log(err);
-    }
     });
 
     socket.on('rejectFriendRequest', async (data) => {
-    try {
-        socket.emit('friendRequestRejected', { to: data.to, from: data.from });
-        const receiverSocket = onlineUsers[data.from];
-        if (receiverSocket) {
-            io.to(receiverSocket.socketID).emit('friendRequestRejected', { to: data.to, from: data.from });
+        try {
+            socket.emit('friendRequestRejected', { to: data.to, from: data.from });
+            const receiverSocket = onlineUsers[data.from];
+            if (receiverSocket) {
+                io.to(receiverSocket.socketID).emit('friendRequestRejected', { to: data.to, from: data.from });
+            }
+        } catch (err) {
+            console.log(err);
         }
-    } catch (err) {
-        console.log(err);
-    }
     });
 
     socket.on('unfriend', async (userId) => {
-    try {
-        socket.emit('unfriend', userId);
-        const receiverSocket = onlineUsers[userId];
-        if (receiverSocket) {
-            io.to(receiverSocket.socketID).emit('unfriend', socket.user.id);
+        try {
+            socket.emit('unfriend', userId);
+            const receiverSocket = onlineUsers[userId];
+            if (receiverSocket) {
+                io.to(receiverSocket.socketID).emit('unfriend', socket.user.id);
+            }
+        } catch (err) {
+            console.log(err);
         }
-    } catch (err) {
-        console.log(err);
-    }
     });
 
     socket.on('deleteMessage', async (msg) => {
-        try{
+        try {
             await Message.deleteOne({ _id: msg._id });
             const chat = await Chat.findById(msg.chatId);
             const receiverSockets = [];
-            for(let participant of chat.participants){
-                if(participant.toString() !== msg.from.toString()){
-                    if(onlineUsers[participant]){
+            for (let participant of chat.participants) {
+                if (participant.toString() !== msg.from.toString()) {
+                    if (onlineUsers[participant]) {
                         receiverSockets.push(onlineUsers[participant])
                     }
                 }
             }
-            for (let receiverSocket of receiverSockets){
+            for (let receiverSocket of receiverSockets) {
                 if (receiverSocket) {
                     io.to(receiverSocket.socketID).emit('deleteMessage', msg);
                 }
             }
-        }catch(err){
+        } catch (err) {
             console.error(err)
         }
     })
 
     socket.on('deleteMessages', async ({ chatId, targetId }) => {
-        try{
+        try {
             await Message.deleteMany({ chatId });
             const receiverSocket = onlineUsers[targetId];
             console.log(receiverSocket)
-            if(receiverSocket){
+            if (receiverSocket) {
                 io.to(receiverSocket.socketID).emit('deleteMessages', chatId)
             }
-        }catch(err){
+        } catch (err) {
             console.log(err)
         }
     })
 
-    socket.on('disconnect', () => { 
+    socket.on('disconnect', () => {
         for (let userID in onlineUsers) {
             if (onlineUsers[userID].socketID === socket.id) {
                 console.log(userID, "disconnected");
                 delete onlineUsers[userID];
                 const chatId = socket.chatId;
-                if(chatId && liveViewers.has(chatId)){
+                if (chatId && liveViewers.has(chatId)) {
                     liveViewers.get(chatId).delete(userID);
                 }
                 break;
@@ -1015,13 +1060,12 @@ io.on('connection', (socket) => {
 // }, 10000);
 
 connectDB(process.env.MONGO_URI)
-  .then(() => {
-    console.log("✅ MongoDB connected");
-    const PORT = process.env.SERVER_PORT || 5000;
-    server.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
-  })
-  .catch(err => {
-    console.error("❌ DB connection failed:", err);
-    process.exit(1); // stop the app
-  });
-  
+    .then(() => {
+        console.log("✅ MongoDB connected");
+        const PORT = process.env.SERVER_PORT || 5000;
+        server.listen(PORT, () => console.log(`🚀 Server running on ${PORT}`));
+    })
+    .catch(err => {
+        console.error("❌ DB connection failed:", err);
+        process.exit(1); // stop the app
+    });

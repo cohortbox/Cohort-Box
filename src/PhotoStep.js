@@ -1,11 +1,13 @@
 import './PhotoStep.css';
 import { useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from './context/AuthContext';
 import Toast from "./components/Toast";
+import closeImg from './images/close-gray.png';
 
 export default function ProfilePhotoStep() {
+  const navigate = useNavigate();
   const { method, id } = useParams();
   const { accessToken } = useAuth();
   const [preview, setPreview] = useState(null);
@@ -60,34 +62,45 @@ export default function ProfilePhotoStep() {
     });
 
     const data = await res.json();
+    if(!res.ok){
+      showAlert('Image not Uploade: Error Occured!');
+      return;
+    } else {
+      navigate('/')
+    }
     console.log('Uploaded DP URL:', data.url);
   }
 
   return (
     <div className="profile-photo-step">
-      <div {...getRootProps({ className: 'dropzone' })}>
-        <input {...getInputProps()} />
-        {isDragActive ? (
-          <p>Drop the photo here...</p>
-        ) : (
-          <p>Drag & drop a photo, or click to select one</p>
-        )}
+      <div className='close-btn-container'>
+        <button onClick={() => navigate('/')} className='close-btn'><img src={closeImg}/></button>
       </div>
-
-      {preview && (
-        <div className="preview-container">
-          <img src={preview} alt="Preview" className="preview-image" />
+      <div className='profile-photo-step-body'>
+        <div {...getRootProps({ className: 'dropzone' })}>
+          <input {...getInputProps()} />
+          {isDragActive ? (
+            <p>Drop the photo here...</p>
+          ) : (
+            <p>Drag & drop a photo, or click to select one</p>
+          )}
         </div>
-      )}
-      <p className='profile-photo-step-note'>Note: Your image should be under 2MB.</p>
-      <button onClick={handleUpload} className="upload-btn">
-        Upload Photo
-      </button>
-      <Toast
-        message={toastMessage}
-        show={showToast}
-        onClose={() => setShowToast(false)}
-      />
+
+        {preview && (
+          <div className="preview-container">
+            <img src={preview} alt="Preview" className="preview-image" />
+          </div>
+        )}
+        <p className='profile-photo-step-note'>Note: Your image should be under 2MB.</p>
+        <button onClick={handleUpload} className="upload-btn">
+          Upload Photo
+        </button>
+        <Toast
+          message={toastMessage}
+          show={showToast}
+          onClose={() => setShowToast(false)}
+        />
+      </div>
     </div>
   );
 }

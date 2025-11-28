@@ -9,6 +9,7 @@ const chatSchema = new mongoose.Schema({
   },
   chatName: String,
   chatNiche: String,
+  subscribers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", default: [] }],
   createdAt: { type: Date, default: Date.now }
 });
 

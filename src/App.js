@@ -21,7 +21,7 @@ function App() {
         <Route path='/posts' element={<Posts/>}/>
         <Route path='/profile/:id' element={<Profile/>}/>
         <Route path='/new-cohort-box' element={<NewCohortBox/>}/>
-        <Route path='/verify-email/:token' element={<VerifyEmail/>}/>
+        <Route path='/verify-email' element={<VerifyEmail/>}/>
         <Route path='/change-dp/:method/:id' element={<PhotoStep/>}/>
       </Routes>
     </Router>

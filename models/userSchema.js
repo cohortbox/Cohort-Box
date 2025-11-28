@@ -30,7 +30,7 @@ const userSchema = mongoose.Schema({
   friends: [ { type: mongoose.Types.ObjectId, ref: 'User' } ]
   ,
   isVerified: { type: Boolean, default: false },
-  verificationToken: String,
+  verificationCode: String,
   verificationExpires: Date,
   createdAt: {
     type: Date,

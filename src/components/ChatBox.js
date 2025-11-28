@@ -21,6 +21,7 @@ import AudioMessage from './AudioMessage.js';
 import ChatInfoMessage from './ChatInfoMessage.js';
 
 function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMessages, typingUsers }){
+  console.log(selectedChat)
   const { socket } = useSocket();
   const [files, setFiles] = useState([]);
   const [chatInfoClass, setChatInfoClass] = useState(' hidden');
@@ -102,7 +103,55 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
       }
     };
 
-  }, [selectedChat])
+  }, [selectedChat]);
+
+   function handleSubscribe(e){
+    e.preventDefault();
+    fetch('/api/chat/subscribe', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ chatId: selectedChat._id })
+    }).then(res => {
+      if(!res.ok){
+        throw new Error();
+      }
+      return res.json();
+    }).then(data => {
+      setSelectedChat(prev => ({
+        ...prev,
+        subscribers: data.subscribers
+      }))
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  function handleUnsubscribe(e){
+    e.preventDefault();
+    fetch('/api/chat/unsubscribe', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({ chatId: selectedChat._id })
+    }).then(res => {
+      if(!res.ok){
+        throw new Error();
+      }
+      return res.json();
+    }).then(data => {
+      setSelectedChat(prev => ({
+        ...prev,
+        subscribers: data.subscribers
+      }))
+    }).catch(err => {
+      console.error(err)
+    })
+  }
 
   function handleCloseChat(e){
       e.preventDefault();
@@ -278,6 +327,11 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
             <div className='chatName-chatDp-container'>
               <img className='chatDp' src={selectedChat.chatDp}/>
               <h3 className='chat-box-heading'>{selectedChat.chatName}</h3>
+              {
+                selectedChat?.subscribers.includes(user.id) ? 
+                ( <button className='subscribe-btn' onClick={handleSubscribe}>Subscribe</button> ) :
+                ( <button className='unsubscribe-btn' onClick={handleUnsubscribe}>Unsubscribe</button> )
+              }
             </div>
             <p className='chat-live-count'><img className='chat-live-count-img' src={eyeIcon}/> {chatLiveCount}</p>
             <div className='chat-btns-container'>

@@ -1,10 +1,40 @@
 .profile-photo-step {
   flex-direction: column;
   gap: 1rem;
-  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  padding: 25px 25px;
+  box-sizing: border-box;
+}
+
+.close-btn-container{
+  width: 100%;
+  display: flex;
+  justify-content: right;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.close-btn-container button{
+  background: none;
+  border: none;
+  height: 50px;
+  width: 50px;
+  border-radius: 50px;
+}
+
+.close-btn-container button img{
+  height: 45px;
+  width: 45px;
+}
+
+.profile-photo-step-body{
+  flex-direction: column;
+  gap: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 1;
 }
 
 .dropzone {

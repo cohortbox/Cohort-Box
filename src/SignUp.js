@@ -60,7 +60,7 @@ function SignUp() {
       console.log('Access Token:', data.accessToken);
       // Store token in localStorage or memory
       login(data.accessToken);
-      navigate('/profile-picture')
+      navigate('/verify-email')
     })
     .catch(error => {
       console.error('Sign Up error:', error);

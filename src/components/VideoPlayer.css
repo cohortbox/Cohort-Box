@@ -1,91 +1,21 @@
 .video-wrapper {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  width: 100%;
+  max-height: 70vh; /* optional */
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
 }
 
-.video{
-    width: 100%;
-    height: 100%;
-    max-height: 600px;
-    max-width: 600px;
-    object-fit: contain;
+/* RESPONSIVE PLAYER FIX */
+.player-container {
+  position: relative;
+  padding-top: 56.25%; /* 16:9 responsive ratio */
 }
 
-/* controls pinned to bottom */
-.video-controls {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0,0,0,0.6);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-    box-sizing: border-box;
-    height: 60px;
-}
-
-.control-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-}
-
-.control-icon {
-    height: 25px;
-    width: 25px;
-}
-
-.time-display {
-    color: white;
-    font-size: 0.8rem;
-    font-family: monospace;
-}
-
-.progress-bar {
-  flex: 1;
-  -webkit-appearance: none;
-  height: 100px;
-  border-radius: 5px;
-  background: transparent; /* let track control colors */
-  outline: none;
-  cursor: pointer;
-}
-
-/* Track (unplayed + played in WebKit browsers) */
-.progress-bar::-webkit-slider-runnable-track {
-  height: 10px;
-  border-radius: 10px;
-  background: linear-gradient(
-    to right,
-    var(--black) 0%,
-    var(--black) var(--progress, 0%),
-    #ddd var(--progress, 0%),
-    #ddd 100%
-  );
-}
-
-/* Thumb */
-.progress-bar::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: var(--black, #000);
-  cursor: pointer;
-  margin-top: -3px; /* center thumb vertically */
-}
-
-.volume-bar {
-    width: 80px;
-    cursor: pointer;
+.player-container > div {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
 }
