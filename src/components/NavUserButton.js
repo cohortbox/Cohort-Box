@@ -10,8 +10,6 @@ function NavUserButton({ user, isFriend, sentRequest, gotRequest }) {
   const { socket } = useSocket();
   const { accessToken } = useAuth();
 
-  const apiBase = process.env.REACT_APP_API_BASE_URL;
-
   const callApi = async (url, method, body = null) => {
     const res = await fetch(`${url}`, {
       method,
@@ -46,7 +44,8 @@ function NavUserButton({ user, isFriend, sentRequest, gotRequest }) {
     e.preventDefault();
     try {
       const result = await callApi(`/api/friends/request/${user._id}`, 'POST');
-      socket.emit('friendRequest', result); // notify other user
+      socket.emit('friendRequest', result.request); // notify other user
+      socket.emit('notification', result.notification);
     } catch (err) {
       console.error(err);
     }

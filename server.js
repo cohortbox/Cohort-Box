@@ -318,6 +318,17 @@ app.post('/api/verify-code', async (req, res) => {
     }
 });
 
+app.get('/api/return-notification', authTokenAPI, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const notifications = await Notification.find({user: userId}).populate('sender', '_id firstName lastName dp');
+        return res.status(200).json({notifications})
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({message: 'Internal Server Error!'});
+    }
+})
+
 app.get('/api/return-users', authTokenAPI, async (req, res) => {
     try {
         const query = (req.query.q || '').trim();
@@ -346,7 +357,7 @@ app.get('/api/return-users', authTokenAPI, async (req, res) => {
 app.get('/api/return-users/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
-        const userDB = await User.findById(userId).populate('friends', '_id firstName lastName').lean();
+        const userDB = await User.findById(userId).populate('friends', '_id firstName lastName dp').lean();
         console.log(userDB)
         return res.status(200).json({ userDB });
     } catch (err) {
@@ -647,7 +658,18 @@ app.post('/api/friends/request/:userId', authTokenAPI, async (req, res) => {
             .populate('to', '_id firstName lastName')
             .lean();
 
-        res.status(201).json(populated);
+        
+        const notification = await Notification.create({
+            user: toUserId,
+            type: "friend_request_received",
+            sender: req.user.id,
+        })
+
+        const populatedNotification = await Notification.findById(notification._id)
+            .populate('sender', '_id firstName lastName dp')
+            .lean();
+
+        res.status(201).json({ request: populated, notification:  populatedNotification });
     } catch (err) {
         res.status(500).json({ error: 'Failed to send friend request', details: err.message });
     }
@@ -661,6 +683,8 @@ app.delete('/api/friends/request/:userId', authTokenAPI, async (req, res) => {
         const deleted = await FriendRequest.findOneAndDelete({ from: fromUserId, to: toUserId })
             .populate('from', '_id firstName lastName')
             .populate('to', '_id firstName lastName');
+
+        await Notification.deleteOne({user: toUserId, sender: fromUserId, type: "friend_request_received"});
 
         res.json(deleted);
     } catch (err) {
@@ -678,13 +702,15 @@ app.post('/api/friends/accept/:userId', authTokenAPI, async (req, res) => {
 
         if (!from || !to) return res.status(404).json({ error: 'User not found' });
 
-        from.friends.push(toUserId);
-        to.friends.push(fromUserId);
+        if (!from.friends.includes(toUserId)) from.friends.push(toUserId);
+        if (!to.friends.includes(fromUserId)) to.friends.push(fromUserId);
 
         await from.save();
         await to.save();
 
         await FriendRequest.deleteOne({ from: fromUserId, to: toUserId });
+
+        await Notification.deleteOne({user: toUserId, sender: fromUserId, type: "friend_request_received"});
 
         res.json({ success: true, from: fromUserId, to: toUserId });
     } catch (err) {
@@ -697,7 +723,14 @@ app.post('/api/friends/reject/:userId', authTokenAPI, async (req, res) => {
         const fromUserId = req.params.userId;
         const toUserId = req.user.id;
 
+        const fr = await FriendRequest.findOne({ from: fromUserId, to: toUserId });
+        if (!fr) {
+            return res.status(404).json({ error: "Friend request not found" });
+        }
+
         await FriendRequest.deleteOne({ from: fromUserId, to: toUserId });
+        
+        await Notification.deleteOne({user: toUserId, sender: fromUserId, type: "friend_request_received" });
 
         res.json({ success: true, from: fromUserId, to: toUserId });
     } catch (err) {
@@ -1003,6 +1036,13 @@ io.on('connection', (socket) => {
             console.log(err);
         }
     });
+
+    socket.on('notification', (notification) => {
+        const receiverSocket = onlineUsers[notification.user];
+        if(receiverSocket){
+            io.to(receiverSocket.socketID).emit('notification', notification)
+        }
+    })
 
     socket.on('deleteMessage', async (msg) => {
         try {

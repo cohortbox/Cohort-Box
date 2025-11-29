@@ -329,8 +329,8 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
               <h3 className='chat-box-heading'>{selectedChat.chatName}</h3>
               {
                 selectedChat?.subscribers.includes(user.id) ? 
-                ( <button className='subscribe-btn' onClick={handleSubscribe}>Subscribe</button> ) :
-                ( <button className='unsubscribe-btn' onClick={handleUnsubscribe}>Unsubscribe</button> )
+                ( <button className='unsubscribe-btn' onClick={handleUnsubscribe}>Unsubscribe</button> ) :
+                ( <button className='subscribe-btn' onClick={handleSubscribe}>Subscribe</button> )
               }
             </div>
             <p className='chat-live-count'><img className='chat-live-count-img' src={eyeIcon}/> {chatLiveCount}</p>
