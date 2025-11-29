@@ -2,6 +2,7 @@ import './FriendRequestPopup.css';
 import { useSocket, useSocketEvent } from '../context/SocketContext';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import Toast from './Toast';
 import accept from '../images/check-gray.png';
 import cancel from '../images/close-gray.png';
 
@@ -9,7 +10,14 @@ function FriendRequestPopup() {
   const [incomingRequests, setIncomingRequests] = useState([]);
   const { socket } = useSocket();
   const { user, accessToken } = useAuth();
-  
+  const [toastMsg, setToastMsg] = useState('');
+  const [showToast, setShowToast] = useState(false)
+
+  function showAlert(msg) {
+    setToastMsg(msg);
+    setShowToast(true)
+  }
+
   const apiBase = process.env.REACT_APP_API_BASE_URL;
 
   const callApi = async (url, method, body = null) => {
@@ -40,6 +48,7 @@ function FriendRequestPopup() {
     try {
       const result = await callApi(`/api/friends/accept/${user._id}`, 'POST');
       socket.emit('acceptFriendRequest', user._id);
+      socket.emit('notification', result.notification)
       removePopup(req._id)
     } catch (err) {
       console.error(err);
@@ -92,8 +101,10 @@ function FriendRequestPopup() {
           </div>
         </div>
       ))}
+      <Toast message={toastMsg} show={showToast} onClose={() => setShowToast(false)} />
     </div>
   );
 }
 
 export default FriendRequestPopup;
+

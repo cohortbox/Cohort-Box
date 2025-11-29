@@ -90,6 +90,22 @@ function Home() {
     }
   })
 
+  useSocketEvent('participantAdded', ({ addedUser, chatId, msg }) => {
+    setChats(prev => prev.map(chat => {
+      if (chat._id === chatId) {
+        const updatedChat = {
+          ...chat,
+          participants: [ ...chat.participants, addedUser ],
+        };
+        return updatedChat;
+      }
+      return chat;
+    }));
+    if(selectedChat._id === chatId){
+      setMessages(prev => [...prev, msg]);
+    }
+  })
+
   useSocketEvent("returnMessages", (msgs) => {
     setMessages(msgs);
   }, []);

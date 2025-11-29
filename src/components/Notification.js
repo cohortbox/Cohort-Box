@@ -4,10 +4,19 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import accept from '../images/check-gray.png';
 import cancel from '../images/close-gray.png';
+import Toast from './Toast'
+import { useState } from 'react';
 
 export default function Notification({notification, setNotifications}){
     const { user, accessToken } = useAuth();
     const { socket } = useSocket();
+    const [toastMsg, setToastMsg] = useState('');
+    const [showToast, setShowToast] = useState(false)
+
+    function showAlert(msg){
+        setToastMsg(msg);
+        setShowToast(true)
+    }
 
     const callApi = async (url, method, body = null) => {
         const res = await fetch(`${url}`, {
@@ -22,6 +31,7 @@ export default function Notification({notification, setNotifications}){
 
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
+            showAlert('Server failed!')
             throw new Error(err.error || `API failed: ${url}`);
         }
 
@@ -33,6 +43,7 @@ export default function Notification({notification, setNotifications}){
         try {
             const result = await callApi(`/api/friends/accept/${notification.sender._id}`, 'POST');
             socket.emit('acceptFriendRequest', notification.sender._id);
+            socket.emit('notification', result.notification)
             setNotifications(prev => prev.filter(currNotification => currNotification._id !== notification._id))
         } catch (err) {
             console.error(err);
@@ -53,6 +64,8 @@ export default function Notification({notification, setNotifications}){
     let message = '';
     if(notification.type === 'friend_request_received'){
         message = `${notification.sender.firstName + ' ' + notification.sender.lastName} sent you a Friend Request!`
+    }else if(notification.type === 'friend_request_accepted') {
+        message = `${notification.sender.firstName + ' ' + notification.sender.lastName} accepted your Friend Request!`
     }
     return (
         <div className='notification-container'>
@@ -73,6 +86,7 @@ export default function Notification({notification, setNotifications}){
                     </div>
                 )
             }
+            <Toast message={toastMsg} show={showToast} onClose={() => setShowToast(false)} />
         </div>
     )
 }

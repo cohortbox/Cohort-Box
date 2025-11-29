@@ -4,12 +4,14 @@ import closeImg from '../images/close.png';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useSocket } from '../context/SocketContext';
 
 function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, chatId, addParticipant }){
     const navigate = useNavigate();
     const [users, setUsers] = useState([])
     const [query, setQuery] = useState('');
     const { accessToken, user } = useAuth();
+    const { socket } = useSocket();
 
     function HideSearch(){
         setSearchBarClass(' hidden')
@@ -79,6 +81,9 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
                 throw new Error('Request Failed!');
             }else{
                 setMembers([]);
+                for (let participant of participants){
+                    socket.emit('participantAdded', { userId: participant, chatId });
+                }
                 setSearchBarClass(' hidden');
             }
         }).catch(err => {

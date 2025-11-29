@@ -229,13 +229,17 @@
 }
 
 .reaction-bubble {
-  background: #fff;
-  border: 1px solid #ddd;
+  background: var(--hover);
+  border: 1px solid var(--chatBoxBg);
   border-radius: 12px;
-  padding: 0 6px;
+  padding: 1px 6px;
   font-size: 0.8rem;
   display: flex;
   align-items: center;
+  font-family: 
+    'Emoji',
+    'RR'
+  ;
 }
 
 .my-reactions,

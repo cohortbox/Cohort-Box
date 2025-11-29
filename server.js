@@ -712,7 +712,18 @@ app.post('/api/friends/accept/:userId', authTokenAPI, async (req, res) => {
 
         await Notification.deleteOne({user: toUserId, sender: fromUserId, type: "friend_request_received"});
 
-        res.json({ success: true, from: fromUserId, to: toUserId });
+        const notification = await Notification.create({
+            user: fromUserId,
+            type: "friend_request_accepted",
+            sender: toUserId,
+        })
+
+        const populatedNotification = await Notification.findById(notification._id)
+            .populate('sender', '_id firstName lastName dp')
+            .lean();
+
+
+        res.json({ success: true, from: fromUserId, to: toUserId, notification: populatedNotification });
     } catch (err) {
         res.status(500).json({ error: 'Failed to accept friend request', details: err.message });
     }
@@ -831,7 +842,6 @@ io.on('connection', (socket) => {
             media: [],
             reactions: []
         });
-        console.log(newMessage);
         const receiverSockets = [];
         for (let participant of chat.participants) {
             if (onlineUsers[participant]) {
@@ -842,6 +852,30 @@ io.on('connection', (socket) => {
             io.to(receiverSocket.socketID).emit('participantRemoved', { userId, chatId, msg: newMessage });
         }
         io.to(chatId).emit('participantRemoved', { userId, chatId, msg: newMessage });
+    });
+
+    socket.on('participantAdded', async ({ userId, chatId }) => {
+        console.log('Received particpantAdded');
+        const addedUser = await User.findById(userId).select('_id firstName lastName dp')
+        const chat = await Chat.findById(chatId);
+        const newMessage = await Message.create({
+            from: chat.chatAdmin,
+            chatId,
+            message: `Admin added ${addedUser.firstName + ' ' + addedUser.lastName}`,
+            type: 'chatInfo',
+            media: [],
+            reactions: []
+        });
+        const receiverSockets = [];
+        for (let participant of chat.participants) {
+            if (onlineUsers[participant]) {
+                receiverSockets.push(onlineUsers[participant]);
+            }
+        }
+        for (let receiverSocket of receiverSockets) {
+            io.to(receiverSocket.socketID).emit('participantAdded', { addedUser, chatId, msg: newMessage });
+        }
+        io.to(chatId).emit('participantAdded', { addedUser, chatId, msg: newMessage });
     })
 
     socket.on('participantLeft', ({ userId, chatId }) => {

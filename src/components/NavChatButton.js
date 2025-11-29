@@ -1,19 +1,19 @@
 import './NavChatButton.css';
 import eyeImg from '../images/eye.png';
 
-function NavChatButton({ chat, setSelectedChat }){
+function NavChatButton({ chat, selectedChat, setSelectedChat }){
 
     // ---------- nav-chat-button === ncbs ----------
 
     return (
-        <div className='ncbs-container' onClick={() => setSelectedChat(chat)}>
+        <div className={'ncbs-container' + `${chat._id === selectedChat?._id ? ' bg-hover' : ''}`} onClick={() => setSelectedChat(chat)}>
             <div className='ncbs-img-heading-container'>
                 <div className='ncbs-img-container'>
                     <img className='ncbs-img' src={chat.chatDp}/>
                 </div>
                 <div className='ncbs-heading-container'>
                     <h4 className='ncbs-heading'>{chat.chatName}</h4>
-                    <h5 className='ncbs-sub-heading'>{chat.chatNiche}</h5>
+                    <h5 className='ncbs-sub-heading'>{chat.subscribers.length} Subscribers</h5>
                 </div>
             </div>
             <div className='ncbs-live-count-container'>

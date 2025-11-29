@@ -152,7 +152,7 @@ function ChatsNav({ users, chats, selectedChat, setSelectedChat }) {
         <div className='cn-chats-container'>
           {currFilter === 'cb'
             ? chats.map(chat => (
-                <NavChatButton key={chat._id || chat.id} chat={chat} setSelectedChat={setSelectedChat}/>
+                <NavChatButton key={chat._id || chat.id} chat={chat} selectedChat={selectedChat} setSelectedChat={setSelectedChat}/>
               ))
             : users.map(u => {
                 const id = String(u._id);

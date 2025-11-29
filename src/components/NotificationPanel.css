@@ -29,6 +29,12 @@
     overflow-y: auto;
 }
 
+.no-notifications{
+    font-size: 1rem;
+    color: var(--small);
+    font-weight: bold;
+}
+
 @keyframes myMove {
     from {
         right: 490px;
