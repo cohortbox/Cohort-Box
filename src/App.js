@@ -8,7 +8,8 @@ import Profile from './Profile';
 import NewCohortBox from './NewCohortBox';
 import VerifyEmail from './VerifyEmail';
 import PhotoStep from './PhotoStep';
-import FriendRequestPopup from './components/FriendRequestPopup'
+import FriendRequestPopup from './components/FriendRequestPopup';
+import LandingPage from './LandingPage';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path='/new-cohort-box' element={<NewCohortBox/>}/>
         <Route path='/verify-email' element={<VerifyEmail/>}/>
         <Route path='/change-dp/:method/:id' element={<PhotoStep/>}/>
+        <Route path='/welcome' element={ <LandingPage/> }/>
       </Routes>
     </Router>
   );
