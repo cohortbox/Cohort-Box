@@ -60,6 +60,10 @@ body {
   background-color: var(--black);
 }
 
+h1{
+  margin: 0;
+}
+
 code {
   font-family: 'GM',
     monospace;

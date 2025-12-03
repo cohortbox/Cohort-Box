@@ -7,10 +7,11 @@ import NavBar from './components/NavBar';
 import HomeNav from './components/HomeNav';
 import ChatBox from './components/ChatBox';
 import Posts from './components/Posts'
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 function Home() {
   const paramChatId = useParams().chatId;
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [chats, setChats] = useState([]);
   const [users, setUsers] = useState([]);
@@ -19,6 +20,10 @@ function Home() {
   const { user, accessToken, loading } = useAuth();
 
   const { markMessagesRead, chatOpened } = useSocket();
+
+  useEffect(() => {
+    navigate('/welcome')
+  })
 
   useEffect(() => {
     if (!accessToken || !paramChatId || loading) return;

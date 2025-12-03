@@ -1,0 +1,67 @@
+.lp-container{
+    background-color: var(--black);
+    animation: fadeInAnimation ease 3s;
+}
+
+.lp-welcome-container{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    height: 100vh;
+    width: 100%;
+}
+
+.lp-welcome-container img{
+    height: 100px;
+    width: 100px;
+}
+
+.lp-welcome-container h1{
+    font-size: 4rem;
+    color: var(--fontColor);
+}
+
+.lp-welcome-container h1 span{
+    font-family: 'Emoji';
+    animation: wave-animation 5s;
+    animation-iteration-count: infinite;
+    transform-origin: 70% 70%;
+    display: inline-block;
+}
+
+.lp-welcome-container button{
+    font-family: 'GB';
+    background-color: var(--green);
+    height: 50px;
+    width: 120px;
+    font-size: 1.5rem;
+    border-radius: 5px;
+    border: none;
+}
+
+.lp-welcome-container p{
+    font-size: 2rem;
+    color: var(--small);
+}
+
+.lp-welcome-container p span{
+    color: var(--green);
+}
+
+@keyframes fadeInAnimation {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes wave-animation {
+  0% { transform: rotate(0.0deg) }
+  15% { transform: rotate(14.0deg) }
+  30% { transform: rotate(-8.0deg) }
+  40% { transform: rotate(14.0deg) }
+  50% { transform: rotate(-4.0deg) }
+  60% { transform: rotate(10.0deg) }
+  70% { transform: rotate(0.0deg) } /* Pause at the end of the wave */
+  100% { transform: rotate(0.0deg) }
+}
