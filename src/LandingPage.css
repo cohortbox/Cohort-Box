@@ -9,7 +9,7 @@
     align-items: center;
     justify-content: center;
     gap: 40px;
-    height: 100vh;
+    height: 100dvh;
     width: 100%;
 }
 
@@ -50,6 +50,85 @@
     color: var(--green);
 }
 
+.lp-faq-section-container{
+    height: 100dvh;
+    width: 100%;
+    padding: 60px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: var(--fontColor);
+    justify-content: center;
+}
+
+.lp-faq-section-container h1{
+    font-size: 2rem;
+    color: var(--green);
+}
+
+.lp-faq-container{
+    height: fit-content;
+    width: auto;
+    background-color: var(--searchBoxBg);
+    border: 1px solid var(--small);
+    border-radius: 10px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.faq-inner-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 0 15px;
+    box-sizing: border-box;
+    border: 1px solid var(--small);
+}
+
+.faq-question-container{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 50px;
+}
+
+.dropdown-btn{
+    border: none;
+    background: none;
+    height: 40px;
+    width: 40px;
+    border-radius: 40px;
+    display: grid;
+    place-items: center;
+}
+
+.dropdown-btn:hover{
+    background-color: var(--hover);
+}
+
+.dropdown-btn img{
+    height: 25px;
+}
+
+.answer-wrapper {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.5s ease;
+}
+
+.answer-wrapper.open {
+    max-height: 200px;
+    margin-bottom: 10px;
+}
+
+.rotate-animation{
+    /*animation: rotateAnimation 1s ease;*/
+    transform: rotate(180deg);
+    transition: 1s ease;
+}
+
 @keyframes fadeInAnimation {
   0% { opacity: 0; }
   100% { opacity: 1; }
@@ -64,4 +143,22 @@
   60% { transform: rotate(10.0deg) }
   70% { transform: rotate(0.0deg) } /* Pause at the end of the wave */
   100% { transform: rotate(0.0deg) }
+}
+
+@keyframes rotateAnimation{
+    0%{
+        transform: rotate(0deg);
+    }
+    100%{
+        transform: rotate(180deg);
+    }
+}
+
+@keyframes answerAnimation{
+    0%{
+        height: 0%;
+    }
+    100%{
+        height: 100%;
+    }
 }
