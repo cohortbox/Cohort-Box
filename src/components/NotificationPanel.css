@@ -13,6 +13,9 @@
     padding: 10px 10px;
     border-left: 1px solid var(--small);
     border-right: 1px solid var(--small);
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
 }
 
 .np-container h1{

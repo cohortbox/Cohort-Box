@@ -140,7 +140,7 @@ function Profile(){
                                     <img className='profile-img' src={userObj.dp}/>
                                     { isMe &&
                                         <div className='photo-change-btn'>
-                                            <img className='photo-change-img' onClick={() => navigate('/change-dp/profile')} src={addPhoto}/>
+                                            <img className='photo-change-img' onClick={() => navigate('/change-dp/profile/0')} src={addPhoto}/>
                                         </div>
                                     }
                                 </div>

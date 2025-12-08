@@ -33,6 +33,7 @@ function FriendRequestPopup() {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
+      showAlert('An Error Occurred!')
       throw new Error(err.error || `API failed: ${url}`);
     }
 

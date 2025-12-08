@@ -18,8 +18,9 @@ const notificationSchema = new mongoose.Schema(
         "friend_request_received",
         "friend_request_accepted",
         "message_received",
-        "added_to_group",
+        "added_to_group_request",
         "removed_from_group",
+        "chat_participant_joined",
         "mention",
         "post_reaction",
         "post_comment",
@@ -35,11 +36,6 @@ const notificationSchema = new mongoose.Schema(
     message: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Message",
-      required: false,
-    },
-    post: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Post",
       required: false,
     },
     text: {

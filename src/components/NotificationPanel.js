@@ -2,11 +2,16 @@ import './NotificationPanel.css';
 import { useEffect, useRef, useState } from 'react';
 import Notification from './Notification';
 import { useAuth } from '../context/AuthContext';
+import { useSocketEvent } from '../context/SocketContext';
 
 export default function NotificationPanel({notificationBtnRef, openNotification, setOpenNotification}){
     const panelRef = useRef(null);
     const [notifications, setNotifications] = useState([]);
     const {accessToken} = useAuth();
+
+    useSocketEvent('notification', (notification) => {
+        setNotifications(prev => [notification, ...prev ]);
+    })
     useEffect(() => {
         if(!accessToken) return;
         fetch('/api/return-notification', {

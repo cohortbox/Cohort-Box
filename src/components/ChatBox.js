@@ -92,6 +92,35 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
     const isParticipant = selectedChat.participants.some(p => p._id === user.id)
     if(isParticipant){
       socket.emit('chatOpenedByParticipant', { chatId: selectedChat._id, userId: user.id })
+      selectedChat.subscribers.map((sub) => {
+        const body = {
+          user: sub,
+          sender: user.id,
+          type: 'chat_participant_joined',
+          chat: selectedChat._id,
+          message: null,
+          text: ''
+        }
+        fetch(`/api/notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'authorization': `Bearer ${accessToken}`
+          },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        }).then(response => {
+          if (!response.ok) {
+            throw new Error('Request Failed!');
+          }
+          return response.json();
+        }).then(data => {
+          console.log(data.notification)
+          socket.emit('notification', data.notification)
+        }).catch(err => {
+          console.error(err)
+        })
+      })
     }else{
       socket.emit('joinChat', { chatId: selectedChat._id, userId: user.id })
     }
@@ -327,11 +356,11 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
             <div className='chatName-chatDp-container'>
               <img className='chatDp' src={selectedChat.chatDp}/>
               <h3 className='chat-box-heading'>{selectedChat.chatName}</h3>
-              {
-                selectedChat?.subscribers.includes(user.id) ? 
-                ( <button className='unsubscribe-btn' onClick={handleUnsubscribe}>Unsubscribe</button> ) :
-                ( <button className='subscribe-btn' onClick={handleSubscribe}>Subscribe</button> )
-              }
+              { !selectedChat.participants.some(p => p._id === user.id) && (
+                  selectedChat?.subscribers.includes(user.id) ? 
+                  ( <button className='unsubscribe-btn' onClick={handleUnsubscribe}>Unsubscribe</button> ) :
+                  ( <button className='subscribe-btn' onClick={handleSubscribe}>Subscribe</button> )
+              )}
             </div>
             <p className='chat-live-count'><img className='chat-live-count-img' src={eyeIcon}/> {chatLiveCount}</p>
             <div className='chat-btns-container'>

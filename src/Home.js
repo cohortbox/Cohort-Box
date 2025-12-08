@@ -21,9 +21,9 @@ function Home() {
 
   const { markMessagesRead, chatOpened } = useSocket();
 
-  useEffect(() => {
-    navigate('/welcome')
-  })
+  // useEffect(() => {
+  //   navigate('/welcome')
+  // })
 
   useEffect(() => {
     if (!accessToken || !paramChatId || loading) return;

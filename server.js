@@ -765,6 +765,21 @@ app.delete('/api/friends/:userId', authTokenAPI, async (req, res) => {
     }
 });
 
+app.post('/api/notification', authTokenAPI, async (req, res) => {
+    const {user, sender, type, chat, message, text} = req.body;
+
+    const newNotification = await Notification.create({
+        user,
+        sender,
+        type,
+        chat,
+        message,
+        text
+    })
+    const populatedNotification = await Notification.findById(newNotification._id).populate('sender', '_id firstName lastName dp').populate('chat', '_id chatName chatDp').populate('message', '_id message type');
+    res.status(200).json({ notification: populatedNotification });
+})
+
 let onlineUsers = {};
 
 io.on('connection', (socket) => {
@@ -809,10 +824,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on("chatOpenedByParticipant", async ({ chatId, userId }) => {
-        console.log('hello cobp')
-        // const msgs = await Message.find({ chatId }).sort({timestamp: 1});
-        // socket.emit("returnMessages", msgs);
-
+        console.log('hello cobp');
         await Message.updateMany(
             { chatId, from: { $ne: userId }, read: false },
             { $set: { read: true } }
@@ -1071,7 +1083,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('notification', (notification) => {
+    socket.on('notification', async (notification) => {
         const receiverSocket = onlineUsers[notification.user];
         if(receiverSocket){
             io.to(receiverSocket.socketID).emit('notification', notification)
