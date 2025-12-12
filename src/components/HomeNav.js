@@ -6,12 +6,50 @@ import NavChatButton from './NavChatButton';
 import NavUserButton from './NavUserButton';
 import { useAuth } from '../context/AuthContext';
 import { useSocketEvent } from '../context/SocketContext';
+import close from '../images/close-gray.png'
+import Toast from './Toast';
 
 function ChatsNav({ users, chats, selectedChat, setSelectedChat }) {
   const { user, accessToken, loading } = useAuth();
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
   const [currFilter, setCurrFilter] = useState('cb');
+  const [searchInput, setSearchInput] = useState('');
+  const [searchUsers, setSearchUsers] = useState([]);
+  const [searchChats, setSearchChats] = useState([]);
+  const [toastMsg, setToastMsg] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [searchState, setSearchState] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  function showAlert(msg) {
+    setToastMsg(msg);
+    setShowToast(true);
+  }
+  
+
+  async function handleSearch(e){
+    e.preventDefault();
+    if(searchInput.trim() === '') return;
+
+    const result = await fetch(`/api/search?q=${encodeURIComponent(searchInput)}`, {
+      method: 'GET',
+      headers: {
+        'authorization': `Bearer ${accessToken}`
+      }
+    })
+
+    if(!result.ok){
+      showAlert('Search was Unsuccessful!');
+      return;
+    }
+    const {chats, users} = await result.json();
+    setSearchQuery(searchInput);
+    setSearchChats(chats);
+    setSearchUsers(users);
+    setSearchState(true);
+
+  }
 
   useEffect(() => {
     if (!accessToken || loading) return;
@@ -141,20 +179,33 @@ function ChatsNav({ users, chats, selectedChat, setSelectedChat }) {
       <div className='cn-body-container'>
         <div className='cn-searchbar-container'>
           <img className='cn-search-icon' src={searchIcon}/>
-          <input className='cn-search-input' placeholder='SEARCH COHORTIAN/COHORT BOX'/>
+          <form className='form' onSubmit={handleSearch}>
+            <input className='cn-search-input'  placeholder='SEARCH COHORTIAN/COHORT BOX' value={searchInput} onInput={(e) => setSearchInput(e.target.value)}/>
+          </form>
         </div>
 
         <div className='cn-filter-container'>
           <button className={'cn-filter-btn' + (currFilter === 'cb' ? ' active-filter-btn' : '')} onClick={() => setCurrFilter('cb')}>Cohort Boxes</button>
-          <button className={'cn-filter-btn' + (currFilter === 'people' ? ' active-filter-btn' : '')} onClick={() => setCurrFilter('people')}>People</button>
+          <button className={'cn-filter-btn' + (currFilter === 'people' ? ' active-filter-btn' : '')} onClick={(e) => {e.preventDefault(); setCurrFilter('people')}}>People</button>
         </div>
 
         <div className='cn-chats-container'>
-          {currFilter === 'cb'
-            ? chats.map(chat => (
-                <NavChatButton key={chat._id || chat.id} chat={chat} selectedChat={selectedChat} setSelectedChat={setSelectedChat}/>
+          {
+            searchState && (
+              <div className='search-heading'>
+                <p>{`search '${searchQuery}'`}</p>
+                <img src={close} onClick={() => setSearchState(false)}/>
+              </div>
+            )
+          }
+          {
+            searchState ? 
+              currFilter === 'cb'
+              ? 
+               searchChats.map(chat => (
+                <NavChatButton key={chat._id || chat.id} chat={chat} selectedChat={selectedChat} setSelectedChat={setSelectedChat} />
               ))
-            : users.map(u => {
+              : searchUsers.map(u => {
                 const id = String(u._id);
                 const isFriend = friendIds.has(id);
                 const sentRequest = outgoingPending.has(id);
@@ -170,9 +221,37 @@ function ChatsNav({ users, chats, selectedChat, setSelectedChat }) {
                     />
                   </Link>
                 );
-              })}
+              })
+             :
+            currFilter === 'cb'
+              ? chats.map(chat => (
+                <NavChatButton key={chat._id || chat.id} chat={chat} selectedChat={selectedChat} setSelectedChat={setSelectedChat} />
+              ))
+              : users.map(u => {
+                const id = String(u._id);
+                const isFriend = friendIds.has(id);
+                const sentRequest = outgoingPending.has(id);
+                const gotRequest = incomingPending.has(id);
+
+                return (
+                  <Link to={'/profile/' + u._id} style={{ textDecoration: 'none' }} key={u._id}>
+                    <NavUserButton
+                      user={u}
+                      isFriend={isFriend}
+                      sentRequest={sentRequest}
+                      gotRequest={gotRequest}
+                    />
+                  </Link>
+                );
+              })
+          }
         </div>
       </div>
+      <Toast
+        message={toastMsg}
+        show={showToast}
+        onClose={() => setShowToast(false)}
+      />
     </div>
   );
 }

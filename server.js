@@ -318,6 +318,37 @@ app.post('/api/verify-code', async (req, res) => {
     }
 });
 
+app.get('/api/search', authTokenAPI, async (req, res) => {
+    try{
+        const query = (req.query.q || '').trim();
+        const userFilter = {
+            _id: { $ne: req.user.id },
+            $or: [
+                { firstName: { $regex: query, $options: 'i' } },
+                { lastName: { $regex: query, $options: 'i' } }
+            ]
+        };
+
+        const chatFilter = {
+            _id: { $ne: req.user.id },
+            $or: [
+                { chatName: { $regex: query, $options: 'i' } },
+            ]
+        };
+
+        let users = await User.find(userFilter).lean();
+        let chats = await Chat.find(chatFilter).lean();
+
+        if(!chats) chats = [];
+        if(!users) users = [];
+
+        res.status(200).json({ chats, users });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({message: 'Internal Server Error!'});
+    }
+})
+
 app.get('/api/return-notification', authTokenAPI, async (req, res) => {
     try {
         const userId = req.user.id;
