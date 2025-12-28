@@ -5,6 +5,7 @@ import SearchBar from './components/SearchBar';
 import './NewCohortBox.css';
 import { useAuth } from './context/AuthContext';
 import Toast from './components/Toast';
+import { useSocket } from './context/SocketContext';
 
 function NewCohortBox(){
     const [searchBarClass, setSearchBarClass] = useState(' hidden');
@@ -16,6 +17,7 @@ function NewCohortBox(){
     const [dpFile, setDpFile] = useState(null);
     const [toastMsg, setToastMsg] = useState('');
     const [showToast, setShowToast] = useState(false);
+    const { socket } = useSocket();
 
     function showAlert(msg){
         setToastMsg(msg);
@@ -61,10 +63,10 @@ function NewCohortBox(){
             return;
         }
 
-        let participants = [user.id];
+        let requested_participants = [user.id];
 
         for(let member of members){
-            participants.push(member._id);
+            requested_participants.push(member._id);
         }
 
         const formData = new FormData();
@@ -84,11 +86,12 @@ function NewCohortBox(){
         const data = await res.json();
 
         const body = {
-            participants,
+            requested_participants,
             chatAdmin: user.id,
             chatName,
             chatNiche,
-            chatDp: data.url
+            chatDp: data.url,
+            participants: []
         }
 
         fetch(`/api/start-chat`, {
@@ -104,8 +107,30 @@ function NewCohortBox(){
             }
 
             return response.json();
-        }).then(data => {
-            console.log(data);
+        }).then(async (data) => {
+            const { newChat } = data
+            for (const participant of newChat.participants){
+                let body = {
+                    user: participant,
+                    sender: newChat.chatAdmin,
+                    type: 'added_to_group_request',
+                    chat: newChat._id,
+                    message: null,
+                    text: ''
+                }
+                const result = await fetch('/api/notification', {
+                    method: 'POST',
+                    headers: {
+                        'authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                })
+                if(result.ok){
+                    const data = await result.json();
+                    socket.emit('notification', data.notification);
+                }
+            }
         }).catch(err => {
             console.error(err);
         })

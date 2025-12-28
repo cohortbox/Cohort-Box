@@ -51,7 +51,7 @@ export default function MediaMessage({ msg, sender, setMessages, setClickedMedia
                       {msg.reactions?.length > 0 && (
                         <div className={msg.from === user.id ? "my-reactions" : "other-reactions"}>
                           <span className="reaction-bubble">
-                            {groupReactions(msg.reactions)[0].emoji} {groupReactions(msg.reactions)[1]?.emoji} {msg.reactions.length > 1 && <span className="reaction-count">{msg.reactions.length}</span>}
+                            {groupReactions(msg.reactions)[0].emoji}{groupReactions(msg.reactions)[1]?.emoji} {msg.reactions.length > 1 && <span className="reaction-count">{msg.reactions.length}</span>}
                           </span>
                         </div>
                       )}
@@ -85,7 +85,7 @@ export default function MediaMessage({ msg, sender, setMessages, setClickedMedia
                         {msg.reactions?.length > 0 && (
                           <div className={msg.from === user.id ? "my-reactions" : "other-reactions"}>
                             <span className="reaction-bubble">
-                              {groupReactions(msg.reactions)[0].emoji} {groupReactions(msg.reactions)[1]?.emoji} {msg.reactions.length > 1 && <span className="reaction-count">{msg.reactions.length}</span>}
+                              <span>{groupReactions(msg.reactions)[0].emoji}</span>{groupReactions(msg.reactions)[1] && <span>{groupReactions(msg.reactions)[1]?.emoji}</span>}{msg.reactions.length > 1 && <span className="reaction-count">{msg.reactions.length}</span>}
                             </span>
                           </div>
                         )}

@@ -415,7 +415,7 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
                 Recording......
               </div>
             ) : (
-              <textarea
+              <input
                 ref={msgRef}
                 className="msg-input"
                 value={message}

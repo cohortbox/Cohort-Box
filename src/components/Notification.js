@@ -61,11 +61,36 @@ export default function Notification({notification, setNotifications}){
         }
     };
 
+        const handleChatAccept = async (e) => {
+        e.preventDefault();
+        try {
+            const result = await callApi(`/api/friends/accept/${notification.sender._id}`, 'POST');
+            socket.emit('acceptFriendRequest', notification.sender._id);
+            socket.emit('notification', result.notification)
+            setNotifications(prev => prev.filter(currNotification => currNotification._id !== notification._id))
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleChatReject = async (e) => {
+        e.preventDefault();
+        try {
+            const result = await callApi(`/api/friends/reject/${notification.sender._id}`, 'POST');
+            socket.emit('rejectFriendRequest', result);
+            setNotifications(prev => prev.filter(currNotification => currNotification._id !== notification._id))
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     let message = '';
-    if(notification.type === 'friend_request_received'){
+    if (notification.type === 'friend_request_received') {
         message = `${notification.sender.firstName + ' ' + notification.sender.lastName} sent you a Friend Request!`
-    }else if(notification.type === 'friend_request_accepted') {
+    } else if (notification.type === 'friend_request_accepted') {
         message = `${notification.sender.firstName + ' ' + notification.sender.lastName} accepted your Friend Request!`
+    } else if (notification.type === 'added_to_group_request') {
+        message = `${notification.sender.firstName + ' ' + notification.sender.lastName} wants you to join a new CohortBox: ${notification.chat.chatName}`
     }
     return (
         <div className='notification-container'>
@@ -80,6 +105,21 @@ export default function Notification({notification, setNotifications}){
                                 <img className="request-btn-img" src={accept} alt="accept" />
                             </button>
                             <button onClick={handleReject}>
+                                <img className="request-btn-img" src={cancel} alt="reject" />
+                            </button>
+                        </div>
+                    </div>
+                )
+            }
+            {
+                notification.type === 'added_to_group_request' &&
+                (
+                    <div className="nub-btn got-request-btn">
+                        <div className="request-btns">
+                            <button onClick={handleChatAccept}>
+                                <img className="request-btn-img" src={accept} alt="accept" />
+                            </button>
+                            <button onClick={handleChatReject}>
                                 <img className="request-btn-img" src={cancel} alt="reject" />
                             </button>
                         </div>

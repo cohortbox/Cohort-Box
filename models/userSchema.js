@@ -25,7 +25,7 @@ const userSchema = mongoose.Schema({
     type: String,
     default: 'https://res.cloudinary.com/dzhvgedcy/image/upload/v1762806265/user-dps/rffbg5mugkfttsmsytri.png'
   },
-  chats: [{ type: mongoose.Types.ObjectId, ref: 'Chat' }]
+  chat_requests: [{ type: mongoose.Types.ObjectId, ref: 'Chat' }]
   ,
   friends: [ { type: mongoose.Types.ObjectId, ref: 'User' } ]
   ,

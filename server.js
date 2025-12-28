@@ -520,12 +520,12 @@ app.post('/api/start-chat', authTokenAPI, async (req, res) => {
     try {
         console.log('\n start-chat Request! \n')
         console.log(req.body)
-        const friend = await User.findById(req.body.userID);
-
-        const newChat = new Chat(req.body)
+        const newChat = new Chat({...req.body, status:'pending_requests'})
         await newChat.save();
         await newChat.populate('participants', '_id firstName lastName')
-
+        for(const participant of newChat.participants){
+            const user = await User.findByIdAndUpdate(participant, {chat_requests: { $push: newChat._id }});
+        }
         res.status(200).json({ newChat });
     } catch (err) {
         console.log(err)
@@ -676,6 +676,42 @@ app.patch('/api/chat/unsubscribe', authTokenAPI, async (req, res) => {
         res.status(500).json({ message: 'Internal Server Error!' })
     } 
 });
+
+app.post('/api/chat/accept/:chatId', authTokenAPI, async (req, res) => {
+    try{
+        const userId = req.user.id;
+        const {chatId} = req.params;
+        const chat = await Chat.findByIdAndUpdate(chatId, {participants: { $push: userId }, requsted_participants: { $pull: userId }})
+        const user = await User.findByIdAndUpdate(userId, { chat_requests: { $pull: chatId } });
+        await Notification.deleteOne({user: userId, chat: chatId, type: 'added_to_group_request'});
+        if(!chat){
+            return res.status(400).json({message: 'Chat not Found!'});
+        }
+        if(chat.participants.length >= 3){
+            chat.status = 'active';
+            chat.save();
+        }
+        return res.status(200).json({chat});
+    } catch(err) {
+        return res.status(500).json({message: 'Internal Server Error'});
+    }
+})
+
+app.post('/api/chat/reject/:chatId', authTokenAPI, async (req, res) => {
+    try{
+        const userId = req.user.id;
+        const {chatId} = req.params;
+        const chat = await Chat.findByIdAndUpdate(chatId, {requsted_participants: { $pull: userId }});
+        const user = await User.findByIdAndUpdate(userId, { chat_requests: { $pull: chatId } });
+        await Notification.deleteOne({user: userId, chat: chatId, type: 'added_to_group_request'});
+        if(!chat){
+            return res.status(400).json({message: 'Chat not Found!'});
+        }
+        return res.status(200).json({chat});
+    } catch(err) {
+        return res.status(500).json({message: 'Internal Server Error'});
+    }
+})
 
 app.post('/api/friends/request/:userId', authTokenAPI, async (req, res) => {
     try {
