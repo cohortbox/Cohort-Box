@@ -16,7 +16,6 @@ const cookieParser = require('cookie-parser');
 const { upload, uploadUserDp, uploadChatDp } = require('./config/CloudinaryConfig.js');
 const path = require('path');
 const { default: mongoose } = require('mongoose');
-const { error } = require('console');
 const saltRounds = 10;
 require('dotenv').config()
 
@@ -318,6 +317,78 @@ app.post('/api/verify-code', async (req, res) => {
     }
 });
 
+// server/routes/auth.js (or wherever your routes live)
+app.get('/api/check-username', async (req, res) => {
+  try {
+    const usernameRaw = (req.query.username || '').trim();
+
+    if (!usernameRaw) {
+      return res.status(400).json({
+        available: false,
+        reason: 'username_required',
+      });
+    }
+
+    // normalize for checking
+    const username = usernameRaw.toLowerCase();
+
+    // basic validation (tune rules to your liking)
+    if (username.length < 3 || username.length > 20) {
+      return res.status(400).json({
+        available: false,
+        reason: 'invalid_length',
+      });
+    }
+
+    // allow letters, numbers, underscore, dot (example)
+    if (!/^[a-z0-9._]+$/.test(username)) {
+      return res.status(400).json({
+        available: false,
+        reason: 'invalid_characters',
+      });
+    }
+
+    // IMPORTANT: use normalized field (recommended) OR do a case-insensitive exact match
+    // Option A (recommended): if you add usernameLower in schema
+    // const exists = await User.exists({ usernameLower: username });
+
+    // Option B (works without schema changes but is slower):
+    const exists = await User.exists({
+      username: { $regex: `^${escapeRegex(usernameRaw)}$`, $options: 'i' }
+    });
+
+    if (exists) {
+      return res.status(200).json({
+        available: false,
+        reason: 'taken',
+        // optional suggestions
+        suggestions: [
+          `${username}1`,
+          `${username}__`,
+          `${username}.${Math.floor(Math.random() * 900 + 100)}`
+        ],
+      });
+    }
+
+    return res.status(200).json({
+      available: true,
+      reason: 'available',
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: 'Internal Server Error!',
+      available: false,
+    });
+  }
+});
+
+// helpers
+function escapeRegex(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+
 app.get('/api/search', authTokenAPI, async (req, res) => {
     try{
         const query = (req.query.q || '').trim();
@@ -352,7 +423,7 @@ app.get('/api/search', authTokenAPI, async (req, res) => {
 app.get('/api/return-notification', authTokenAPI, async (req, res) => {
     try {
         const userId = req.user.id;
-        const notifications = await Notification.find({user: userId}).populate('sender', '_id firstName lastName dp');
+        const notifications = await Notification.find({user: userId}).populate('sender', '_id firstName lastName dp').populate('chat', '_id chatName chatDp').populate('message', '_id message type');
         return res.status(200).json({notifications})
     } catch (error) {
         console.log(error)
@@ -362,21 +433,29 @@ app.get('/api/return-notification', authTokenAPI, async (req, res) => {
 
 app.get('/api/return-users', authTokenAPI, async (req, res) => {
     try {
+        const lastId = req.query.lastId;
         const query = (req.query.q || '').trim();
-        const limit = Math.min(Number(req.query.limit) || 80, 200);
+        const limit = Math.min(Number(req.query.limit) || 30, 200);
 
-        const filter = {
-            _id: { $ne: req.user.id },
-            $or: [
+        const filter = { _id: { $ne: req.user.id } };
+
+        if (query) {
+            filter.$or = [
                 { firstName: { $regex: query, $options: 'i' } },
                 { lastName: { $regex: query, $options: 'i' } }
-            ]
-        };
+            ];
+        }
+
+        if (lastId) {
+            filter._id.$lt = lastId;
+        }
 
         const users = await User.find(filter)
             .select('_id firstName lastName dp')
+            .sort({ _id: -1 })
             .limit(limit)
             .lean();
+
 
         res.status(200).json({ users });
     } catch (err) {
@@ -454,14 +533,14 @@ app.get('/api/return-posts', authTokenAPI, async (req, res) => {
 
 app.get('/api/return-chats', authTokenAPI, async (req, res) => {
     const { lastId } = req.query;
-    const limit = 35;
+    const limit = 30;
     let filter = {}
     if (lastId) {
         filter._id = { $lt: lastId }
     }
 
     try {
-        const chats = await Chat.find(filter).sort({ _id: -1 }).populate('participants', '_id firstName lastName').limit(limit).lean({ defaults: true });
+        const chats = await Chat.find(filter).sort({ _id: -1 }).populate('participants', '_id firstName lastName').populate('liveComments.from', '_id firstName lastName').limit(limit).lean({ defaults: true });
         if (chats.length === 0) {
             return res.status(404).json({ message: 'No chats found!' });
         }
@@ -509,7 +588,7 @@ app.get('/api/return-user-chats/:id', authTokenAPI, async (req, res) => {
 app.get('/api/return-messages/:chatId', authTokenAPI, async (req, res) => {
     try {
         const chatId = req.params.chatId;
-        const msgs = await Message.find({ chatId }).sort({ timestamp: 1 });
+        const msgs = await Message.find({ chatId }).populate('from', '_id firstName lastName dp').sort({ timestamp: 1 });
         res.status(200).json({ msgs })
     } catch (err) {
         res.status(500).json({ message: 'Server Error!' });
@@ -522,9 +601,9 @@ app.post('/api/start-chat', authTokenAPI, async (req, res) => {
         console.log(req.body)
         const newChat = new Chat({...req.body, status:'pending_requests'})
         await newChat.save();
-        await newChat.populate('participants', '_id firstName lastName')
-        for(const participant of newChat.participants){
-            const user = await User.findByIdAndUpdate(participant, {chat_requests: { $push: newChat._id }});
+        await newChat.populate('requested_participants', '_id firstName lastName')
+        for(const participant of newChat.requested_participants){
+            const user = await User.findByIdAndUpdate(participant, {$push: { chat_requests: newChat._id }});
         }
         res.status(200).json({ newChat });
     } catch (err) {
@@ -587,9 +666,58 @@ app.post('/api/upload-audio', authTokenAPI, upload.single('audio'), (req, res) =
         return res.status(200).json({ media });
     } catch (err) {
         console.log(err);
-        res.status(500).json({ message: 'Server Error!' })
+        return res.status(500).json({ message: 'Server Error!' })
     }
 });
+
+app.post('/api/live-comment', authTokenAPI, async (req, res) => {
+    try{
+        const {chatId, message, repliedTo} = req.body;
+        const from = new mongoose.Types.ObjectId(req.user.id);
+
+        if(!mongoose.Types.ObjectId.isValid(chatId)) return res.status(400).json({message: 'Invalid chatId'});
+        if(!message || !message.trim()) return res.status(400).json({message: 'Comment is required'})
+
+        const payload = {
+            from,
+            message: message.trim(),
+            createdAt: new Date(),
+        }
+        if(repliedTo && mongoose.Types.ObjectId.isValid(repliedTo)){
+            payload.repliedTo = repliedTo;
+        }
+
+        const result = await Chat.updateOne({_id: chatId}, { $push: {liveComments: { $each: [payload], $slice: -500 }} })
+        if(result.modifiedCount === 0) return res.status(400).json({message: 'Comment could not be creaeted!'});
+
+        const fromUser = await User.findById(from).select('_id firstName lastName');
+
+        if(fromUser) {
+            payload.from = fromUser
+        }
+
+        return res.status(200).json({
+            message: '',
+            comment: payload
+        })
+    } catch (err) {
+        console.log(err)
+        return res.status(500).json({ message: 'Server Error!' })
+    }
+})
+
+app.delete('/api/chat/:chatId', authTokenAPI, async (req, res) => {
+    try{
+        console.log('Delete Chat request!');
+        const chatId = req.params.chatId;
+        await Chat.deleteOne({ _id: chatId });
+        await Notification.deleteMany({ chat: chatId })
+        return res.status(200).json({message: 'Chat Deleted!'})
+    } catch(err) {
+        console.log(err)
+        return res.status(500).json({message: 'Internal Server Error!'})
+    }
+})
 
 app.delete('/api/chat/participant/:userId/:chatId', authTokenAPI, async (req, res) => {
     try {
@@ -679,10 +807,17 @@ app.patch('/api/chat/unsubscribe', authTokenAPI, async (req, res) => {
 
 app.post('/api/chat/accept/:chatId', authTokenAPI, async (req, res) => {
     try{
+        console.log('hello from "/api/chat/accept/:userId"');
         const userId = req.user.id;
         const {chatId} = req.params;
-        const chat = await Chat.findByIdAndUpdate(chatId, {participants: { $push: userId }, requsted_participants: { $pull: userId }})
-        const user = await User.findByIdAndUpdate(userId, { chat_requests: { $pull: chatId } });
+        const chat = await Chat.findByIdAndUpdate(chatId, {$push: { participants: userId }, $pull: { requsted_participants: userId }})
+        const user = await User.findByIdAndUpdate(userId, { $pull: { chat_requests: chatId } });
+        const notification = await Notification.create({
+            user: chat.chatAdmin,
+            sender: userId,
+            chat: chatId,
+            type: 'accepted_group_request'
+        })
         await Notification.deleteOne({user: userId, chat: chatId, type: 'added_to_group_request'});
         if(!chat){
             return res.status(400).json({message: 'Chat not Found!'});
@@ -691,8 +826,9 @@ app.post('/api/chat/accept/:chatId', authTokenAPI, async (req, res) => {
             chat.status = 'active';
             chat.save();
         }
-        return res.status(200).json({chat});
+        return res.status(200).json({chat, notification});
     } catch(err) {
+        console.log(err)
         return res.status(500).json({message: 'Internal Server Error'});
     }
 })
@@ -828,24 +964,79 @@ app.delete('/api/friends/:userId', authTokenAPI, async (req, res) => {
 
         res.json({ removedFriend });
     } catch (err) {
+        console.log(err);
         res.status(500).json({ error: 'Failed to Unfriend', details: err.message });
     }
 });
 
 app.post('/api/notification', authTokenAPI, async (req, res) => {
-    const {user, sender, type, chat, message, text} = req.body;
+    try{
+        const {user, sender, type, chat, message, text} = req.body;
+        console.log("\nnotification API call");
+        console.log(req.body);
 
-    const newNotification = await Notification.create({
-        user,
-        sender,
-        type,
-        chat,
-        message,
-        text
-    })
-    const populatedNotification = await Notification.findById(newNotification._id).populate('sender', '_id firstName lastName dp').populate('chat', '_id chatName chatDp').populate('message', '_id message type');
-    res.status(200).json({ notification: populatedNotification });
+        const newNotification = await Notification.create({
+            user,
+            sender,
+            type,
+            chat,
+            message,
+            text
+        })
+        const populatedNotification = await Notification.findById(newNotification._id).populate('sender', '_id firstName lastName dp').populate('chat', '_id chatName chatDp').populate('message', '_id message type');
+        res.status(200).json({ notification: populatedNotification });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ error: 'Failed to Unfriend', details: err.message });
+    }
 })
+
+app.get('/api/media/:chatId', authTokenAPI, async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { lastId, limit = 30, mediaType } = req.query;
+
+    if (!mongoose.Types.ObjectId.isValid(chatId)) {
+      return res.status(400).json({ message: "Invalid chatId" });
+    }
+
+    const safeLimit = Math.min(Number(limit) || 30, 200);
+
+    const filter = {
+      chatId: new mongoose.Types.ObjectId(chatId),
+      type: "media",
+      media: { $exists: true, $ne: [] }, // ensure there is media
+    };
+
+    // Cursor pagination
+    if (lastId) {
+      if (!mongoose.Types.ObjectId.isValid(lastId)) {
+        return res.status(400).json({ message: "Invalid lastId" });
+      }
+      filter._id = { $lt: new mongoose.Types.ObjectId(lastId) };
+    }
+
+    // Optional filter: only messages containing a certain media subtype
+    if (mediaType && ["image", "video", "audio"].includes(mediaType)) {
+      filter["media.type"] = mediaType;
+    }
+
+    const mediaMessages = await Message.find(filter)
+        .populate('from', '_id firstName lastName dp')
+        .sort({ _id: -1 })
+        .limit(safeLimit)
+        .lean();
+
+    if (mediaMessages.length === 0) {
+      return res.status(404).json({ message: "No media found for this chat!" });
+    }
+
+    return res.status(200).json({ media: mediaMessages });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error", details: err.message });
+  }
+});
 
 let onlineUsers = {};
 
@@ -963,15 +1154,6 @@ io.on('connection', (socket) => {
 
     socket.on('message', async ({ chatId, type, message, media }) => {
         const from = socket.user.id;
-        const chat = await Chat.findById(chatId);
-        const receiverSockets = [];
-        for (let participant of chat.participants) {
-            if (participant.toString() !== from.toString()) {
-                if (onlineUsers[participant]) {
-                    receiverSockets.push(onlineUsers[participant])
-                }
-            }
-        }
         try {
             const newMessage = await Message.create({
                 from,
@@ -981,13 +1163,6 @@ io.on('connection', (socket) => {
                 type: type || undefined,
                 reactions: []
             });
-
-            for (let receiverSocket of receiverSockets) {
-                if (receiverSocket) {
-                    io.to(receiverSocket.socketID).emit('message', newMessage);
-                }
-            }
-
             io.to(chatId).emit('message', newMessage)
 
             socket.emit('messageSent', newMessage);
@@ -1067,6 +1242,18 @@ io.on('connection', (socket) => {
             console.log('typing error:', err);
         }
     });
+
+    socket.on('liveComment', async (data) => {
+        try{
+            const {chatId, comment} = data;
+            if(!chatId || !comment) return;
+
+            io.to(chatId).emit('liveComment', data)
+
+        } catch (err) {
+            console.log(err)
+        }
+    })
 
     socket.on('friendRequest', async (request) => {
         try {

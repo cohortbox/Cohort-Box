@@ -1,6 +1,7 @@
 import './SignUp.css';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext'
+import { useState } from 'react';
 
 
 function SignUp() {
@@ -8,6 +9,7 @@ function SignUp() {
   const apiUrl = process.env.REACT_APP_API_BASE_URL;
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [usernameAvailable, setUsernameAvailable] = useState()
 
   function Signup(e){
     e.preventDefault();
@@ -79,6 +81,7 @@ function SignUp() {
                     <input type='text' placeholder='Last Name' className='signup-input' id='lName'/>
                     <input type='text' placeholder='Email' className='signup-input' id='email'/>
                     <input type='password' placeholder='Password' className='signup-input' id='password'/>
+                    <input type='text' placeholder='Username' className='signup-input' onChange={userNameCheck}/>
                 </div>
                 <button type='submit' className='signup-btn' typeof='submit'>Create Account</button>
                 <Link to='/login' className='link-to-login'>Already have an account?</Link>

@@ -4,7 +4,7 @@ import AudioPlayer from './AudioPlayer.js';
 import MessageMenu from './MessageMenu.js';
 import ReactionMenu from './ReactionMenu.js';
 
-export default function AudioMessage({ msg, setMessages, sender, selectedChat }){
+export default function AudioMessage({ msg, setMessages, sender, selectedChat, setClickedMsg }){
     const { user } = useAuth();
     const senderColors = ['#c76060', '#c79569', '#c7c569', '#6ec769', '#69c2c7', '#6974c7', '#9769c7', '#c769bf']
 
@@ -13,7 +13,7 @@ export default function AudioMessage({ msg, setMessages, sender, selectedChat })
     : 0;
 
     return(
-      <div className={user.id === msg.from ? 'my-msg-container' : 'other-msg-container'}>
+      <div className={user.id === msg.from ? 'my-msg-container' : 'other-msg-container'} onClick={() => setClickedMsg(msg)}>
         <div className={ msg.from === user.id ? "my-media-msg" : "other-media-msg" }>
             <div className='name-menu-container'>
                 { msg.from !== user.id && sender && (

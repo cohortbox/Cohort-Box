@@ -1,0 +1,126 @@
+.chat-media-view-container{
+    height: 100dvh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    background-color: var(--chatBoxBg);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    padding: 1rem;
+}
+
+.chat-media-header{
+    height: 70px;
+    width: 100%;
+    padding: 1rem 8px;
+    display: flex;
+    justify-content: space-between;
+    box-sizing: border-box;
+}
+
+.chat-media-info{
+    display: flex;
+    align-items: center;
+    height: 100%;
+    color: var(--fontColor);
+    gap: 8px;
+}
+
+.chat-media-info .img-container{
+    height: 50px;
+    width: 50px;
+    border-radius: 50px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+}
+
+.chat-media-info .img-container img {
+    height: 50px;
+}
+
+.chat-media-send-info{
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-media-send-info h1{
+    font-size: 1.2rem;
+}
+
+.chat-media-send-info p{
+    font-size: 0.8rem;
+}
+
+.chat-media-header .chat-media-btns{
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.chat-media-header .chat-media-btns button{
+    background: none;
+    border: none;
+    height: 40px;
+    width: 40px;
+    padding: 0;
+}
+
+.chat-media-header .chat-media-btns button img{
+    height: 25px;
+}
+
+.main-media-view{
+    flex: 1 1 auto;
+    width: 100%;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.main-media-view button{
+    height: 40px;
+    width: 40px;
+    display: grid;
+    place-items: center;
+    background: none;
+    border: none;
+}
+
+.main-media-view button img {
+    height: 35px;
+}
+
+.main-media-view .main-media{
+    display: grid;
+    place-items: center;
+    flex: 1 1 auto;
+}
+
+.main-media-view img,
+.main-media-view video,
+.main-media-view .audio-player{
+    max-height: 500px;
+    max-width: 700px;
+}
+
+.chat-media-scroll{
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    overflow-y: auto;
+}
+
+.chat-media-item{
+    height: 70px;
+    width: 70px;
+    object-fit: cover;
+}
+

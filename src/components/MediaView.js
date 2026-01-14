@@ -3,7 +3,7 @@ import closeImg from '../images/close-gray.png'
 import { useState, useEffect } from 'react';
 
 // ---------- media-view === mv ----------
-function MediaView({ media, setClickedMedia }){
+function MediaView({ msg, media, setClickedMedia }){
 
     const [index, setIndex] = useState(0)
 
@@ -24,8 +24,19 @@ function MediaView({ media, setClickedMedia }){
 
     return (
         <div className='mv-container'>
-            <div className='mv-close-btn-container'>
-                <button className='mv-close-btn'><img src={closeImg} className='mv-close-img' onClick={() => setClickedMedia(null)}/></button>
+            <div className='mv-header'>
+                <div className='mv-sender-info'>
+                    <div className='img-container'>
+                        <img src={msg?.from?.dp}/>
+                    </div>
+                    <div className='mv-send-info'>
+                        <h1>{msg?.from?.firstName + ' ' + msg?.from?.lastName}</h1>
+                        <p>{msg?.timestamp}</p>
+                    </div>
+                </div>
+                <div className='mv-close-btn-container'>
+                    <button className='mv-close-btn'><img src={closeImg} className='mv-close-img' onClick={() => setClickedMedia(null)}/></button>
+                </div>
             </div>
             <div className='mv-main-media-container'>
                 {

@@ -19,6 +19,7 @@ const notificationSchema = new mongoose.Schema(
         "friend_request_accepted",
         "message_received",
         "added_to_group_request",
+        "accepted_group_request",
         "removed_from_group",
         "chat_participant_joined",
         "mention",

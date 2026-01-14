@@ -5,7 +5,7 @@ import AudioPlayer from './AudioPlayer.js';
 import playIcon from '../images/play.png';
 import { useAuth } from '../context/AuthContext.js';
 
-export default function MediaMessage({ msg, sender, setMessages, setClickedMedia, selectedChat }){
+export default function MediaMessage({ msg, sender, setMessages, setClickedMedia, selectedChat, setClickedMsg }){
     const { user } = useAuth();
     const senderColors = ['#c76060', '#c79569', '#c7c569', '#6ec769', '#69c2c7', '#6974c7', '#9769c7', '#c769bf']
 
@@ -22,12 +22,12 @@ export default function MediaMessage({ msg, sender, setMessages, setClickedMedia
     : 0;
 
     return(
-        <div className={user.id === msg.from ? 'my-msg-container' : 'other-msg-container'}>
+        <div className={user.id === msg.from ? 'my-msg-container' : 'other-msg-container'} onClick={() => setClickedMsg(msg)}>
                 { msg.media.length > 0 && msg.media.length <= 2 ? (
                     <div className={ msg.from === user.id ? "my-media-msg" : "other-media-msg" }>
                       <div className='name-menu-container'>
                         { msg.from !== user.id && sender && (
-                          <h4 className='sender-name' style={{color: `${senderColors[senderIndex]}`}}>{sender.firstName + ' ' + sender.lastName }</h4>
+                          <h4 className='sender-name' style={{color: `${senderColors[senderIndex] ? senderColors[senderIndex] : '#c5cad3'}`}}>{sender.firstName + ' ' + sender.lastName }</h4>
                         ) }
                       </div>
                       <div className={'msg-media-wrapper' + (msg.media[0].type === 'audio' ? ' audio-msg-wrapper' : '')} onClick={msg.media[0].type === 'audio' ? () => {return} : () => setClickedMedia(msg.media)}>

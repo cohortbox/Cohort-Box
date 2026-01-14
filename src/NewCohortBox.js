@@ -50,10 +50,10 @@ function NewCohortBox(){
         }
     });
 
-    async function handleCreate(e){
+    async function handleCreate(e) {
         e.preventDefault();
 
-          if (!chatName.trim()) {
+        if (!chatName.trim()) {
             showAlert("Please enter a name for the Cohort Box.");
             return;
         }
@@ -63,9 +63,9 @@ function NewCohortBox(){
             return;
         }
 
-        let requested_participants = [user.id];
+        let requested_participants = [];
 
-        for(let member of members){
+        for (let member of members) {
             requested_participants.push(member._id);
         }
 
@@ -79,7 +79,7 @@ function NewCohortBox(){
             },
             body: formData,
         });
-        if(!res.ok){
+        if (!res.ok) {
             showAlert("Image couldn't be uploaded! Try again.");
             return;
         }
@@ -91,49 +91,61 @@ function NewCohortBox(){
             chatName,
             chatNiche,
             chatDp: data.url,
-            participants: []
+            participants: [user.id]
         }
 
-        fetch(`/api/start-chat`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'authorization': `Bearer ${accessToken}`
-            },
-            body: JSON.stringify(body)
-        }).then(response => {
-            if(!response.ok){
-                throw new Error('Request Failed!');
+        try {
+            const response = await fetch('/api/start-chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify(body),
+            });
+
+            if (!response.ok) {
+                throw new Error('Start chat request failed');
             }
 
-            return response.json();
-        }).then(async (data) => {
-            const { newChat } = data
-            for (const participant of newChat.participants){
-                let body = {
-                    user: participant,
-                    sender: newChat.chatAdmin,
-                    type: 'added_to_group_request',
-                    chat: newChat._id,
-                    message: null,
-                    text: ''
-                }
-                const result = await fetch('/api/notification', {
-                    method: 'POST',
-                    headers: {
-                        'authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(body)
+            const { newChat } = await response.json();
+
+            await Promise.all(
+                newChat.requested_participants.map(async (participant) => {
+                    console.log(participant)
+                    if (participant._id === newChat.chatAdmin) return;
+                    const notificationBody = {
+                        user: participant,
+                        sender: newChat.chatAdmin,
+                        type: 'added_to_group_request',
+                        chat: newChat._id,
+                        message: null,
+                        text: '',
+                    };
+
+                    const result = await fetch('/api/notification', {
+                        method: 'POST',
+                        headers: {
+                            authorization: `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(notificationBody),
+                    });
+
+                    if (!result.ok) {
+                        throw new Error('Notification request failed');
+                    }
+
+                    const { notification } = await result.json();
+                    socket.emit('notification', notification);
                 })
-                if(result.ok){
-                    const data = await result.json();
-                    socket.emit('notification', data.notification);
-                }
-            }
-        }).catch(err => {
+            );
+
+        } catch (err) {
             console.error(err);
-        })
+            showAlert('Something went wrong while creating the chat.');
+        }
+
     }
 
     // ---------- new-cohort-box === ncb ----------

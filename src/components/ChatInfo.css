@@ -1,5 +1,6 @@
 .chat-info-container{
-    height: 500px;
+    height: 550px;
+    max-height: 550px;
     width: 450px;
     position: absolute;
     top: 50%;
@@ -14,6 +15,7 @@
     gap: 1.2rem;
     color: var(--fontColor);
     border: 1px solid var(--small);
+    overflow-y: auto;
 }
 
 .chat-info-heading{
@@ -41,6 +43,52 @@
 
 .chatname{
     font-size: 1.5rem;
+}
+
+.media-toggle-btn{
+    width: 100%;
+    height: 35px;
+    background: none;
+    color: var(--fontColor);
+    display: flex;
+    justify-content: space-between;
+    padding: 0;
+    margin: 0;
+    align-items: center;
+    font-size: 14px;
+    border: none;
+    font-family: 'GB';
+    cursor: pointer;
+}
+
+.chat-info-media-container{
+    display: flex;
+    flex-wrap: wrap;
+    color: var(--fontColor);
+    width: 100%;
+    gap: 2px;
+    align-items: center;
+}
+
+.chat-info-media{
+    height: 60px;
+    width: 60px;
+    display: grid;
+    place-items: center;
+}
+
+
+.chat-info-media-img,
+.chat-info-media-video{
+  width: 100%;
+  object-fit: cover;
+  display: block;
+  max-height: 60px;
+  max-height: 60px;
+}
+
+.chat-info-media-audio{
+  width: 100%;
 }
 
 .participants-heading-container{

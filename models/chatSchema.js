@@ -9,10 +9,31 @@ const chatSchema = new mongoose.Schema({
   },
   chatName: String,
   chatNiche: String,
-  requsted_participants: [{type: mongoose.Schema.Types.ObjectId, ref: "User"}],
+  requested_participants: [{type: mongoose.Schema.Types.ObjectId, ref: "User"}],
   status: {type: String, enum: ['pending_requests', 'active', 'inactive'], default: 'pending_requests'},
   subscribers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", default: [] }],
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  liveComments: [{
+    from: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    message: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    repliedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Message',
+      default: null,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    }
+  }],
 });
 
 module.exports = mongoose.model('Chat', chatSchema)

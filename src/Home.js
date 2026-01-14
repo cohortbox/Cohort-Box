@@ -7,6 +7,7 @@ import NavBar from './components/NavBar';
 import HomeNav from './components/HomeNav';
 import ChatBox from './components/ChatBox';
 import Posts from './components/Posts'
+import LiveChatView from './components/LiveChatCommentsView';
 import { useParams, useNavigate } from 'react-router-dom';
 
 function Home() {
@@ -18,6 +19,7 @@ function Home() {
   const [typingUsers, setTypingUsers] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const { user, accessToken, loading } = useAuth();
+  const [showLiveChat, setShowLiveChat] = useState(true);
 
   const { markMessagesRead, chatOpened } = useSocket();
 
@@ -134,8 +136,8 @@ function Home() {
     }
   }, [selectedChat?._id, user?.id]);
 
-  useSocketEvent("messageSent", (serverMsg) => {
-    setMessages(prev => [...prev, serverMsg]);
+  useSocketEvent("messageSent", ({newMessage}) => {
+    console.log('Message sent Successfully!', newMessage)
   }, []);
 
   useSocketEvent("messagesRead", ({ chatId, reader }) => {
@@ -196,16 +198,23 @@ function Home() {
     <div className="home">
       <title>Home | CohortBox</title>
       <NavBar selectedChat={selectedChat}/>
-      <HomeNav users={users} chats={chats} selectedChat={selectedChat} setSelectedChat={setSelectedChat} />
+      <HomeNav users={users} setUsers={setUsers} chats={chats} setChats={setChats} selectedChat={selectedChat} setSelectedChat={setSelectedChat} />
       {selectedChat ? (
-        <ChatBox
-          paramChatId={paramChatId}
-          selectedChat={selectedChat}
-          setSelectedChat={setSelectedChat}
-          messages={messages}
-          setMessages={setMessages}
-          typingUsers={typingUsers}
-        />
+        <div className='chat-box-live-chat-container'>
+          <ChatBox
+          setChats={setChats}
+            paramChatId={paramChatId}
+            selectedChat={selectedChat}
+            setSelectedChat={setSelectedChat}
+            messages={messages}
+            setMessages={setMessages}
+            typingUsers={typingUsers}
+            setShowLiveChat={setShowLiveChat}
+          />
+          { showLiveChat &&
+            <LiveChatView selectedChat={selectedChat} setShowLiveChat={setShowLiveChat}/>
+          }  
+        </div>
       ) : (
         <Posts />
       )}

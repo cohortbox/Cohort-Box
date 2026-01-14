@@ -19,8 +19,10 @@ import TextMessage from './TextMessage.js';
 import MediaMessage from './MediaMessage.js';
 import AudioMessage from './AudioMessage.js';
 import ChatInfoMessage from './ChatInfoMessage.js';
+import {ReactComponent as MyIcon} from '../images/comment.svg';
 
-function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMessages, typingUsers }){
+
+function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, messages, setMessages, typingUsers, setShowLiveChat }){
   console.log(selectedChat)
   const { socket } = useSocket();
   const [files, setFiles] = useState([]);
@@ -31,6 +33,7 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
   const { user, accessToken } = useAuth();
   const [clickedMedia, setClickedMedia] = useState(null);
   const [recording, setRecording] = useState(false);
+  const [clickedMsg, setClickedMsg] = useState(null)
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const emojiPickerRef = useRef(null);
@@ -91,6 +94,7 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
     //Notifying server that user has opened a chat
     const isParticipant = selectedChat.participants.some(p => p._id === user.id)
     if(isParticipant){
+      socket.emit('joinChat', { chatId: selectedChat._id, userId: user.id })
       socket.emit('chatOpenedByParticipant', { chatId: selectedChat._id, userId: user.id })
       selectedChat.subscribers.map((sub) => {
         const body = {
@@ -349,8 +353,8 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
   return (
     <div className="chat-box">
       { files.length > 0 && <MediaMessagePreview files={files} setFiles={setFiles} selectedChat={selectedChat}/> }
-      {clickedMedia && <MediaView media={clickedMedia} setClickedMedia={setClickedMedia}/>}
-      { selectedChat && <ChatInfo selectedChat={selectedChat} setSelectedChat={setSelectedChat} chatInfoClass={chatInfoClass} setChatInfoClass={setChatInfoClass} setMessages={setMessages}/> }
+      {clickedMedia && clickedMsg && <MediaView msg={clickedMsg} media={clickedMedia} setClickedMedia={setClickedMedia}/>}
+      { selectedChat && <ChatInfo setChats={setChats}selectedChat={selectedChat} setSelectedChat={setSelectedChat} chatInfoClass={chatInfoClass} setChatInfoClass={setChatInfoClass} setMessages={setMessages}/> }
       { selectedChat &&
         (<div className='chat-heading-and-btns-container'>
             <div className='chatName-chatDp-container'>
@@ -364,6 +368,7 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
             </div>
             <p className='chat-live-count'><img className='chat-live-count-img' src={eyeIcon}/> {chatLiveCount}</p>
             <div className='chat-btns-container'>
+              <button className='show-live-chat-btn' onClick={() => setShowLiveChat(prev => !prev)}><MyIcon fill='#c5cad3' style={{height: '20px', width: '20px', color: '#c5cad3'}}/></button>
               <button className='chat-info-btn' onClick={() => setChatInfoClass('')}><img className='chat-info-img' src={dotsImg}/></button>
               <button className='chat-close-btn' onClick={handleCloseChat}><img className='chat-close-img' src={closeImg}/></button>
             </div>
@@ -382,14 +387,12 @@ function ChatBox({ paramChatId, selectedChat, setSelectedChat, messages, setMess
 
         {[...messages].reverse().map((msg, index) => { 
           
-          const sender = selectedChat.participants.find( p => p._id === msg.from );
-          
           return msg.type === 'text' ? (               
-            <TextMessage key={index} msg={msg} sender={sender} setMessages={setMessages} selectedChat={selectedChat}/>      
+            <TextMessage key={index} msg={msg} sender={msg.from} setMessages={setMessages} selectedChat={selectedChat} setClickedMsg={setClickedMsg}/>      
           ) : ( msg.type === 'media' && msg.media.length > 0 ) ? (
-            <MediaMessage msg={msg} sender={sender} setMessages={setMessages} setClickedMedia={setClickedMedia} selectedChat={selectedChat}/>
+            <MediaMessage msg={msg} sender={msg.from} setMessages={setMessages} setClickedMedia={setClickedMedia} selectedChat={selectedChat} setClickedMsg={setClickedMsg}/>
           ) : msg.type === 'audio' ? (
-            <AudioMessage msg={msg} setMessages={setMessages} sender={sender} selectedChat={selectedChat}/>
+            <AudioMessage msg={msg} setMessages={setMessages} sender={msg.from} selectedChat={selectedChat} setClickedMsg={setClickedMsg}/>
           ) : msg.type === 'chatInfo' && (
             <ChatInfoMessage msg={msg}/>
           )

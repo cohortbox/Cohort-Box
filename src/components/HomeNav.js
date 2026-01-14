@@ -1,5 +1,5 @@
 import './HomeNav.css';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import searchIcon from '../images/magnifying-glass.png';
 import NavChatButton from './NavChatButton';
@@ -9,7 +9,7 @@ import { useSocketEvent } from '../context/SocketContext';
 import close from '../images/close-gray.png'
 import Toast from './Toast';
 
-function ChatsNav({ users, chats, selectedChat, setSelectedChat }) {
+function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedChat }) {
   const { user, accessToken, loading } = useAuth();
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
@@ -21,6 +21,127 @@ function ChatsNav({ users, chats, selectedChat, setSelectedChat }) {
   const [showToast, setShowToast] = useState(false);
   const [searchState, setSearchState] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [hasMoreChats, setHasMoreChats] = useState(true);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [hasMoreUsers, setHasMoreUsers] = useState(true);
+  const [userLoading, setUserLoading] = useState(false);
+  
+  const chatsContainerRef = useRef(null);
+  const loadMoreChatsRef = useRef(null);
+  const loadMoreUsersRef = useRef(null);
+
+  const fetchMoreChats = useCallback(async () => {
+    if (!accessToken || loading) return;
+    if (chatLoading || !hasMoreChats || chats.length < 30) return;
+    if (searchState || currFilter !== 'cb') return; // only lazy-load when showing chats list
+
+    setChatLoading(true);
+
+    const lastId = chats?.length ? chats[chats.length - 1]._id : null;
+
+    try {
+      const url = lastId
+        ? `/api/return-chats?lastId=${encodeURIComponent(lastId)}`
+        : `/api/return-chats`;
+
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { authorization: `Bearer ${accessToken}` },
+        credentials: 'include'
+      });
+
+      // your backend returns 404 when no chats found
+      if (res.status === 404) {
+        setHasMoreChats(false);
+        setChatLoading(false);
+        return;
+      }
+
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+
+      const data = await res.json();
+      const newChats = data?.chats || [];
+
+      if (newChats.length === 0) {
+        setHasMoreChats(false);
+      } else {
+        // ✅ prevent duplicates (important if observer fires twice)
+        const existing = new Set((chats || []).map(c => String(c._id)));
+        const deduped = newChats.filter(c => !existing.has(String(c._id)));
+
+        if (deduped.length === 0) {
+          setHasMoreChats(false);
+        } else {
+          setChats(prev => [...prev, ...deduped]);
+        }
+      }
+    } catch (err) {
+      console.error(err.message || 'Failed to load chats');
+    } finally {
+      setChatLoading(false);
+    }
+  }, [accessToken, loading, chatLoading, hasMoreChats, searchState, currFilter, chats, setChats]);
+
+  const fetchMoreUsers = useCallback(async () => {
+    if (!accessToken || loading) return;
+
+    // Only lazy-load when showing the People list (and not searching)
+    if (searchState || currFilter !== 'people') return;
+
+    // Prevent double fetches
+    if (userLoading || !hasMoreUsers) return;
+
+    // Optional: only paginate if you already loaded one full page
+    if (users.length > 0 && users.length < 30) return;
+
+    setUserLoading(true);
+
+    const lastId = users?.length ? users[users.length - 1]._id : null;
+
+    try {
+      const url = lastId
+        ? `/api/return-users?lastId=${encodeURIComponent(lastId)}`
+        : `/api/return-users`;
+
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { authorization: `Bearer ${accessToken}` },
+        credentials: 'include'
+      });
+
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+
+      const data = await res.json();
+      const newUsers = data?.users || [];
+
+      if (newUsers.length === 0) {
+        setHasMoreUsers(false);
+        return;
+      }
+
+      const existing = new Set((users || []).map(u => String(u._id)));
+      const deduped = newUsers.filter(u => !existing.has(String(u._id)));
+
+      if (deduped.length === 0) {
+        setHasMoreUsers(false);
+      } else {
+        setUsers(prev => [...prev, ...deduped]);
+      }
+    } catch (err) {
+      console.error(err.message || 'Failed to load users');
+    } finally {
+      setUserLoading(false);
+    }
+  }, [
+    accessToken,
+    loading,
+    searchState,
+    currFilter,
+    userLoading,
+    hasMoreUsers,
+    users,
+    setUsers
+  ]);
   
   function showAlert(msg) {
     setToastMsg(msg);
@@ -48,8 +169,60 @@ function ChatsNav({ users, chats, selectedChat, setSelectedChat }) {
     setSearchChats(chats);
     setSearchUsers(users);
     setSearchState(true);
-
   }
+
+  useEffect(() => {
+    if (!accessToken || loading) return;
+    if (!chats || chats.length === 0) fetchMoreChats();
+  }, [accessToken, loading]);
+
+  useEffect(() => {
+    if (!accessToken || loading) return;
+    if(!currFilter === ' people') return;
+    if (!users || users.length === 0) fetchMoreUsers();
+  }, [accessToken, loading, currFilter]);
+
+  useEffect(() => {
+    if (!loadMoreChatsRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchMoreChats();
+        }
+      },
+      {
+        root: chatsContainerRef.current, // ✅ observe inside the scroll container
+        rootMargin: "200px",
+        threshold: 0
+      }
+    );
+
+    observer.observe(loadMoreChatsRef.current);
+    return () => observer.disconnect();
+  }, [fetchMoreChats]);
+
+  useEffect(() => {
+    if (!loadMoreUsersRef.current) return;
+    if(searchState || !currFilter === 'people') return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchMoreUsers();
+        }
+      },
+      {
+        root: chatsContainerRef.current, // ✅ observe inside the scroll container
+        rootMargin: "200px",
+        threshold: 0
+      }
+    );
+
+    observer.observe(loadMoreUsersRef.current);
+    return () => observer.disconnect();
+  }, [fetchMoreUsers]);
+
 
   useEffect(() => {
     if (!accessToken || loading) return;
@@ -189,7 +362,7 @@ function ChatsNav({ users, chats, selectedChat, setSelectedChat }) {
           <button className={'cn-filter-btn' + (currFilter === 'people' ? ' active-filter-btn' : '')} onClick={(e) => {e.preventDefault(); setCurrFilter('people')}}>People</button>
         </div>
 
-        <div className='cn-chats-container'>
+        <div className='cn-chats-container' ref={chatsContainerRef}>
           {
             searchState && (
               <div className='search-heading'>
@@ -223,27 +396,44 @@ function ChatsNav({ users, chats, selectedChat, setSelectedChat }) {
                 );
               })
              :
-            currFilter === 'cb'
-              ? chats.map(chat => (
-                <NavChatButton key={chat._id || chat.id} chat={chat} selectedChat={selectedChat} setSelectedChat={setSelectedChat} />
-              ))
-              : users.map(u => {
-                const id = String(u._id);
-                const isFriend = friendIds.has(id);
-                const sentRequest = outgoingPending.has(id);
-                const gotRequest = incomingPending.has(id);
+              currFilter === 'cb'
+                ? (
+                  <>
+                    {chats.map(chat => (
+                      <NavChatButton key={chat._id || chat.id} chat={chat} selectedChat={selectedChat} setSelectedChat={setSelectedChat} />
+                    ))}
+                    {chatLoading && <p style={{ padding: '8px', opacity: 0.8, color: '#c5cad3' }}>Loading more...</p>}
+                    {!chatLoading && !hasMoreChats && chats.length > 0 && (
+                      <p style={{ padding: '8px', opacity: 0.6 }}>No more chats</p>
+                    )}
+                    <div ref={loadMoreChatsRef} style={{ height: 1 }} />
+                  </>
+                ) : (
+                  <>
+                    {users.map(u => {
+                      const id = String(u._id);
+                      const isFriend = friendIds.has(id);
+                      const sentRequest = outgoingPending.has(id);
+                      const gotRequest = incomingPending.has(id);
 
-                return (
-                  <Link to={'/profile/' + u._id} style={{ textDecoration: 'none' }} key={u._id}>
-                    <NavUserButton
-                      user={u}
-                      isFriend={isFriend}
-                      sentRequest={sentRequest}
-                      gotRequest={gotRequest}
-                    />
-                  </Link>
-                );
-              })
+                      return (
+                        <Link to={'/profile/' + u._id} style={{ textDecoration: 'none' }} key={u._id}>
+                          <NavUserButton
+                            user={u}
+                            isFriend={isFriend}
+                            sentRequest={sentRequest}
+                            gotRequest={gotRequest}
+                          />
+                        </Link>
+                      );
+                    })}
+                    {userLoading && <p style={{ padding: '8px', opacity: 0.8, color: '#c5cad3' }}>Loading more...</p>}
+                    {!userLoading && !hasMoreUsers && users.length > 0 && (
+                      <p style={{ padding: '8px', opacity: 0.6 }}>No more users</p>
+                    )}
+                    <div ref={loadMoreUsersRef} style={{ height: 1 }} />
+                  </>
+                )
           }
         </div>
       </div>

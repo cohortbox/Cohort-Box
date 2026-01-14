@@ -1,0 +1,106 @@
+.live-chat-container{
+    width: 320px;
+    max-width: 320px;
+    height: 100vh;
+    background-color: var(--black);
+    border-left: 1px solid var(--borderColor);
+    animation: slideIn 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 10px;
+    box-sizing: border-box;
+    flex: 1 1 auto;
+}
+
+.live-chat-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 50px;
+    width: 100%;
+    background-color: var(--hover);
+    border-bottom: 1px solid var(--borderColor);
+    font-family: 'GB';
+    color: var(--fontColor);
+    padding: 10px 20px;
+    box-sizing: border-box;
+    border-radius: 10px;
+    font-size: 0.8rem;
+}
+
+.live-chat-close-btn{
+    height: 35px;
+    width: 35px;
+    border-radius: 40px;
+    border: none;
+    background-color: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.live-chat-close-img{
+    height: 15px;
+}
+
+.live-chat-comments-container{
+    flex: 1 1 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 8px 0;
+    overflow-y: auto;
+    gap: 8px;
+}
+
+.live-chat-comments-container > p {
+    color: var(--fontColor);
+}
+
+.live-chat-comments-container .comment {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+}
+
+.live-chat-comments-container .comment .comment-msg{
+    color: var(--fontColor);
+}
+
+.comment-msg-input-container{
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.comment-msg-input-container input {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--small);
+    background-color: var(--hover);
+    color: var(--fontColor);
+    font-family:
+        'RR',
+        'Emoji';
+    height: 22px;
+    font-size: 1rem;
+    resize: none;
+    flex: 1 1 auto;
+}
+
+.comment-msg-input-container button{
+    height: 40px;
+    width: 40px;
+    border-radius: 25px;
+    background-color: var(--chatBoxBg);
+    display: grid;
+    place-items: center;
+    color: var(--fontColor);
+    border: none;
+    cursor: pointer;
+}
+
+.comment-msg-input-container button svg path{
+    fill: var(--fontColor);
+}

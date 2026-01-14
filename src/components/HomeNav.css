@@ -1,7 +1,9 @@
 .cn-container{
     display: flex;
     flex-direction: column;
-    width: 550px;
+    flex: 1 1 auto;
+    width: 400px;
+    min-width: 400px;
     height: 100vh;
     border: 1px solid var(--borderColor);
     border-left: none;

@@ -13,6 +13,7 @@
     background-color: var(--black);
     border-right: 1px solid var(--borderColor);
     transition: width 0.3s ease; /* smooth slide */
+    z-index: 1;
 }
 
 /* Expanded state */

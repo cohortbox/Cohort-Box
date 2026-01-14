@@ -8,6 +8,7 @@ import Toast from './Toast'
 import { useState } from 'react';
 
 export default function Notification({notification, setNotifications}){
+    console.log(notification)
     const { user, accessToken } = useAuth();
     const { socket } = useSocket();
     const [toastMsg, setToastMsg] = useState('');
@@ -30,6 +31,7 @@ export default function Notification({notification, setNotifications}){
         });
 
         if (!res.ok) {
+            console.log('Failed!')
             const err = await res.json().catch(() => ({}));
             showAlert('Server failed!')
             throw new Error(err.error || `API failed: ${url}`);
@@ -55,6 +57,7 @@ export default function Notification({notification, setNotifications}){
         try {
             const result = await callApi(`/api/friends/reject/${notification.sender._id}`, 'POST');
             socket.emit('rejectFriendRequest', result);
+            socket.emit('notification', result.notification)
             setNotifications(prev => prev.filter(currNotification => currNotification._id !== notification._id))
         } catch (err) {
             console.error(err);
@@ -64,8 +67,7 @@ export default function Notification({notification, setNotifications}){
         const handleChatAccept = async (e) => {
         e.preventDefault();
         try {
-            const result = await callApi(`/api/friends/accept/${notification.sender._id}`, 'POST');
-            socket.emit('acceptFriendRequest', notification.sender._id);
+            const result = await callApi(`/api/chat/accept/${notification.chat._id}`, 'POST');
             socket.emit('notification', result.notification)
             setNotifications(prev => prev.filter(currNotification => currNotification._id !== notification._id))
         } catch (err) {
@@ -76,8 +78,7 @@ export default function Notification({notification, setNotifications}){
     const handleChatReject = async (e) => {
         e.preventDefault();
         try {
-            const result = await callApi(`/api/friends/reject/${notification.sender._id}`, 'POST');
-            socket.emit('rejectFriendRequest', result);
+            const result = await callApi(`/api/chat/reject/${notification.chat._id}`, 'POST');
             setNotifications(prev => prev.filter(currNotification => currNotification._id !== notification._id))
         } catch (err) {
             console.error(err);

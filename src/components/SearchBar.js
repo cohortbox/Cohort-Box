@@ -116,7 +116,7 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
                         {
                             users.length > 0 ? 
                                 users.map((u, index) => {
-                                    if(u._id !== user.id)
+                                    if(u._id === user.id) return;
                                     return (
                                         <div key={index} className={'user' + searchBarClass}>
                                             <h2>{u.firstName + ' ' + u.lastName}</h2>
