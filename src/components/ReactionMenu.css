@@ -6,6 +6,24 @@
   height: fit-content;
 }
 
+.width-on-post{
+  width: 100%;
+}
+
+.rm-btn-post{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background-color: inherit;
+  border: none;
+  transition: opacity 0.2s ease;
+  font-family: 'GM';
+  color: var(--fontColor);
+  font-size: 1rem;
+}
+
 .rm-btn {
   height: 25px;
   width: 25px;
@@ -15,9 +33,10 @@
   justify-content: center;
   background-color: inherit;
   border: none;
-  opacity: 0;
   transition: opacity 0.2s ease;
   font-family: 'GM';
+  opacity: 0;
+  color: var(--fontColor);
 }
 
 .rm-container:hover .rm-btn {
@@ -53,6 +72,8 @@
   line-height: 1;
   background-color: rgba(255, 255, 255, 0);
 }
+
+
 
 .rm-inner-btn:hover {
   transform: scale(1.2);

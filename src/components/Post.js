@@ -1,13 +1,32 @@
 import './Post.css';
 import userImg from '../images/sample.png';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import left from '../images/left-arrow.png';
 import right from '../images/right-arrow.png';
 import VideoPlayer from './VideoPlayer';
+import ReactionMenu from './ReactionMenu';
 
 function Post({ post }) {
     const [mainIndex, setMainIndex] = useState(0);
+
+    function groupReactions(reactions = []) {
+        const map = {};
+        for (let r of reactions) {
+            if (!map[r.emoji]) map[r.emoji] = 0;
+        }
+        return Object.entries(map).map(([emoji, count]) => ({ emoji, count }));
+    }
+
+
+    const msg = useMemo(() => {
+        return {
+            ...post,
+            chatId: typeof post.chatId === "object" ? post.chatId._id : post.chatId,
+        };
+    }, [post]);
+
+    const grouped = useMemo(() => groupReactions(post?.reactions), [post?.reactions]);
 
     return (
         <div className='post-container'>
@@ -50,8 +69,18 @@ function Post({ post }) {
                     </div>
                 }
             </div>
+            {grouped.length > 0 && (
+                <div className="post-reactions-row">
+                    {grouped.map((r) => (
+                        <div key={r.emoji} className="post-reaction-pill">
+                            <span className="post-reaction-emoji">{r.emoji}</span>
+                            <span className="post-reaction-count">{r.count}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
             <div className='post-btn-container'>
-                <button className='post-btn border-right'>React</button>
+                <button className='post-btn border-right'><ReactionMenu msg={msg} isPost={true}/></button>
                 <button className='post-btn'>Share</button>
             </div>
         </div>

@@ -7,7 +7,11 @@ const chatSchema = new mongoose.Schema({
     type: String,
     default: 'https://res.cloudinary.com/dzhvgedcy/image/upload/v1763410012/group_sfs2cr.png'
   },
-  chatName: String,
+  chatName: {
+    type: String,
+    required: true,
+    trim: true,
+  },
   chatNiche: String,
   requested_participants: [{type: mongoose.Schema.Types.ObjectId, ref: "User"}],
   status: {type: String, enum: ['pending_requests', 'active', 'inactive'], default: 'pending_requests'},

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import NavBar from './components/NavBar'
 import SearchBar from './components/SearchBar';
@@ -18,8 +18,61 @@ function NewCohortBox(){
     const [toastMsg, setToastMsg] = useState('');
     const [showToast, setShowToast] = useState(false);
     const { socket } = useSocket();
+    const [chatNameAvailable, setChatNameAvailable] = useState(null); // null | true | false
 
-    function showAlert(msg){
+    const chatNameDebounceRef = useRef(null);
+
+    function chatNameCheck(value) {
+        const name = (value ?? chatName).trim();
+
+        // Clear previous timer
+        if (chatNameDebounceRef.current) {
+            clearTimeout(chatNameDebounceRef.current);
+        }
+
+        // If empty, reset state
+        if (!name) {
+            setChatNameAvailable(null);
+            return;
+        }
+
+        const chatNameInput = document.getElementById('chatName');
+
+        chatNameDebounceRef.current = setTimeout(async () => {
+            try {
+                const res = await fetch(
+                    `/api/check-chatname?chatname=${encodeURIComponent(name)}`,
+                    {
+                        method: "GET",
+                        headers: { authorization: `Bearer ${accessToken}` },
+                    }
+                );
+
+                const data = await res.json().catch(() => null);
+
+                // If server gives 400 for invalid
+                if (!res.ok) {
+                    chatNameInput.style.borderColor = 'red';
+                    setChatNameAvailable(false);
+                    return;
+                }
+
+                setChatNameAvailable(Boolean(data?.available));
+
+                if (data?.available === false) {
+                    chatNameInput.style.borderColor = 'red'
+                } else {
+                    chatNameInput.style.borderColor = '#1ff200'
+                }
+
+            } catch (err) {
+                console.error(err);
+                setChatNameAvailable(false);
+            }
+        }, 500); // ✅ debounce delay
+    }
+
+    function showAlert(msg) {
         setToastMsg(msg);
         setShowToast(true);
     }
@@ -52,6 +105,11 @@ function NewCohortBox(){
 
     async function handleCreate(e) {
         e.preventDefault();
+
+        if (!chatNameAvailable) {
+            showAlert("Please choose a different Cohort Box name.");
+            return;
+        }
 
         if (!chatName.trim()) {
             showAlert("Please enter a name for the Cohort Box.");
@@ -153,12 +211,12 @@ function NewCohortBox(){
     return (
         <div className='ncb-container'>
             <title>Create New CohortBox | CohortBox</title>
-            <NavBar/>
+            <NavBar />
             <div className='ncb-body-container'>
                 <h4 className='ncb-heading'>START A NEW COHORT BOX</h4>
                 <div className='ncb-options-container'>
                     <div className='ncb-select-members'>
-                        <SearchBar searchBarClass={searchBarClass} setSearchBarClass={setSearchBarClass} members={members} setMembers={setMembers} chatId={null} addParticipant={false}/>
+                        <SearchBar searchBarClass={searchBarClass} setSearchBarClass={setSearchBarClass} members={members} setMembers={setMembers} chatId={null} addParticipant={false} />
                         <button className='ncb-select-members-btn' onClick={() => setSearchBarClass('')}>SELECT MEMBERS FOR YOUR COHORT BOX</button>
                         {
                             members.length > 0 ? (
@@ -169,8 +227,12 @@ function NewCohortBox(){
                         }
                     </div>
                     <div className='ncb-chatname'>
-                        <h4 className='ncb-chatname-heading'>CHOOSE COHORT BOX NAME</h4>
-                        <input className='ncb-chatname-input' type='text' placeholder='ENTER NAME' onChange={e => setChatName(e.target.value)}/>
+                        <h4 style={{marginBottom: '2px'}} className='ncb-chatname-heading'>CHOOSE COHORT BOX NAME</h4>
+                        <p>This should be unique</p>
+                        <input className='ncb-chatname-input' type='text' placeholder='ENTER NAME' id='chatName' onChange={e => {
+                            setChatName(e.target.value);
+                            chatNameCheck(e.target.value);
+                        }} />
                     </div>
                     <div className='ncb-chatname'>
                         <h4 className='ncb-chatname-heading'>SELECT COHORT BOX CHAT NICHE</h4>

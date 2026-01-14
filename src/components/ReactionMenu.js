@@ -5,7 +5,7 @@ import "./ReactionMenu.css";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 
-function ReactionMenu({ msg }) {
+function ReactionMenu({ msg, isPost = false }) {
   const { socket } = useSocket();
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
@@ -56,13 +56,13 @@ function ReactionMenu({ msg }) {
   };
 
   return (
-    <div className="rm-container">
+    <div className={isPost ? "rm-container width-on-post" : 'rm-container'}>
       <button
         ref={btnRef}
-        className="rm-btn"
+        className={isPost ? "rm-btn-post" : 'rm-btn'}
         onClick={() => setOpen((prev) => !prev)}
       >
-        <img className="rm-btn-img" src={reactImg} alt="menu" />
+        <img className="rm-btn-img" src={reactImg} alt="menu" />{isPost && 'React'}
       </button>
 
       {open && (

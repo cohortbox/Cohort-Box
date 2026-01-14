@@ -97,6 +97,7 @@ app.post('/api/signup', async (req, res) => {
         const user = {
             firstName: req.body.firstName,
             lastName: req.body.lastName,
+            username: req.body.username,
             email: req.body.email,
             password_hash: await bcrypt.hash(req.body.password, saltRounds),
             verificationCode,
@@ -317,7 +318,6 @@ app.post('/api/verify-code', async (req, res) => {
     }
 });
 
-// server/routes/auth.js (or wherever your routes live)
 app.get('/api/check-username', async (req, res) => {
   try {
     const usernameRaw = (req.query.username || '').trim();
@@ -367,6 +367,66 @@ app.get('/api/check-username', async (req, res) => {
           `${username}__`,
           `${username}.${Math.floor(Math.random() * 900 + 100)}`
         ],
+      });
+    }
+
+    return res.status(200).json({
+      available: true,
+      reason: 'available',
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
+      message: 'Internal Server Error!',
+      available: false,
+    });
+  }
+});
+
+app.get('/api/check-chatname', async (req, res) => {
+  try {
+    console.log('check-chatname')
+    const chatnameRaw = (req.query.chatname || '').trim();
+
+    if (!chatnameRaw) {
+      return res.status(400).json({
+        available: false,
+        reason: 'chatname_required',
+      });
+    }
+
+    // normalize for checking
+    const chatname = chatnameRaw.toLowerCase();
+
+    // basic validation (tune rules to your liking)
+    if (chatname.length < 3 || chatname.length > 20) {
+      return res.status(400).json({
+        available: false,
+        reason: 'invalid_length',
+      });
+    }
+
+    // allow letters, numbers, underscore, dot (example)
+    if (!/^[a-z0-9._]+$/.test(chatname)) {
+      return res.status(400).json({
+        available: false,
+        reason: 'invalid_characters',
+      });
+    }
+
+    // IMPORTANT: use normalized field (recommended) OR do a case-insensitive exact match
+    // Option A (recommended): if you add usernameLower in schema
+    // const exists = await User.exists({ usernameLower: username });
+
+    // Option B (works without schema changes but is slower):
+    const exists = await Chat.exists({
+      uniqueChatName: { $regex: `^${escapeRegex(chatnameRaw)}$`, $options: 'i' }
+    });
+
+    if (exists) {
+      return res.status(200).json({
+        available: false,
+        reason: 'taken'
       });
     }
 

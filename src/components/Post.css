@@ -128,6 +128,31 @@
     height: 30px;   
 }
 
+.post-reactions-row{
+  display: flex;
+  gap: 8px;
+  padding: 10px 0 0;
+  flex-wrap: wrap;
+}
+
+.post-reaction-pill{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--small);
+  border-radius: 999px;
+  color: var(--fontColor);
+  font-family: 'GM';
+  font-size: 0.9rem;
+  background: rgba(255,255,255,0.03);
+}
+
+.post-reaction-count{
+  color: var(--small);
+}
+
+
 .post-btn-container{
     display: flex;
     width: 100%;

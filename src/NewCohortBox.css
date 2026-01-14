@@ -65,6 +65,11 @@
     margin: 0;
 }
 
+.ncb-chatname p{
+    font-size: 0.8rem;
+    color: var(--small);
+}
+
 .ncb-chatname-input{
     margin-top: 20px;
     width: 100%;
