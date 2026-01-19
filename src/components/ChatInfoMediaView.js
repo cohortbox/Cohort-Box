@@ -1,4 +1,4 @@
-import './chatInfoMediaView.css';
+import './ChatInfoMediaView.css';
 import { useState, useEffect } from 'react';
 import closeImg from '../images/close-gray.png';
 import right from '../images/right-arrow.png';
