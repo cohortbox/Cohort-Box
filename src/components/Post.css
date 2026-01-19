@@ -140,7 +140,6 @@
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border: 1px solid var(--small);
   border-radius: 999px;
   color: var(--fontColor);
   font-family: 'GM';
@@ -152,6 +151,11 @@
   color: var(--small);
 }
 
+.post-reaction-emojis{
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
 
 .post-btn-container{
     display: flex;

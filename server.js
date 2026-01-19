@@ -646,13 +646,39 @@ app.get('/api/return-user-chats/:id', authTokenAPI, async (req, res) => {
 });
 
 app.get('/api/return-messages/:chatId', authTokenAPI, async (req, res) => {
-    try {
-        const chatId = req.params.chatId;
-        const msgs = await Message.find({ chatId }).populate('from', '_id firstName lastName dp').sort({ timestamp: 1 });
-        res.status(200).json({ msgs })
-    } catch (err) {
-        res.status(500).json({ message: 'Server Error!' });
+  try {
+    console.log('return-msgs')
+    const { chatId } = req.params;
+    const limit = Math.min(parseInt(req.query.limit || '10', 10), 100);
+    const { before } = req.query; // message _id cursor (oldest currently loaded)
+
+    const filter = { chatId };
+
+    // If before is provided, load messages older than that _id
+    if (before) {
+      filter._id = { $lt: before };
     }
+
+    // Fetch newest -> oldest for pagination efficiency
+    const msgs = await Message.find(filter)
+      .sort({ _id: -1 }) // newest first
+      .limit(limit)
+      .populate('from', '_id firstName lastName dp')
+      .lean();
+
+    // Determine if there are more older messages
+    let hasMore = false;
+    if (msgs.length === limit) {
+      const last = msgs[msgs.length - 1]; // oldest in this batch (because sorted desc)
+      const olderExists = await Message.exists({ chatId, _id: { $lt: last._id } });
+      hasMore = !!olderExists;
+    }
+
+    res.status(200).json({ msgs, hasMore });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error!' });
+  }
 });
 
 app.post('/api/start-chat', authTokenAPI, async (req, res) => {
@@ -1106,7 +1132,6 @@ io.on('connection', (socket) => {
     socket.on('register', async (userID) => {
         if (!userID) return;
         const userDB = await User.findById(userID).select('firstName lastName');
-        Notification.updateMany({}, { $set: { chatDp: 'https://res.cloudinary.com/dzhvgedcy/image/upload/v1763410012/group_sfs2cr.png' } })
         if (!userDB) return;
         onlineUsers[userID] = {
             socketID: socket.id,

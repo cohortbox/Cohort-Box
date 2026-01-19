@@ -5,7 +5,7 @@ import "./ReactionMenu.css";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 
-function ReactionMenu({ msg, isPost = false }) {
+function ReactionMenu({ msg, isPost = false, onReactLocal }) {
   const { socket } = useSocket();
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
@@ -46,36 +46,47 @@ function ReactionMenu({ msg, isPost = false }) {
 
   const handleReact = (e, emoji) => {
     e.preventDefault();
+
+    // ✅ Optimistic UI update for posts
+    if (isPost && typeof onReactLocal === "function") {
+      onReactLocal(emoji, user.id);
+    }
+
+    // ✅ Server update (DB + broadcast)
     socket.emit("reaction", {
       emoji,
       msgId: msg._id,
       userId: user.id,
       chatId: msg.chatId,
+      isPost,
     });
+
     setOpen(false);
   };
 
   return (
-    <div className={isPost ? "rm-container width-on-post" : 'rm-container'}>
+    <div className={isPost ? "rm-container width-on-post" : "rm-container"}>
       <button
         ref={btnRef}
-        className={isPost ? "rm-btn-post" : 'rm-btn'}
-        onClick={() => setOpen((prev) => !prev)}
+        className={isPost ? "rm-btn-post" : "rm-btn"}
+        onClick={(e) => {
+          e.preventDefault();
+          setOpen((prev) => !prev);
+        }}
+        type="button"
       >
-        <img className="rm-btn-img" src={reactImg} alt="menu" />{isPost && 'React'}
+        <img className="rm-btn-img" src={reactImg} alt="menu" />
+        {isPost && "React"}
       </button>
 
       {open && (
-        <div
-          ref={menuRef}
-          style={floatingStyles}
-          className="rm-menu-container"
-        >
+        <div ref={menuRef} style={floatingStyles} className="rm-menu-container">
           {reactions.map((r) => (
             <button
               key={r.label}
               className="rm-inner-btn"
               onClick={(e) => handleReact(e, r.emoji)}
+              type="button"
             >
               {r.emoji}
             </button>

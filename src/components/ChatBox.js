@@ -33,12 +33,19 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
   const { user, accessToken } = useAuth();
   const [clickedMedia, setClickedMedia] = useState(null);
   const [recording, setRecording] = useState(false);
-  const [clickedMsg, setClickedMsg] = useState(null)
+  const [clickedMsg, setClickedMsg] = useState(null);
+  const [hasMoreMsgs, setHasMoreMsgs] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const messagesBoxRef = useRef(null);
+  const loadingMoreRef = useRef(false);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
   const emojiPickerRef = useRef(null);
   const msgRef = useRef(null);
   const caretPosRef = useRef(0);
+  const PAGE_SIZE = 1;
+  
   const { refs, floatingStyles } = useFloating({
     placement: "top-start",
     middleware: [offset(4), flip()],
@@ -73,70 +80,192 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
     }
   }, [showEmoji])
 
-  useEffect(() => {
-    if(!selectedChat) return;
+  async function loadOlderMessages() {
+    if (!selectedChat) return;
+    if (!hasMoreMsgs) return;
+    if (loadingMoreRef.current) return;
 
-    fetch(`/api/return-messages/${encodeURIComponent(selectedChat._id)}`, {
-      method: 'GET',
-      headers: {
-        'authorization': `Bearer ${accessToken}` 
-      }
-    }).then(response => {
-      if(!response.ok){
-        throw new Error('Request Failed!');
-      }
-      return response.json();
-    }).then(data => {
-      console.log(data.msgs)
-      setMessages(data.msgs);
-    })
+    const el = messagesBoxRef.current;
+    if (!el) return;
 
-    //Notifying server that user has opened a chat
-    const isParticipant = selectedChat.participants.some(p => p._id === user.id)
-    if(isParticipant){
-      socket.emit('joinChat', { chatId: selectedChat._id, userId: user.id })
-      socket.emit('chatOpenedByParticipant', { chatId: selectedChat._id, userId: user.id })
-      selectedChat.subscribers.map((sub) => {
-        const body = {
-          user: sub,
-          sender: user.id,
-          type: 'chat_participant_joined',
-          chat: selectedChat._id,
-          message: null,
-          text: ''
+    const prevScrollHeight = el.scrollHeight;
+
+    try {
+      setLoadingMore(true);
+      loadingMoreRef.current = true;
+
+      const oldest = messages[0]; // because messages are oldest->newest
+      if (!oldest?._id) return;
+
+      const res = await fetch(
+        `/api/return-messages/${encodeURIComponent(selectedChat._id)}?limit=${PAGE_SIZE}&before=${oldest._id}`,
+        {
+          method: "GET",
+          headers: { authorization: `Bearer ${accessToken}` },
         }
-        fetch(`/api/notification`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'authorization': `Bearer ${accessToken}`
-          },
-          credentials: 'include',
-          body: JSON.stringify(body)
-        }).then(response => {
-          if (!response.ok) {
-            throw new Error('Request Failed!');
-          }
-          return response.json();
-        }).then(data => {
-          console.log(data.notification)
-          socket.emit('notification', data.notification)
-        }).catch(err => {
-          console.error(err)
-        })
-      })
-    }else{
-      socket.emit('joinChat', { chatId: selectedChat._id, userId: user.id })
+      );
+
+      if (!res.ok) throw new Error("Load older failed");
+      const data = await res.json();
+
+      const olderBatch = [...(data.msgs || [])]; // convert to oldest->newest
+
+      // prepend older messages
+      setMessages((prev) => [...olderBatch, ...prev]);
+      setHasMoreMsgs(Boolean(data.hasMore));
+
+      // preserve scroll position (avoid jump)
+      setTimeout(() => {
+        const newScrollHeight = el.scrollHeight;
+        el.scrollTop = newScrollHeight - prevScrollHeight;
+      }, 0);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingMore(false);
+      loadingMoreRef.current = false;
+    }
+  }
+
+
+  useEffect(() => {
+  if (!selectedChat) return;
+
+  let cancelled = false; // prevents state updates after unmount/switch
+
+  async function loadInitialAndJoin() {
+    try {
+      // ---------- 1) LAZY LOAD INITIAL MESSAGES ----------
+      setLoadingMore(true);
+      loadingMoreRef.current = true;
+
+      const res = await fetch(
+        `/api/return-messages/${encodeURIComponent(selectedChat._id)}?limit=${PAGE_SIZE}`,
+        {
+          method: "GET",
+          headers: { authorization: `Bearer ${accessToken}` },
+        }
+      );
+
+      if (!res.ok) throw new Error("Request failed");
+      const data = await res.json();
+
+      if (cancelled) return;
+
+      // API returns newest->oldest (desc), reverse for render order oldest->newest
+      const initialMsgs = [...(data.msgs || [])];
+      setMessages(initialMsgs);
+      setHasMoreMsgs(Boolean(data.hasMore));
+
+      // scroll to bottom after first load
+      setTimeout(() => {
+        if (cancelled) return;
+        const el = messagesBoxRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+      }, 0);
+
+      // ---------- 2) JOIN/OPEN CHAT LOGIC ----------
+      const chatId = selectedChat._id;
+
+      const isParticipant = Array.isArray(selectedChat.participants)
+        ? selectedChat.participants.some((p) => p?._id === user.id)
+        : false;
+
+      // Everyone joins room (so they receive updates like reactions/live counts)
+      socket.emit("joinChat", { chatId, userId: user.id });
+
+      // Only participants trigger "opened by participant" + subscriber notifications
+      if (isParticipant) {
+        socket.emit("chatOpenedByParticipant", { chatId, userId: user.id });
+
+        // Notify subscribers (your existing behavior)
+        const subs = Array.isArray(selectedChat.subscribers) ? selectedChat.subscribers : [];
+
+        // IMPORTANT: your earlier code used .map without await; this keeps your behavior
+        subs.forEach((sub) => {
+          // If subs are objects sometimes, normalize to id
+          const subId = typeof sub === "object" ? sub?._id : sub;
+
+          const body = {
+            user: subId,
+            sender: user.id,
+            type: "chat_participant_joined",
+            chat: chatId,
+            message: null,
+            text: "",
+          };
+
+          fetch(`/api/notification`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              authorization: `Bearer ${accessToken}`,
+            },
+            credentials: "include",
+            body: JSON.stringify(body),
+          })
+            .then((r) => {
+              if (!r.ok) throw new Error("Notification request failed");
+              return r.json();
+            })
+            .then((d) => {
+              if (cancelled) return;
+              if (d?.notification) socket.emit("notification", d.notification);
+            })
+            .catch((err) => console.error(err));
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      if (!cancelled) {
+        setLoadingMore(false);
+        loadingMoreRef.current = false;
+      }
+    }
+  }
+
+  loadInitialAndJoin();
+
+  // ---------- CLEANUP: leave chat on switch/unmount ----------
+  return () => {
+    cancelled = true;
+
+    if (socket && selectedChat?._id) {
+      socket.emit("leaveChat", selectedChat._id);
+      console.log("left chat:", selectedChat._id);
     }
 
-    return () => {
-      if (selectedChat && socket) {
-        socket.emit('leaveChat', selectedChat._id);
-        console.log('left chat:', selectedChat._id);
-      }
-    };
+    // also stop typing if user leaves while typing (optional but recommended)
+    if (socket && isTypingRef.current && selectedChat?._id) {
+      socket.emit("typing", { chatId: selectedChat._id, userId: user.id, typing: false });
+      isTypingRef.current = false;
+    }
 
-  }, [selectedChat]);
+    // clear the typing timeout (optional)
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+  };
+}, [selectedChat, accessToken, socket, user.id]);
+
+
+  useEffect(() => {
+    const el = messagesBoxRef.current;
+    if (!el) return;
+
+    function onScroll() {
+      // when near top, load older
+      if (el.scrollTop <= 40) {
+        loadOlderMessages();
+      }
+    }
+
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [messages, hasMoreMsgs, selectedChat, accessToken]);
+
 
    function handleSubscribe(e){
     e.preventDefault();
@@ -374,7 +503,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
             </div>
           </div>)
       }
-      <div className='messages-box'>
+      <div className='messages-box' ref={messagesBoxRef}>
 
         {/* ✅ Typing indicator */}
         {typingUsers.length > 0 && (
