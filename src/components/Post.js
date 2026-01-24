@@ -5,6 +5,10 @@ import left from "../images/left-arrow.png";
 import right from "../images/right-arrow.png";
 import VideoPlayer from "./VideoPlayer";
 import ReactionMenu from "./ReactionMenu";
+import dotsImg from '../images/dots.png';
+import reportImg from '../images/report.png';
+import ReportMenu from './ReportMenu';
+import { useFloating, offset, flip } from '@floating-ui/react-dom';
 
 function getReactionSummary(reactions = [], topN = 2) {
   const map = {};
@@ -30,6 +34,35 @@ function Post({ post }) {
 
   // ✅ keep a local copy so we can update reactions instantly
   const [postState, setPostState] = useState(post);
+
+  const [open, setOpen] = useState(false);
+  const [showReport, setShowReport] = useState(false)
+
+  const { refs, floatingStyles } = useFloating({
+    placement: "bottom-start",
+    middleware: [offset(4), flip()],
+  });
+
+
+  const btnRef = refs.setReference;
+  const menuRef = refs.setFloating;
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (
+        open &&
+        refs.reference.current &&
+        refs.floating.current &&
+        !refs.reference.current.contains(e.target) &&
+        !refs.floating.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open, refs]);
 
   // keep in sync if parent sends new post object
   useEffect(() => {
@@ -79,27 +112,43 @@ function Post({ post }) {
   return (
     <div className="post-container">
       <div className="post-heading-container">
-        <div className="post-chat-img-container">
-          <img className="post-chat-img" src={postState.chatId.chatDp} alt="user" />
+        <div className="post-chat-name-img-container">
+          <div className="post-chat-img-container">
+            <img className="post-chat-img" src={postState.chatId.chatDp} alt="user" />
+          </div>
+          <div className="post-names-container">
+            <h3 className="chat-name">
+              <Link
+                to={"/" + postState.chatId._id.toString()}
+                style={{ textDecoration: "none", color: "#c5cad3" }}
+              >
+                {postState.chatId.chatName}
+              </Link>
+            </h3>
+            <p className="post-username">
+              posted by{" "}
+              <Link
+                to={"/profile/" + postState.from._id.toString()}
+                style={{ textDecoration: "none", color: "#878792" }}
+              >
+                {postState.from.firstName + " " + postState.from.lastName}
+              </Link>
+            </p>
+          </div>
         </div>
-        <div className="post-names-container">
-          <h3 className="chat-name">
-            <Link
-              to={"/" + postState.chatId._id.toString()}
-              style={{ textDecoration: "none", color: "#c5cad3" }}
-            >
-              {postState.chatId.chatName}
-            </Link>
-          </h3>
-          <p className="post-username">
-            posted by{" "}
-            <Link
-              to={"/profile/" + postState.from._id.toString()}
-              style={{ textDecoration: "none", color: "#878792" }}
-            >
-              {postState.from.firstName + " " + postState.from.lastName}
-            </Link>
-          </p>
+        <div className="post-menu-container">
+          <button
+            ref={btnRef}
+            className="pm-btn"
+            onClick={() => setOpen((prev) => !prev)}
+          >
+            <img className="pm-btn-img" src={dotsImg} alt="menu" />
+          </button>
+          {open && (
+            <div ref={menuRef} style={floatingStyles} className="pm-menu-container">
+              <button className="pm-inner-btn" onClick={() => { setShowReport(true) }}> <img className="pm-img" src={reportImg} /> Report User</button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -166,6 +215,7 @@ function Post({ post }) {
           Share
         </button>
       </div>
+      { showReport && <ReportMenu targetId={msg._id} targetModel={'Message'} setSelfState={setShowReport}/>}
     </div>
   );
 }

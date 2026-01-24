@@ -5,7 +5,6 @@
     padding-top: 10px;
     background-color: var(--black);
     border-radius: 10px;
-    overflow: hidden;
     border: 1px solid var(--borderColor);
     box-sizing: border-box;
     height: fit-content;
@@ -13,7 +12,13 @@
     margin: 1rem 10rem;
 }
 
-.post-heading-container{
+.post-heading-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.post-heading-container .post-chat-name-img-container{
     display: flex;
     gap: 10px;
     align-items: center;
@@ -29,6 +34,10 @@
     align-items: center;
     justify-content: center;
     border: 1px solid var(--green);
+}
+
+.post-menu-container{
+    margin-right: 10px;
 }
 
 .post-chat-img{
@@ -57,7 +66,7 @@
     justify-content: center;
     align-items: center;
     min-height: 500px;
-    min-width: 500px;
+    min-width: 498spx;
     max-width: 500px;
     min-height: 500px;
     overflow: hidden;
@@ -131,7 +140,6 @@
 .post-reactions-row{
   display: flex;
   gap: 8px;
-  padding: 10px 0 0;
   flex-wrap: wrap;
 }
 
@@ -145,6 +153,7 @@
   font-family: 'GM';
   font-size: 0.9rem;
   background: rgba(255,255,255,0.03);
+  font-family: 'Emoji';
 }
 
 .post-reaction-count{

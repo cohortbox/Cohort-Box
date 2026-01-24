@@ -239,6 +239,7 @@
   place-items: center;
   overflow: hidden;
   margin-top: 12px;
+  border-radius: 20px;
 }
 
 .msg-user-dp{

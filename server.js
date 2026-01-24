@@ -7,7 +7,8 @@ const Chat = require('./models/chatSchema.js');
 const Message = require('./models/messageSchema.js');
 const FriendRequest = require('./models/friendRequestSchema.js');
 const Notification = require('./models/notificationSchema.js');
-const Report = require('./models/reportSchema.js')
+const Report = require('./models/reportSchema.js');
+const Admin = require('./models/adminSchema.js');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -70,6 +71,27 @@ const authTokenSocketIO = (socket, next) => {
         socket.user = user; // attach user info to socket
         next();
     });
+}
+
+const adminAuthAPI = async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ message: 'Admin token required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
+    const admin = await Admin.findById(decoded.adminId);
+
+    if (!admin || !admin.active) {
+      return res.status(401).json({ message: 'Invalid admin' });
+    }
+
+    req.admin = admin;
+    next();
+  } catch {
+    res.status(401).json({ message: 'Invalid admin token' });
+  }
 }
 
 io.use(authTokenSocketIO);
@@ -284,6 +306,49 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+app.post('/api/admin/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    const admin = await Admin.findOne({ email, active: true });
+    if (!admin) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const ok = await bcrypt.compare(password, admin.password);
+    if (!ok) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+        { adminId: admin._id },
+        process.env.ADMIN_JWT_SECRET,
+        { expiresIn: '2h' }
+    );
+
+    res.json({ token });
+});
+
+app.get('/api/admin/auth/me', async (req, res) => {
+    const token = req.cookies.adminToken;
+
+    if (!token) {
+        return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
+        const admin = await Admin.findById(decoded.adminId);
+
+        if (!admin || !admin.active) {
+            return res.status(401).json({ message: 'Invalid admin' });
+        }
+
+        res.status(200).json({ ok: true });
+    } catch {
+        res.status(401).json({ message: 'Invalid token' });
+    }
+});
+
 app.post('/api/logout', (req, res) => {
     res.clearCookie('refreshToken', {
         httpOnly: true,
@@ -447,7 +512,6 @@ app.get('/api/check-chatname', async (req, res) => {
 function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-
 
 app.get('/api/search', authTokenAPI, async (req, res) => {
     try{
