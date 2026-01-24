@@ -18,6 +18,8 @@ import { AdminAuthProvider } from './admin/context/AdminAuthContext';
 import AdminRoute from './admin/components/AdminRoute';
 import AdminLogin from './admin/pages/Login';
 import AdminDashboard from './admin/pages/Dashboard';
+import AdminUsers from './admin/pages/Users';
+import AdminReports from './admin/pages/Reports';
 
 function App() {
   return (
@@ -28,14 +30,21 @@ function App() {
         <Routes>
           {/* ADMIN ROUTES */}
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route
-            path="/admin/*"
-            element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            }
-          />
+          <Route path="/admin" element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          } />
+          <Route path="/admin/users" element={
+            <AdminRoute>
+              <AdminUsers />
+            </AdminRoute>
+          } />
+          <Route path="/admin/reports" element={
+            <AdminRoute>
+              <AdminReports />
+            </AdminRoute>
+          } />
 
           {/* USER ROUTES */}
           <Route path="/signup" element={<Signup />} />

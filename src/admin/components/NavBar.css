@@ -1,0 +1,87 @@
+.nav-container {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 80px;  /* collapsed width */
+    min-width: 75px;
+    padding: 10px 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+    background-color: var(--black);
+    border-right: 1px solid var(--borderColor);
+    transition: width 0.3s ease; /* smooth slide */
+    z-index: 1;
+}
+
+/* Expanded state */
+.nav-container.open {
+    width: 240px; /* expanded width like YouTube */
+    align-items: flex-start;
+    padding-left: 10px;
+}
+
+.nav-container.open .nav-btn {
+  justify-content: flex-start; /* move icons to the left */
+}
+
+/* Toggle button at the very top */
+.nav-toggle {
+    height: 50px;
+    width: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: inherit;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.nav-toggle:hover {
+    background-color: var(--hover);
+}
+
+.nav-btn-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.nav-btn {
+    height: 50px;
+    width: 100%; /* expands with sidebar */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: inherit;
+    border: none;
+    border-radius: 10px;
+    gap: 15px;
+    padding: 0 10px;
+    cursor: pointer;
+    font-family: 'GR';
+}
+
+.nav-btn:hover {
+    background-color: var(--hover);
+}
+
+.nav-btn-img {
+    height: 25px;
+    flex-shrink: 0;
+}
+
+/* Labels */
+.nav-btn span {
+    color: white;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+/* Hide labels when collapsed */
+.nav-container:not(.open) .nav-btn span {
+    display: none;
+}
