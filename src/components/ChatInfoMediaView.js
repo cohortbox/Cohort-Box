@@ -72,7 +72,7 @@ export default function ChatInfoMediaView({items, index, setShowMediaView}){
                     { items[mainIndex].type === 'image' ? 
                         (<img src={items[mainIndex].url}/>) : 
                         items[mainIndex].type === 'video' ? 
-                        (<video src={items[mainIndex].url}/>) : 
+                        (<video src={items[mainIndex].url} controls/>) : 
                         (<AudioPlayer src={items[mainIndex].url}/>)
                     }
                 </div>

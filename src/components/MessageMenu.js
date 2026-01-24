@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useFloating, offset, flip } from "@floating-ui/react";
 import dotsImg from "../images/dots.png";
+import reportImg from '../images/report.png';
 import replyImg from '../images/reply-fontcolor.png';
 import copyImg from '../images/copy-fontcolor.png';
 import reactImg from '../images/reaction-fontcolor.png';
@@ -8,11 +9,13 @@ import delImg from '../images/trash-fontcolor.png';
 import "./MessageMenu.css";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
+import ReportMenu from "./ReportMenu";
 
-function MessageMenu({ msg, setMessages }) {
+function MessageMenu({ setIsReply, setRepliedTo, msg, setMessages }) {
   const {socket} = useSocket();
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
+  const [showReport, setShowReport] = useState(false);
 
   const { refs, floatingStyles } = useFloating({
     placement: "bottom-start",
@@ -52,6 +55,11 @@ function MessageMenu({ msg, setMessages }) {
     setOpen(false)
   }
 
+  function handleReport(e){
+    e.preventDefault();
+    setShowReport(true)
+  }
+
   return (
     <div className="mm-container">
       <button
@@ -64,16 +72,20 @@ function MessageMenu({ msg, setMessages }) {
 
       {open && (
         <div ref={menuRef} style={floatingStyles} className="mm-menu-container">
-            <button className="mm-inner-btn"> <img className="mm-img" src={replyImg}/> Reply</button>
+            <button className="mm-inner-btn" onClick={() => {setIsReply(true); setRepliedTo(msg)}}> <img className="mm-img" src={replyImg}/> Reply</button>
             { msg.type === 'text' &&
               <button className="mm-inner-btn" onClick={handleCopy}><img className="mm-img" src={copyImg}/>Copy</button>
             }
             <button className="mm-inner-btn"><img className="mm-img" src={reactImg}/>React</button>
-            { msg.from === user.id &&
+            { msg.from._id === user.id &&
               <button className="mm-inner-btn" onClick={handleDelete}><img className="mm-img" src={delImg}/>Delete</button>
+            }
+            { msg.from._id !== user.id &&
+              <button className="mm-inner-btn" onClick={handleReport}><img className="mm-img" src={reportImg}/>Report</button>
             }
         </div>
       )}
+      { showReport && <ReportMenu targetId={msg._id} targetModel={'Message'} setSelfState={setShowReport}/>}
     </div>
   );
 }

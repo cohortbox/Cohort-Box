@@ -10,6 +10,7 @@
     padding: 10px 10px;
     box-sizing: border-box;
     flex: 1 1 auto;
+    overflow: hidden;
 }
 
 .live-chat-header{
@@ -48,10 +49,37 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: flex-start;
     padding: 8px 0;
     overflow-y: auto;
     gap: 8px;
+    position: relative;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    overflow-x: hidden;
+    scrollbar-color: var(--small) var(--chatBoxBg); /* thumb, track */
+    scrollbar-width: thin;
+    padding-right: 10px;
+    margin-right: 2rem;
+}
+
+.live-chat-comments-container .pinned-comment-container {
+    left: 0;
+    position: absolute;
+    top: 0;
+    z-index: 2;
+    width: 95%;
+    margin: 10px;
+    height: 38px;
+    border: 1px solid var(--borderColor);
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    box-sizing: border-box;
+    border-radius: 4px;
+    box-shadow: 5px 0px 15px var(--borderColor);
+    background-color: var(--black);
 }
 
 .live-chat-comments-container > p {
@@ -62,6 +90,16 @@
     display: flex;
     align-items: flex-start;
     gap: 5px;
+}
+
+.live-chat-comments-container .comment p {
+    white-space: nowrap;
+}
+
+.live-chat-comments-container .comment:hover .lm-container .lm-btn{
+    opacity: 1;
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 .live-chat-comments-container .comment .comment-msg{

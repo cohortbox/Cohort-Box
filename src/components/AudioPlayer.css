@@ -60,6 +60,6 @@
 
 .audio-time {
   font-size: 12px;
-  color: var(--black);
+  color: var(--fontColor);
   font-family: "GSM";
 }

@@ -1,5 +1,6 @@
 import './Profile.css';
-import userImg from './images/sample.png';
+import dotsImg from "./images/dots.png";
+import reportImg from './images/report.png';
 import NavBar from './components/NavBar';
 import { useAuth } from './context/AuthContext';
 import { useParams, useNavigate, Link } from 'react-router-dom';
@@ -10,23 +11,54 @@ import NavUserButton from './components/NavUserButton';
 import accept from './images/check-gray.png';
 import cancel from './images/close-gray.png';
 import addPhoto from './images/add-photo.png'
+import { useFloating, offset, flip } from '@floating-ui/react-dom';
+import ReportMenu from './components/ReportMenu';
 
 function Profile(){
     
     const [loading, setLoading] = useState(true);
     const { user, accessToken, logout } = useAuth();
     const { id } = useParams();
+    const [open, setOpen] = useState(false);
     const [userObj, setUserObj] = useState(null); 
     const [chats, setChats] = useState([]);
     const [showChats, setShowChats] = useState(true);
     const [friends, setFriends] = useState([]);
     const [friendRequests, setFriendRequests] = useState([]);
+    const [showReport, setShowReport] = useState(false);
+      
     const isMe = useMemo(() => {
         if (!user || !id) return false;
         return String(id) === String(user.id);
     }, [user, id]);
+
     const navigate = useNavigate();
-    
+
+    const { refs, floatingStyles } = useFloating({
+        placement: "bottom-start",
+        middleware: [offset(4), flip()],
+    });
+
+    const btnRef = refs.setReference;
+    const menuRef = refs.setFloating;
+
+    useEffect(() => {
+        function handleClickOutside(e) {
+            if (
+                open &&
+                refs.reference.current &&
+                refs.floating.current &&
+                !refs.reference.current.contains(e.target) &&
+                !refs.floating.current.contains(e.target)
+            ) {
+                setOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [open, refs]);
+
     useEffect(() => {
         if(!user) return;
 
@@ -130,7 +162,7 @@ function Profile(){
             <NavBar/>
             <div className='profile-body-container'>
                 <div className='profile-heading-container'>
-                    <h4 className='profile-heading'>Profile</h4>
+                    <h1 className='profile-heading'>Profile</h1>
                 </div>
                 { loading ? ( <div className='spinner-container'><div className='spinner'></div></div> ) : (
                     <div className='profile-info-section'>
@@ -144,48 +176,71 @@ function Profile(){
                                         </div>
                                     }
                                 </div>
-                                <h4 className='profile-username'>{userObj.firstName + ' ' + userObj.lastName}</h4>
-                            </div>
-                            {userObj._id === user.id ? (
-                                <button className='profile-logout-btn' onClick={handleLogout}>Logout</button>
-                            ) : (
-                                <div className='profile-actions'>
-                                    {(() => {
-                                        const id = String(userObj._id);
-                                        if (friendIds.has(id)) {
-                                            return (
-                                                <button className='profile-action-btn unfriend-btn'>
-                                                    Unfriend
-                                                </button>
-                                            );
-                                        }
-                                        if (outgoingPending.has(id)) {
-                                            return (
-                                                <button className='profile-action-btn cancel-btn'>
-                                                    Cancel Request
-                                                </button>
-                                            );
-                                        }
-                                        if (incomingPending.has(id)) {
-                                            return (
-                                                <div className='profile-request-actions'>
-                                                    <button className='accept-btn'>
-                                                        <img className="request-btn-img" src={accept} alt="accept" />
-                                                    </button>
-                                                    <button className='reject-btn'>
-                                                        <img className="request-btn-img" src={cancel} alt="reject" />
-                                                    </button>
-                                                </div>
-                                            );
-                                        }
-                                        return (
-                                            <button className='profile-action-btn add-btn'>
-                                                Add Friend
-                                            </button>
-                                        );
-                                    })()}
+                                <div className='name-username-container'>
+                                    <h1 className='profile-username'>{userObj.username}</h1>
+                                    <h1 className='profile-name'>{userObj.firstName + ' ' + userObj.lastName}</h1>
                                 </div>
-                            ) }
+                            </div>
+                            <div className='profile-btns-container'>
+                                {
+                                    userObj._id !== user.id && (
+                                        <div className='profile-menu-container'>
+                                            <button
+                                                ref={btnRef}
+                                                className="pm-btn"
+                                                onClick={() => setOpen((prev) => !prev)}
+                                            >
+                                                <img className="pm-btn-img" src={dotsImg} alt="menu" />
+                                            </button>
+                                            {open && (
+                                                <div ref={menuRef} style={floatingStyles} className="pm-menu-container">
+                                                    <button className="pm-inner-btn" onClick={() => { setShowReport(true) }}> <img className="pm-img" src={reportImg} /> Report User</button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                }
+                                {userObj._id === user.id ? (
+                                    <button className='profile-logout-btn' onClick={handleLogout}>Logout</button>
+                                ) : (
+                                    <div className='profile-actions'>
+                                        {(() => {
+                                            const id = String(userObj._id);
+                                            if (friendIds.has(id)) {
+                                                return (
+                                                    <button className='profile-action-btn unfriend-btn'>
+                                                        Unfriend
+                                                    </button>
+                                                );
+                                            }
+                                            if (outgoingPending.has(id)) {
+                                                return (
+                                                    <button className='profile-action-btn cancel-btn'>
+                                                        Cancel Request
+                                                    </button>
+                                                );
+                                            }
+                                            if (incomingPending.has(id)) {
+                                                return (
+                                                    <div className='profile-request-actions'>
+                                                        <button className='accept-btn'>
+                                                            <img className="request-btn-img" src={accept} alt="accept" />
+                                                        </button>
+                                                        <button className='reject-btn'>
+                                                            <img className="request-btn-img" src={cancel} alt="reject" />
+                                                        </button>
+                                                    </div>
+                                                );
+                                            }
+                                            return (
+                                                <button className='profile-action-btn add-btn'>
+                                                    Add Friend
+                                                </button>
+                                            );
+                                        })()}
+                                    </div>
+                                ) }
+                            </div>
                         </div>
 
                         <div className='profile-nav-container'>
@@ -229,6 +284,7 @@ function Profile(){
                     </div> 
                 )}
             </div>
+            { showReport && <ReportMenu targetId={userObj._id} targetModel={'User'} setSelfState={setShowReport}/>}
         </div>
     )
 }

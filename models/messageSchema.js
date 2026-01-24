@@ -22,6 +22,12 @@ const messageSchema = new mongoose.Schema({
     enum: ["text", "media", "file", "audio", "chatInfo"],
     default: "text",
   },
+  isReply: Boolean,
+  repliedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Message',
+    default: null,
+  },
   media: [mediaSchema],
   reactions: [
     {

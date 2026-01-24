@@ -2,6 +2,10 @@
   color: var(--fontColor);
   font-size: 1.6rem;
   margin: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 260px;
 }
 
 .chat-heading-and-btns-container{
@@ -204,9 +208,20 @@
 .other-msg-container{
   display: flex;
   justify-content: left;
-  align-items: center;
   gap: 10px;
   margin: 8px 0;
+}
+
+.my-msg-container .msg-menu-btns-container,
+.other-msg-container .msg-menu-btns-container {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+}
+
+.my-msg-container .msg-menu-btns-container{
+  flex-direction: row-reverse;
 }
 
 .my-msg-container:hover .mm-container .mm-btn,
@@ -217,6 +232,20 @@
   pointer-events: auto;
 }
 
+.msg-user-dp-container{
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.msg-user-dp{
+  height: 30px;
+  object-fit: contain;
+}
+
 .my-msg {
   position: relative;
   text-align: left;
@@ -224,9 +253,39 @@
   width: fit-content;
   background: linear-gradient(to right, var(--triadColor1Pastel), var(--triadColor2Pastel));
   color: var(--fontColor);
-  padding: 2px 8px;
+  padding: 2px 4px;
   border-radius: 5px;
   max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  min-width: 90px;
+}
+
+.reply-msg-container{
+  background-color: var(--chatBoxBg);
+  height: 44px;
+  padding: 4px;
+  box-sizing: border-box;
+  color: var(--fontColor);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  border-radius: 4px;
+  margin: 4px 0;
+  color: var(--small);
+}
+
+.reply-msg-container h1{
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+}
+
+.reply-msg-container p {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.7rem;
 }
 
 .other-msg {
@@ -236,7 +295,7 @@
   width: fit-content;
   background-color: var(--otherMsgBg);
   color: var(--fontColor);
-  padding: 5px 8px;
+  padding: 5px 4px;
   border-radius: 5px;
   display: flex;
   flex-direction: column;
@@ -297,12 +356,14 @@
   overflow-wrap: break-word; /* modern browsers */
   white-space: pre-wrap;  /* respect line breaks, wrap text */
   font-size: 1rem;
-  line-height: 1.4;
+  line-height: 1;
+  margin-top: 4px;
   margin: 2px 0;
   font-family:
       'RR',
       'Emoji';
   color: var(--fontColor);
+  width: 100%;
 }
 
 .my-media-msg{
@@ -396,6 +457,13 @@
   position: relative;
 }
 
+.msg-time{
+  color: var(--small);
+  font-size: 0.8rem;
+  text-align: right;
+  margin-top: 4px;
+}
+
 .video-icon{
   position: absolute;
   top: 50%;
@@ -422,12 +490,74 @@
 }
 
 .msg-input-form {
+  position: relative;
+  top: 0;
+  left: 0;
   display: flex;
   flex-direction: row;
   width: 100%;
   box-sizing: border-box;
   gap: 5px;
   flex-shrink: 0;
+}
+
+.replyee-msg-container{
+  position: absolute;
+  height: 120px;
+  top: -130px;
+  background-color: var(--hover);
+  color: var(--fontColor);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.5rem 0.5rem;
+  box-sizing: border-box;
+  width: 100%;
+  gap: 8px;
+  border-radius: 10px;
+  z-index: 2;
+}
+
+.replyee-msg-container .close-reply-container{
+  width: 100%;
+  display: flex;
+  justify-content: right;
+}
+
+.replyee-msg-container .close-reply-container button{
+  height: 20px;
+  width: 20px;
+  background: none;
+  border: none;
+  transition: 0.2s ease;
+  display: grid;
+  place-items: center;
+}
+
+.replyee-msg-container .close-reply-container button:hover{
+  background-color: var(--hover);
+}
+
+.replyee-msg-container .close-reply-container button img {
+  height: 15px;
+  width: 15px;
+}
+
+.replyee-msg-container h1{
+  font-size: 1.2rem;
+}
+
+.replyee-msg-container p {
+  font-size: 1rem;
+  width: 100%;
+  background-color: var(--chatBoxBg);
+  border-radius: 8px;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  padding: 4px 6px;
+  box-sizing: border-box;
 }
 
 .emoji-btn{

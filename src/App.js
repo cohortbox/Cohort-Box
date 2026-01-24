@@ -10,6 +10,7 @@ import VerifyEmail from './VerifyEmail';
 import PhotoStep from './PhotoStep';
 import FriendRequestPopup from './components/FriendRequestPopup';
 import LandingPage from './LandingPage';
+import Settings from './Settings';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
         <Route path='/verify-email' element={<VerifyEmail/>}/>
         <Route path='/change-dp/:method/:id' element={<PhotoStep/>}/>
         <Route path='/welcome' element={ <LandingPage/> }/>
+        <Route path='/settings' element={ <Settings/> }/>
       </Routes>
     </Router>
   );

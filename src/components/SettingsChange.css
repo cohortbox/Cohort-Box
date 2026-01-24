@@ -1,0 +1,205 @@
+.settings-change-container{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.settings-change-body{
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: auto;
+    z-index: 7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 1px solid var(--borderColor);
+    background-color: var(--black);
+    border-radius: 10px;
+    padding: 1rem 1rem;
+}
+
+.settings-change-body p{
+    color: var(--green);
+    font-size: 0.8rem;
+}
+
+.settings-display-name-form{
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem 0.8rem;
+    width: 100%;
+}
+
+.settings-display-name-form input{
+    flex: 1 1 auto;
+    background-color: var(--chatBoxBg);
+    border: 1px solid var(--borderColor);
+    font-size: 0.9rem;
+    color: var(--fontColor);
+    border-radius: 8px;
+    height: 30px;
+    padding: 0 4px;
+}
+
+.settings-display-name-form button{
+    font-size: 0.9rem;
+    color: var(--black);
+    background-color: var(--green);
+    border: none;
+    padding: 2px 4px;
+    transition: 0.2s ease;
+    border-radius: 8px;
+    height: 30px;
+    width: 80px;
+}
+
+.settings-display-name-form button:hover{
+    background-color: var(--black);
+    color: var(--green);
+    border: 1px solid var(--green);
+}
+
+.settings-about-form{
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem 0.8rem;
+    width: 100%;
+}
+
+.settings-about-form textarea{
+    flex: 1 1 auto;
+    background-color: var(--chatBoxBg);
+    border: 1px solid var(--borderColor);
+    font-size: 0.9rem;
+    color: var(--fontColor);
+    border-radius: 8px;
+    height: 90px;
+    padding: 0 4px;
+    resize: none;
+    font-family: 'GR';
+}
+
+.settings-about-form button{
+    font-size: 0.9rem;
+    color: var(--black);
+    background-color: var(--green);
+    border: none;
+    padding: 2px 4px;
+    transition: 0.2s ease;
+    border-radius: 8px;
+    height: 30px;
+    width: 80px;
+}
+
+.settings-about-form button:hover{
+    background-color: var(--black);
+    color: var(--green);
+    border: 1px solid var(--green);
+}
+
+.settings-password-form{
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem 0.8rem;
+    width: 100%;
+}
+
+.settings-password-form input{
+    flex: 1 1 auto;
+    background-color: var(--chatBoxBg);
+    border: 1px solid var(--borderColor);
+    font-size: 0.9rem;
+    color: var(--fontColor);
+    border-radius: 8px;
+    height: 30px;
+    padding: 0 4px;
+}
+
+.settings-password-form button{
+    font-size: 0.9rem;
+    color: var(--black);
+    background-color: var(--green);
+    border: none;
+    padding: 2px 4px;
+    transition: 0.2s ease;
+    border-radius: 8px;
+    height: 30px;
+    width: 80px;
+}
+
+.settings-password-form button:hover{
+    background-color: var(--black);
+    color: var(--green);
+    border: 1px solid var(--green);
+}
+
+.settings-change-background{
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background-color: #2d2d3254;
+    z-index: 5;
+    transition: 200ms;
+}
+
+.settings-delete-acc-form{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    margin: 1rem 0.8rem;
+    width: 100%;
+}
+
+.settings-delete-acc-form p {
+    font-size: 1.1rem;
+    color: var(--fontColor);
+}
+
+.settings-delete-acc-form div{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.settings-delete-acc-form div button{
+    display: grid;
+    place-content: center;
+    height: 40px;
+    flex: 1 1 auto;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.settings-delete-acc-form div .yes {
+    background-color: #ffcccc;
+    color: red;
+}
+
+.settings-delete-acc-form div .no {
+    background-color: var(--chatBoxBg);
+    color: var(--fontColor);
+}
+
+.hidden{
+    display: none;
+}

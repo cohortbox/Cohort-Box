@@ -50,6 +50,11 @@
     width: 100%;
 }
 
+.signup-inputs-container p {
+    font-size: 0.7rem;
+    color: var(--small);
+}
+
 .signup-input{
     border-radius: 5px;
     height: 35px;
@@ -94,3 +99,79 @@
     text-align: center;
 }
 
+.about-dob-box{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    max-height: 600px;
+    max-width: 450px;
+    height: 100%;
+    width: 100%;
+    padding: 10px 4%;
+    background-color: var(--black);
+    border-radius: 10px;
+    border: 1px solid var(--small);
+    box-sizing: border-box;
+    gap: 10px;
+}
+
+.about-dob-box textarea{
+    width: 100%;
+    resize: none;
+    height: 120px;
+    border-radius: 5px;
+    padding: 0px 10px;
+    border: 1px solid var(--small);
+    background-color: var(--searchBoxBg);
+    font-size: 17px;
+    color: var(--fontColor);
+    transition-duration: 0.4s;
+    font-family: 'GM';
+}
+
+.about-dob-box p {
+    font-size: 0.8rem;
+    color: var(--small);
+}
+
+.about-dob-box div{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 6px;
+}
+
+.about-dob-box div h1{
+    font-size: 1rem;
+    color: var(--fontColor);
+}
+
+.about-dob-box div input {
+    border-radius: 5px;
+    height: 35px;
+    width: 100%;
+    padding: 0px 10px;
+    border: 1px solid var(--small);
+    background-color: var(--searchBoxBg);
+    font-size: 17px;
+    color: var(--fontColor);
+    transition-duration: 0.4s;
+    font-family: 'GM';
+}
+
+.about-dob-box button{
+    height: 38px;
+    width: auto;
+    padding: 0px 10px;
+    border-radius: 5px;
+    border: none;
+    font-size: 16px;
+    font-family: 'GM';
+    font-weight: bold;
+    background-color: var(--green);
+    color: var(--black);
+    transition-duration: 0.2s;
+    cursor: pointer;
+}

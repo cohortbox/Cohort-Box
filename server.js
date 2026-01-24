@@ -7,18 +7,17 @@ const Chat = require('./models/chatSchema.js');
 const Message = require('./models/messageSchema.js');
 const FriendRequest = require('./models/friendRequestSchema.js');
 const Notification = require('./models/notificationSchema.js');
+const Report = require('./models/reportSchema.js')
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const cookieParser = require('cookie-parser');
 const { upload, uploadUserDp, uploadChatDp } = require('./config/CloudinaryConfig.js');
 const path = require('path');
 const { default: mongoose } = require('mongoose');
 const saltRounds = 10;
-require('dotenv').config()
-
+require('dotenv').config();
 
 const liveViewers = new Map();
 const app = express();
@@ -241,6 +240,7 @@ app.get('/api/refresh', (req, res) => {
 
 app.post('/api/login', async (req, res) => {
     try {
+        console.log(req.body)
         const user = await User.findOne({
             email: req.body.email
         })
@@ -511,7 +511,8 @@ app.get('/api/return-users', authTokenAPI, async (req, res) => {
         }
 
         const users = await User.find(filter)
-            .select('_id firstName lastName dp')
+            .select('_id firstName lastName dp username')
+            .populate('friends', '_id firstName lastName dp username')
             .sort({ _id: -1 })
             .limit(limit)
             .lean();
@@ -527,7 +528,7 @@ app.get('/api/return-users', authTokenAPI, async (req, res) => {
 app.get('/api/return-users/:userId', async (req, res) => {
     try {
         const userId = req.params.userId;
-        const userDB = await User.findById(userId).populate('friends', '_id firstName lastName dp').lean();
+        const userDB = await User.findById(userId).populate('friends', '_id firstName lastName dp username').lean();
         console.log(userDB)
         return res.status(200).json({ userDB });
     } catch (err) {
@@ -537,7 +538,7 @@ app.get('/api/return-users/:userId', async (req, res) => {
 
 app.get('/api/return-friends', authTokenAPI, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).populate('friends', '_id firstName lastName').lean();
+        const user = await User.findById(req.user.id).populate('friends', '_id firstName lastName username').lean();
         res.json({ friends: user.friends });
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
@@ -547,7 +548,7 @@ app.get('/api/return-friends', authTokenAPI, async (req, res) => {
 app.get('/api/return-friends/:id', authTokenAPI, async (req, res) => {
     try {
         const id = req.params.id;
-        const user = await User.findById(id).populate('friends', '_id firsName lastName').lean();
+        const user = await User.findById(id).populate('friends', '_id firsName lastName username').lean();
         res.json({ friends: user.friends });
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
@@ -562,8 +563,8 @@ app.get('/api/return-friend-requests', authTokenAPI, async (req, res) => {
             $or: [{ from: userId }, { to: userId }]
         })
             .sort({ createdAt: -1 })
-            .populate('from', '_id firstName lastName')
-            .populate('to', '_id firstName lastName')
+            .populate('from', '_id firstName lastName username')
+            .populate('to', '_id firstName lastName username')
             .lean();
 
         res.status(200).json({ requests });
@@ -646,40 +647,287 @@ app.get('/api/return-user-chats/:id', authTokenAPI, async (req, res) => {
 });
 
 app.get('/api/return-messages/:chatId', authTokenAPI, async (req, res) => {
-  try {
-    console.log('return-msgs')
-    const { chatId } = req.params;
-    const limit = Math.min(parseInt(req.query.limit || '10', 10), 100);
-    const { before } = req.query; // message _id cursor (oldest currently loaded)
+    try {
+        console.log('return-msgs');
+        const { chatId } = req.params;
+        const limit = Math.min(parseInt(req.query.limit || '10', 10), 100);
+        const { before } = req.query; // message _id cursor (oldest currently loaded)
 
-    const filter = { chatId };
+        const filter = { chatId };
 
-    // If before is provided, load messages older than that _id
-    if (before) {
-      filter._id = { $lt: before };
+        // If before is provided, load messages older than that _id
+        if (before) {
+            filter._id = { $lt: before };
+        }
+
+        // Fetch newest -> oldest for pagination efficiency
+        let query = Message.find(filter)
+            .sort({ _id: -1 }) // newest first
+            .limit(limit)
+            .populate('from', '_id firstName lastName dp') // always populate sender
+            .lean();
+
+        // Optionally populate repliedTo if isReply is true
+        // Mongoose populate works even if field is null, so safe to populate always
+        query = query.populate({
+            path: 'repliedTo',
+            populate: { path: 'from', select: '_id firstName lastName dp' }, // populate sender of repliedTo
+        });
+
+        const msgs = await query;
+
+        // Determine if there are more older messages
+        let hasMore = false;
+        if (msgs.length === limit) {
+            const last = msgs[msgs.length - 1]; // oldest in this batch (because sorted desc)
+            const olderExists = await Message.exists({ chatId, _id: { $lt: last._id } });
+            hasMore = !!olderExists;
+        }
+
+        res.status(200).json({ msgs, hasMore });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: 'Server Error!' });
     }
-
-    // Fetch newest -> oldest for pagination efficiency
-    const msgs = await Message.find(filter)
-      .sort({ _id: -1 }) // newest first
-      .limit(limit)
-      .populate('from', '_id firstName lastName dp')
-      .lean();
-
-    // Determine if there are more older messages
-    let hasMore = false;
-    if (msgs.length === limit) {
-      const last = msgs[msgs.length - 1]; // oldest in this batch (because sorted desc)
-      const olderExists = await Message.exists({ chatId, _id: { $lt: last._id } });
-      hasMore = !!olderExists;
-    }
-
-    res.status(200).json({ msgs, hasMore });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server Error!' });
-  }
 });
+
+app.get('/api/user', authTokenAPI, async (req, res) => {
+    try{
+        const userId = new mongoose.Types.ObjectId(req.user.id);
+        if(!userId){
+            return res.json(400).status({message: 'Got no User ID!'});
+        }
+        const user = await User.findById(userId).select('_id firstName lastName dp username about').lean();
+        if(!user){
+            return res.json(404).status({message: 'No User Found!'});
+        }
+        return res.status(200).json({user})
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: 'Server Error!' });
+    }
+})
+
+app.patch('/api/user/display-name', authTokenAPI, async (req, res) => {
+    try{
+        const { firstName, lastName } = req.body;
+
+        if (!firstName || !lastName) {
+            return res.status(400).json({
+                message: 'First name and last name are required'
+            });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id, // set by authTokenAPI
+            {
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+            },
+            {
+                new: true,
+                runValidators: true,
+            }
+        ).select('_id firstName lastName username dp about');
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        return res.status(200).json({
+            message: 'Display name updated successfully',
+            user: updatedUser,
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: 'Server Error!' });
+    }
+});
+
+app.patch('/api/user/about', authTokenAPI, async (req, res) => {
+    try {
+        const { about } = req.body;
+
+        if (!about) {
+            return res.status(400).json({
+                message: 'About field is required',
+            });
+        }
+
+        if (about.length > 120) {
+            return res.status(400).json({
+                message: 'About must be 100 characters or less',
+            });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user.id, // set by authTokenAPI
+            { about: about.trim() },
+            {
+                new: true,
+                runValidators: true,
+            }
+        ).select('_id firstName lastName username dp about');
+
+        if (!updatedUser) {
+            return res.status(404).json({
+                message: 'User not found',
+            });
+        }
+
+        return res.status(200).json({
+            message: 'About updated successfully',
+            user: updatedUser,
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Server Error!' });
+    }
+});
+
+app.patch('/api/user/password', authTokenAPI, async (req, res) => {
+    try {
+        const currentPassword = req.body.currentPassword?.trim();
+        const newPassword = req.body.newPassword?.trim();
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({
+                message: 'Current and new passwords are required',
+            });
+        }
+
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                message: 'Password must be at least 8 characters long',
+            });
+        }
+
+        const user = await User.findById(req.user.id).select('+password_hash');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+
+        if (!isMatch) {
+            return res.status(401).json({
+                message: 'Current password is incorrect',
+            });
+        }
+
+        user.password_hash = await bcrypt.hash(newPassword, saltRounds);
+        await user.save();
+
+        return res.status(200).json({
+            message: 'Password updated successfully',
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Server Error!' });
+    }
+});
+
+app.patch('/api/user/dob', authTokenAPI, async (req,res) => {
+    try {
+        const { dob } = req.body;
+
+        if (!dob) {
+            return res.status(400).json({ message: 'Date of birth is required' });
+        }
+
+        const parsedDOB = new Date(dob);
+
+        if (isNaN(parsedDOB.getTime())) {
+            return res.status(400).json({ message: 'Invalid date format' });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { dob: parsedDOB },
+            { new: true }
+        ).select('dob');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json({
+            message: 'Date of birth updated successfully',
+            dob: user.dob,
+        });
+    } catch (err) {
+        console.error('DOB update error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+})
+
+app.delete('/api/user', authTokenAPI, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const user = await User.findByIdAndDelete(userId);
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found',
+            });
+        }
+
+        // Clear refresh token cookie
+        res.clearCookie('refreshToken', {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: false, // set true in production HTTPS
+        });
+
+        return res.status(200).json({
+            message: 'Account deleted successfully',
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: 'Server Error',
+        });
+    }
+});
+
+app.post('/api/message', authTokenAPI, async (req, res) => {
+    try{
+        let {from, chatId, message, isReply, repliedTo, media, type} = req.body;
+        console.log(req.body)
+        from = new mongoose.Types.ObjectId(from);
+
+        if (!from || !chatId || (!message && (!media || media.length === 0) || (isReply && !repliedTo))) {
+            return res.status(400).json({ message: 'Please send all required fields!' });
+        }
+
+        const newMessage = await Message.create({
+            from,
+            chatId,
+            message,
+            media,
+            isReply,
+            repliedTo,
+            type: type || undefined,
+            reactions: []
+        });
+        const populatedMessage = await Message.findById(newMessage._id)
+            .populate('from', '_id firstName lastName dp')
+            .populate({
+                path: 'repliedTo',
+                select: 'from message media type',
+                populate: { path: 'from', select: '_id firstName lastName dp' }, // sender of repliedTo
+            });
+        return res.status(200).json({message: populatedMessage});
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({message: 'Internal Server Error'})
+    }   
+})
 
 app.post('/api/start-chat', authTokenAPI, async (req, res) => {
     try {
@@ -1124,6 +1372,32 @@ app.get('/api/media/:chatId', authTokenAPI, async (req, res) => {
   }
 });
 
+app.post('/api/report', authTokenAPI, async (req, res) => {
+    try {
+        const { target, targetModel, reason, description } = req.body;
+        const from = req.user.id; // comes from authMiddleware
+
+        // Validate
+        if (!target || !targetModel || !reason) {
+            return res.status(400).json({ message: "target, targetModel, and reason are required" });
+        }
+
+        // Create new report
+        const report = await Report.create({
+            from,
+            target,
+            targetModel,
+            reason,
+            description: description?.trim() || undefined,
+        });
+
+        return res.status(201).json({ report, success: true });
+    } catch (err) {
+        console.error("Report API error:", err);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+})
+
 let onlineUsers = {};
 
 io.on('connection', (socket) => {
@@ -1237,20 +1511,11 @@ io.on('connection', (socket) => {
 
     })
 
-    socket.on('message', async ({ chatId, type, message, media }) => {
-        const from = socket.user.id;
+    socket.on('message', async ({message}) => {
         try {
-            const newMessage = await Message.create({
-                from,
-                chatId,
-                message,
-                media,
-                type: type || undefined,
-                reactions: []
-            });
-            io.to(chatId).emit('message', newMessage)
+            io.to(message.chatId).emit('message', message)
 
-            socket.emit('messageSent', newMessage);
+            socket.emit('messageSent', message);
 
         } catch (err) {
             console.log("Error saving message:", err);
@@ -1339,6 +1604,30 @@ io.on('connection', (socket) => {
             console.log(err)
         }
     })
+
+    socket.on('liveCommentPin', async ({ chatId, comment }) => {
+        try {
+            console.log('hello')
+            if (!chatId || !comment) return;
+
+            const chat = await Chat.findById(chatId).select('participants');
+            if (!chat) return;
+
+            const isParticipant = chat.participants.some(
+                p => p.toString() === socket.user.id
+            );
+
+            if (!isParticipant) {
+                console.warn(`Unauthorized pin attempt by ${socket.user.id}`);
+                return;
+            }
+
+            io.to(chatId).emit('liveCommentPin', { chatId, comment });
+
+        } catch (err) {
+            console.error(err);
+        }
+    });
 
     socket.on('friendRequest', async (request) => {
         try {
@@ -1465,18 +1754,33 @@ io.on('connection', (socket) => {
     })
 
     socket.on('disconnect', () => {
+        let disconnectedUserId = null;
+
         for (let userID in onlineUsers) {
             if (onlineUsers[userID].socketID === socket.id) {
-                console.log(userID, "disconnected");
+                disconnectedUserId = userID;
                 delete onlineUsers[userID];
-                const chatId = socket.chatId;
-                if (chatId && liveViewers.has(chatId)) {
-                    liveViewers.get(chatId).delete(userID);
-                }
                 break;
             }
         }
+
+        const chatId = socket.chatId;
+
+        if (chatId && disconnectedUserId && liveViewers.has(chatId)) {
+            liveViewers.get(chatId).delete(disconnectedUserId);
+
+            const count = liveViewers.get(chatId).size;
+
+            io.to(chatId).emit('leftChat', {
+                chatId,
+                userId: disconnectedUserId,
+                count
+            });
+        }
+
+        console.log('Socket disconnected:', socket.id);
     });
+
 });
 
 // setInterval(() => {

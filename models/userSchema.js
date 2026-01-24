@@ -16,6 +16,10 @@ const userSchema = mongoose.Schema({
     required: true,
     trim: true
   },
+  about: {
+    type: String,
+    trim: true,
+  },
   email: {
     type: String,
     required: true,
@@ -24,7 +28,10 @@ const userSchema = mongoose.Schema({
   },
   password_hash: {
     type: String,
-    required: true
+    required: true,
+  },
+  dob: {
+    type: Date,
   },
   dp: {
     type: String,

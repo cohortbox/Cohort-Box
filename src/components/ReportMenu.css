@@ -1,0 +1,97 @@
+.report-menu-container{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.report-menu-body{
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: auto;
+    z-index: 7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 1px solid var(--borderColor);
+    background-color: var(--black);
+    border-radius: 10px;
+    padding: 1rem 1rem;
+    color: var(--fontColor);
+}
+
+.report-form{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.report-form label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 300px;
+}
+
+.report-form select{
+    color: var(--fontColor);
+    background-color: var(--black);
+    height: 30px;
+    border-radius: 4px;
+}
+
+.report-form .description{
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.report-form textarea{
+    resize: none;
+    width: 100%;
+    height: 200px;
+    background-color: var(--black);
+    color: var(--fontColor);
+    font-family: 'GR';
+    border-radius: 4px;
+    padding: 4px;
+}
+
+.report-menu-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.report-menu-actions button{
+    flex: 1 1 auto;
+    background-color: var(--black);
+    color: var(--green);
+    border: 1px solid var(--green);
+    border-radius: 4px;
+    height: 30px;
+    font-family: 'GR';
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.report-menu-actions button:hover{
+    background-color: var(--green);
+    color: var(--black);
+}
+
+.report-menu-background{
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background-color: #2d2d329a;
+    z-index: 5;
+    transition: 200ms;
+}

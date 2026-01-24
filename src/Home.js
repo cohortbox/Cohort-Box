@@ -124,7 +124,7 @@ function Home() {
       if (user?.id && String(msg.from) !== String(user.id)) {
         markMessagesRead({ chatId: selectedChat._id, msgId: msg._id, to: msg.from });
       }
-      setMessages(prev => [...prev, msg]);
+      setMessages(prev => [msg, ...prev]);
     } else {
       setChats(prev =>
         prev.map(chat =>

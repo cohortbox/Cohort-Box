@@ -76,10 +76,12 @@ function NavBar({ selectedChat }){
                         <span>PROFILE</span>
                     </button>
                 </Link>
-                <button className="nav-btn">
-                    <img src={settingsImg} alt="Settings" className="nav-btn-img"/>
-                    <span>SETTINGS</span>
-                </button>
+                <Link to={user ? `/settings` : '/login'} style={{textDecoration: 'none'}}>
+                    <button className="nav-btn">
+                        <img src={settingsImg} alt="Settings" className="nav-btn-img"/>
+                        <span>SETTINGS</span>
+                    </button>
+                </Link>
             </section>
             {
                 openNotification && <NotificationPanel notificationBtnRef={notificationBtnRef} openNotification={openNotification} setOpenNotification={setOpenNotification}/>

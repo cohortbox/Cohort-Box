@@ -1,9 +1,10 @@
 import './LiveChatCommentsView.css';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {ReactComponent as MyIcon} from '../images/send.svg';
 import { useAuth } from '../context/AuthContext';
 import closeImg from '../images/close-gray.png';
 import { useSocket, useSocketEvent } from '../context/SocketContext';
+import LiveCommentMenu from './LiveCommentMenu';
 
 export default function LiveChatView({selectedChat, setShowLiveChat}){
     const senderColors = [
@@ -22,15 +23,36 @@ export default function LiveChatView({selectedChat, setShowLiveChat}){
     const {user, accessToken} = useAuth();
     const [comments, setComments] = useState([]);
     const [message, setMessage] = useState('');
+    const [pinnedComment, setPinnedComment] = useState(null);
+
+    const bottomRef = useRef(null);
 
     useSocketEvent('liveComment', ({chatId, comment}) => {
-    if(chatId === selectedChat._id){
-        if(!comment.from._id == user.id) {
-            setComments(prev => [...prev, comment]);
+        console.log('A live comment came')
+        if (String(chatId) === String(selectedChat._id)) {
+            if (comment.from._id !== user.id) {
+                setComments(prev => [...prev, comment]);
+            }
+
         }
-        
-    }
     })
+
+    useSocketEvent('liveCommentPin', ({chatId, comment}) => {
+        console.log('hello from liveCommentPin', comment, chatId)
+        if (chatId === selectedChat._id) {
+            setPinnedComment(comment);
+        }
+    })
+
+    useEffect(() => {
+        if (!pinnedComment) return;
+
+        const timer = setTimeout(() => {
+            setPinnedComment(null);
+        }, 30000); // 30 seconds
+
+        return () => clearTimeout(timer);
+    }, [pinnedComment]);
 
     useEffect(() => {
         if(!selectedChat) return;
@@ -39,8 +61,6 @@ export default function LiveChatView({selectedChat, setShowLiveChat}){
 
     function sendComment() {
         if(!message || !message.trim()) return;
-        console.log('hello');
-
         const payload = {
             chatId: selectedChat._id,
             message,
@@ -68,7 +88,7 @@ export default function LiveChatView({selectedChat, setShowLiveChat}){
         }).catch(err => {
             console.log(err)
         })
-
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
         setMessage('');
     }
 
@@ -80,15 +100,26 @@ export default function LiveChatView({selectedChat, setShowLiveChat}){
             </div>
             <div className='live-chat-comments-container'>
                 {
+                    pinnedComment && 
+                    <div className='pinned-comment-container'>
+                        <div className='comment'>
+                            <p className='comment-username' style={{color: senderColors[Math.floor(Math.random() * senderColors.length - 1)]}}>{pinnedComment?.from?.firstName + ' ' + pinnedComment?.from?.lastName}:</p>
+                            <p className='comment-msg'>{pinnedComment?.message}</p>
+                        </div>
+                    </div>
+                }
+                {
                     comments.length === 0 ? (
                         <p>No Comments!</p>
                     ) : comments.map((value, index) => (
                         <div key={index} className='comment'>
                             <p className='comment-username' style={{color: senderColors[index%senderColors.length]}}>{value.from.firstName + ' ' + value.from.lastName}:</p>
                             <p className='comment-msg'>{value.message}</p>
+                            <LiveCommentMenu selectedChat={selectedChat} comment={value}/>
                         </div>
                     ))
                 }
+                <div ref={bottomRef} />
             </div>
             <div className='comment-msg-input-container'>
                 <input 

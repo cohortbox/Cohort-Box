@@ -3,7 +3,7 @@ import MessageMenu from './MessageMenu.js';
 import ReactionMenu from './ReactionMenu.js';
 import { useAuth } from '../context/AuthContext.js';
 
-export default function TextMessage({ msg, sender, setMessages, selectedChat }){
+export default function TextMessage({ setIsReply, setRepliedTo, msg, sender, setMessages, selectedChat }){
     const { user } = useAuth();
     const senderColors = ['#c76060', '#c79569', '#c7c569', '#6ec769', '#69c2c7', '#6974c7', '#9769c7', '#c769bf']
 
@@ -15,27 +15,60 @@ export default function TextMessage({ msg, sender, setMessages, selectedChat }){
         return Object.entries(map).map(([emoji, count]) => ({ emoji, count }));
     }
 
+    function formatTime(ts) {
+        const date = new Date(ts);
+        return date.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
     const senderIndex = sender 
     ? selectedChat.participants.findIndex(p => p._id === sender._id)
     : 0;
 
     return(
-        <div className={msg.from === user.id ? "my-msg-container" : "other-msg-container"}>
-            <div className={msg.from === user.id ? "my-msg" : "other-msg"}>
-                { msg.from !== user.id && sender && (
-                <h4 className='sender-name' style={{color: `${senderColors[senderIndex]}`}}>{sender.firstName + ' ' + sender.lastName }</h4>
-                ) }
-                <span className="msg-text">{msg.message}</span>
-                {msg.reactions?.length > 0 && (
-                <div className={msg.from === user.id ? "my-reactions" : "other-reactions"}>
-                    <span className="reaction-bubble">
-                    <span>{groupReactions(msg.reactions)[0].emoji}</span>{groupReactions(msg.reactions)[1] &&<span>{groupReactions(msg.reactions)[1]?.emoji}</span>}{msg.reactions.length > 1 && <span className="reaction-count">{msg.reactions.length}</span>}
-                    </span>
+        <div className={String(msg.from._id) === String(user.id) ? "my-msg-container" : "other-msg-container"}>
+            { String(msg.from._id) !== String(user.id) &&
+                <div className='msg-user-dp-container'>
+                    <img className='msg-user-dp' src={msg.from.dp}/>
                 </div>
-                )}
+            }
+            <div className='msg-menu-btns-container'>
+                <div className={msg.from._id === user.id ? "my-msg" : "other-msg"}>
+                    {msg.from._id !== user.id && sender && (
+                        <h4 className='sender-name' style={{ color: `${senderColors[senderIndex]}` }}>{sender.firstName + ' ' + sender.lastName}</h4>
+                    )}
+                    {msg.isReply && msg.repliedTo && (
+                        <div className="reply-msg-container">
+                            <h1>
+                                {msg.repliedTo.from?.firstName || ''}{' '}
+                                {msg.repliedTo.from?.lastName || ''}
+                            </h1>
+
+                            <p>
+                                {msg.repliedTo.type === 'text' && msg.repliedTo.message}
+
+                                {msg.repliedTo.type === 'media' &&
+                                    `${msg.repliedTo.media?.length || 0} media`}
+
+                                {msg.repliedTo.type === 'audio' && 'Audio Message'}
+                            </p>
+                        </div>
+                    )}
+                    <span className="msg-text">{msg.message}</span>
+                    <span className="msg-time">{formatTime(msg.timestamp)}</span>
+                    {msg.reactions?.length > 0 && (
+                    <div className={msg.from === user.id ? "my-reactions" : "other-reactions"}>
+                        <span className="reaction-bubble">
+                        <span>{groupReactions(msg.reactions)[0].emoji}</span>{groupReactions(msg.reactions)[1] &&<span>{groupReactions(msg.reactions)[1]?.emoji}</span>}{msg.reactions.length > 1 && <span className="reaction-count">{msg.reactions.length}</span>}
+                        </span>
+                    </div>
+                    )}
+                </div>
+                <MessageMenu setIsReply={setIsReply} setRepliedTo={setRepliedTo} msg={msg} setMessages={setMessages}/>
+                <ReactionMenu msg={msg}/>
             </div>
-            <MessageMenu msg={msg} setMessages={setMessages}/>
-            <ReactionMenu msg={msg}/>
         </div>   
     )
 }

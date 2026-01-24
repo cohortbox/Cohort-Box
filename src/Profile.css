@@ -21,7 +21,7 @@
 }
 
 .profile-heading{
-    font-size: 1.5rem;
+    font-size: 1rem;
     font-family: 'GB';
     color: var(--fontColor);
 }
@@ -91,6 +91,96 @@
     height: 100px;
     border-radius: 50px;
 }
+
+.name-username-container{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.profile-username{
+    font-size: 1.3rem;
+    color: var(--fontColor);
+}
+
+.profile-name{
+    font-size: 1rem;
+    color: var(--small);
+}
+
+.profile-btns-container{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-menu-container{
+    position: relative;
+    display: flex;
+    align-items: center;
+    z-index: 1;
+    transition: 5ms;
+    height: fit-content;
+}
+
+.pm-menu-container{
+    position: absolute;
+    bottom: 0px;
+    height: fit-content;
+    width: 120px;
+    border: 1px solid var(--small);
+    border-radius: 5px;
+    background-color: var(--black);
+    animation: myAnimation 0.2s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 5px 0;
+    box-sizing: border-box;
+    z-index: 3;
+}
+
+.pm-btn{
+    height: 35px;
+    width: 35px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: inherit;
+    border: none;
+    transition: opacity 0.2s ease;
+}
+
+.pm-btn:hover{
+    background-color: rgba(255, 255, 255, 0.178);
+}
+
+.pm-btn-img{
+    height: 30px;
+}
+
+.pm-inner-btn{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--fontColor);
+    font-family: 'GM';
+    width: 100%;
+    background-color: inherit;
+    border: none;
+    padding: 5px 5px;
+}
+
+.pm-inner-btn:hover{
+    background-color: var(--hover);
+}
+
+.pm-img{
+    height: 20px;
+}
+
 
 .profile-logout-btn{
     border: 1px solid var(--green);
