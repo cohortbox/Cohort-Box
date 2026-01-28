@@ -121,3 +121,40 @@
     height: 20px;
     cursor: pointer;
 }
+
+@media (max-width: 900px){
+    .cn-container{
+        width: 280px;
+        min-width: 280px;
+    }
+
+    .cn-heading-container{
+        height: 35px;
+    }
+
+    .cn-heading{
+        font-size: 1rem;
+    }
+
+    .cn-body-container{
+        padding: 10px 5px 0 5px;
+        gap: 15px;
+    }
+
+    .cn-searchbar-container{
+        height: 30px;
+        padding: 5px 20px;
+    }
+
+    .cn-search-icon{
+        height: 15px;
+    }
+
+    .cn-search-input{
+        font-size: 0.8rem;
+    }
+
+    .cn-filter-btn{
+        height: 25px;
+    }
+}

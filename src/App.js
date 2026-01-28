@@ -12,14 +12,15 @@ import PhotoStep from './PhotoStep';
 import FriendRequestPopup from './components/FriendRequestPopup';
 import LandingPage from './LandingPage';
 import Settings from './Settings';
+import Crash from './Crash';
 
 // ADMIN IMPORTS
 import { AdminAuthProvider } from './admin/context/AdminAuthContext';
 import AdminRoute from './admin/components/AdminRoute';
-import AdminLogin from './admin/pages/Login';
-import AdminDashboard from './admin/pages/Dashboard';
-import AdminUsers from './admin/pages/Users';
-import AdminReports from './admin/pages/Reports';
+import AdminLogin from './admin/Login';
+import AdminDashboard from './admin/Dashboard';
+import AdminUsers from './admin/Users';
+import AdminReports from './admin/Reports';
 
 function App() {
   return (
@@ -56,6 +57,7 @@ function App() {
           <Route path="/change-dp/:method/:id" element={<PhotoStep />} />
           <Route path="/welcome" element={<LandingPage />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/crash" element={<Crash />} />
 
           {/* HOME / CHAT */}
           <Route path="/:chatId?" element={<Home />} />

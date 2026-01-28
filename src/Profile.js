@@ -78,6 +78,7 @@ function Profile(){
             setLoading(false);
         }).catch(err => {
             console.error(err);
+            navigate('/crash')
         })    
     },[user, accessToken, id]);
 
@@ -96,6 +97,9 @@ function Profile(){
             return response.json();
         }).then(data => {
             setChats(data.chats)
+        }).catch(err => {
+            console.error(err);
+            navigate('/crash')
         })
 
     },[user, loading, id]);
@@ -112,7 +116,10 @@ function Profile(){
             return r.json();
         })
         .then(data => setFriendRequests(data.requests || []))
-        .catch(err => console.error('Error fetching friend requests:', err));
+        .catch(err => {
+            console.error('Error fetching friend requests:', err);
+            navigate('/crash');
+        });
     }, [accessToken, loading]);
 
     useSocketEvent(

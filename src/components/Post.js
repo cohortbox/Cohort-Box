@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import left from "../images/left-arrow.png";
 import right from "../images/right-arrow.png";
 import VideoPlayer from "./VideoPlayer";
+import AudioPlayer from "./AudioPlayer";
 import ReactionMenu from "./ReactionMenu";
 import dotsImg from '../images/dots.png';
 import reportImg from '../images/report.png';
@@ -153,11 +154,20 @@ function Post({ post }) {
       </div>
 
       <div className="post-media-container">
-        {postState.media[mainIndex].type === "image" ? (
-          <img className="post-media" src={postState.media[mainIndex].url} alt="media" />
-        ) : (
-          <VideoPlayer src={postState.media[mainIndex].url} />
-        )}
+        {postState.media[mainIndex].type === "image" && (
+            <img className="post-media" src={postState.media[mainIndex].url} alt="media" />
+          )
+        }
+
+        {postState.media[mainIndex].type === "video" && (
+            <video controlsList="nodownload" className="post-media" src={postState.media[mainIndex].url} controls/>
+          )
+        }
+
+        {postState.media[mainIndex].type === "audio" && (
+            <AudioPlayer isPost={true} src={postState.media[mainIndex].url} />
+          )
+        }
 
         {postState.media.length > 1 && (
           <div className="media-controls-container">

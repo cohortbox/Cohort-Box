@@ -2,9 +2,11 @@
 import './AudioPlayer.css';
 import { useState, useRef, useEffect } from "react";
 import playIcon from "../images/play-black.png";
+import playFontColorIcon from "../images/play.png";
 import pauseIcon from "../images/pause-black.png";
+import pauseFontColorIcon from "../images/pause.png";
 
-function AudioPlayer({ src }) {
+function AudioPlayer({ src, isPost = false }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0); // percentage (0-100)
   const [duration, setDuration] = useState("0:00");
@@ -79,18 +81,18 @@ function AudioPlayer({ src }) {
   }
 
   return (
-    <div className="audio-player">
+    <div className={ isPost ?  "audio-player post-media is-post" : "audio-player"}>
       <audio ref={audioRef} src={src} preload="metadata" />
       <button className="audio-btn" onClick={togglePlay}>
         <img
-          src={isPlaying ? pauseIcon : playIcon}
+          src={isPlaying ? (isPost ? pauseFontColorIcon : pauseIcon) : (isPost ? playFontColorIcon : playIcon)}
           alt={isPlaying ? "Pause" : "Play"}
           className="audio-play-icon"
         />
       </button>
       <input
         type="range"
-        className="audio-slider"
+        className={isPost ? "audio-slider is-post-audio-slider" : "audio-slider"}
         value={progress}
         onChange={handleSeek}
         onMouseDown={handleMouseDown}

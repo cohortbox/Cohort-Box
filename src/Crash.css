@@ -1,0 +1,45 @@
+.crash-container{
+    width: 100vw;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--black);
+    gap: 2rem;
+}
+
+.crash-container h1 {
+    color: var(--fontColor);
+    font-size: 2.3rem;
+    font-family: 'GB';
+}
+
+.crash-container img{
+    width: 600px;
+}
+
+.crash-container p {
+    color: var(--fontColor);
+    font-size: 1.2rem;
+}
+
+.crash-container button {
+    width: 200px;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border-radius: 100px;
+    background-color: var(--green);
+    color: var(--black);
+    transition: 0.2s all ease;
+    border: none;
+    font-family: 'GB';
+}
+
+.crash-container button:hover {
+    border-radius: 8px;
+}
+
+.text-green{
+    color: var(--green);
+}

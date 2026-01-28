@@ -1,6 +1,6 @@
 import './HomeNav.css';
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import searchIcon from '../images/magnifying-glass.png';
 import NavChatButton from './NavChatButton';
 import NavUserButton from './NavUserButton';
@@ -25,6 +25,7 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
   const [chatLoading, setChatLoading] = useState(false);
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
   const [userLoading, setUserLoading] = useState(false);
+  const navigate = useNavigate();
   
   const chatsContainerRef = useRef(null);
   const loadMoreChatsRef = useRef(null);
@@ -77,6 +78,7 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
       }
     } catch (err) {
       console.error(err.message || 'Failed to load chats');
+      navigate('/crash')
     } finally {
       setChatLoading(false);
     }
@@ -129,6 +131,7 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
       }
     } catch (err) {
       console.error(err.message || 'Failed to load users');
+      navigate('/crash');
     } finally {
       setUserLoading(false);
     }

@@ -42,7 +42,10 @@ function Home() {
         return response.json();
       })
       .then(data => setSelectedChat(data.chat))
-      .catch(console.error);
+      .catch(err => {
+        console.error(err);
+        navigate('/crash')
+      });
   }, [paramChatId, accessToken, loading]);
 
   useEffect(() => {
@@ -58,7 +61,10 @@ function Home() {
         return response.json();
       })
       .then(data => setChats(data.chats))
-      .catch(console.error);
+      .catch(err => {
+        console.error(err);
+        navigate('/crash');
+      });
   }, [accessToken, loading]);
 
   useEffect(() => {
@@ -73,7 +79,10 @@ function Home() {
         console.log(data.users)
         setUsers(data.users || []);
       })
-      .catch(console.error);
+      .catch(err => {
+        console.error(err);
+        navigate('/crash');
+      });
   }, [accessToken, loading]);
 
   const updateReactions = (existing = [], data) => {

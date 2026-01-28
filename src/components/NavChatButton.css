@@ -66,3 +66,18 @@
 .ncbs-live-count-container img{
     height: 20px;
 }
+
+@media (max-width: 900px) {
+    .ncbs-container{
+        height: 55px;
+    }
+
+    .ncbs-img-container{
+        height: 35px;
+        width: 35px;
+    }
+
+    .ncbs-img{
+        height: 35px;
+    }
+}

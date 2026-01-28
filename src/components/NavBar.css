@@ -1,7 +1,7 @@
 .nav-container {
     position: sticky;
     top: 0;
-    height: 100vh;
+    height: 100dvh;
     width: 80px;  /* collapsed width */
     min-width: 75px;
     padding: 10px 5px;
@@ -18,7 +18,7 @@
 
 /* Expanded state */
 .nav-container.open {
-    width: 240px; /* expanded width like YouTube */
+    width: 250px; /* expanded width like YouTube */
     align-items: flex-start;
     padding-left: 10px;
 }
@@ -84,4 +84,23 @@
 /* Hide labels when collapsed */
 .nav-container:not(.open) .nav-btn span {
     display: none;
+}
+
+@media (max-width: 900px) {
+    .nav-container{
+        gap: 10px;
+        justify-content: normal;
+        width: 70px;
+    }
+    .nav-btn-container{
+        gap: 4px;
+        flex: 1 1 auto;
+        justify-content: space-between;
+    }
+    .nav-btn{
+        height: 30px;
+    }
+    .nav-btn-img{
+        height: 20px;
+    }
 }

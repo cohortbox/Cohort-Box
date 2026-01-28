@@ -652,3 +652,42 @@
 .audio-btn-img{
   height: 100%;
 }
+
+@media (max-width: 900px){
+  .chat-heading-and-btns-container{
+    padding: 10px 6px;
+  }
+  .chat-box-heading{
+    font-size: 1rem;
+    max-width: 90px;
+  }
+  .chatDp{
+    height: 35px;
+    width: 35px;
+  }
+  .subscribe-btn{
+    font-family: 'GR';
+    height: 25px;
+  }
+  .chat-btns-container{
+    gap: 8px;
+  }
+  .show-live-chat-btn{
+    height: 30px;
+    width: 30px;
+  }
+  .chat-info-btn{
+    height: 30px;
+    width: 30px;
+  }
+  .chat-info-img{
+    height: 15px;
+  }
+  .chat-close-btn{
+    height: 30px;
+    width: 30px;
+  }
+  .chat-close-img{
+    height: 15px;
+  }
+}

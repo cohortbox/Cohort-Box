@@ -13,43 +13,45 @@ export default function AudioMessage({ setIsReply, setRepliedTo, msg, setMessage
     : 0;
 
     return(
-      <div className={user.id === msg.from._id ? 'my-msg-container' : 'other-msg-container'} onClick={() => setClickedMsg(msg)}>
-        {String(msg.from._id) !== String(user.id) &&
-            <div className='msg-user-dp-container'>
-                <img className='msg-user-dp' src={msg.from.dp} />
-            </div>
-        }
-        <div className={ msg.from._id === user.id ? "my-media-msg" : "other-media-msg" }>
-            <div className='name-menu-container'>
-                { msg.from._id !== user.id && sender && (
-                    <h4 className='sender-name' style={{color: `${senderColors[senderIndex]}`}}>{sender.firstName + ' ' + sender.lastName }</h4>
-                ) }
-            </div>
-                {msg.isReply && msg.repliedTo && (
-                    <div className="reply-msg-container">
-                        <h1>
-                            {msg.repliedTo.from?.firstName || ''}{' '}
-                            {msg.repliedTo.from?.lastName || ''}
-                        </h1>
-
-                        <p>
-                            {msg.repliedTo.type === 'text' && msg.repliedTo.message}
-
-                            {msg.repliedTo.type === 'media' &&
-                                `${msg.repliedTo.media?.length || 0} media`}
-
-                            {msg.repliedTo.type === 'audio' && 'Audio Message'}
-                        </p>
+        <div className={user.id === msg.from._id ? 'my-msg-container' : 'other-msg-container'} onClick={() => setClickedMsg(msg)}>
+            {String(msg.from._id) !== String(user.id) &&
+                <div className='msg-user-dp-container'>
+                    <img className='msg-user-dp' src={msg.from.dp} />
+                </div>
+            }
+            <div className='msg-menu-btns-container'>
+                <div className={ msg.from._id === user.id ? "my-media-msg" : "other-media-msg" }>
+                    <div className='name-menu-container'>
+                        { msg.from._id !== user.id && sender && (
+                            <h4 className='sender-name' style={{color: `${senderColors[senderIndex]}`}}>{sender.firstName + ' ' + sender.lastName }</h4>
+                        ) }
                     </div>
-                )}
-            <div className='msg-media-wrapper audio-msg-wrapper' onClick={() => {return}}>
-                <div className='audio-container'>
-                    <AudioPlayer src={msg.media[0].url}/>
-                </div>   
+                        {msg.isReply && msg.repliedTo && (
+                            <div className="reply-msg-container">
+                                <h1>
+                                    {msg.repliedTo.from?.firstName || ''}{' '}
+                                    {msg.repliedTo.from?.lastName || ''}
+                                </h1>
+
+                                <p>
+                                    {msg.repliedTo.type === 'text' && msg.repliedTo.message}
+
+                                    {msg.repliedTo.type === 'media' &&
+                                        `${msg.repliedTo.media?.length || 0} media`}
+
+                                    {msg.repliedTo.type === 'audio' && 'Audio Message'}
+                                </p>
+                            </div>
+                        )}
+                    <div className='msg-media-wrapper audio-msg-wrapper' onClick={() => {return}}>
+                        <div className='audio-container'>
+                            <AudioPlayer src={msg.media[0].url}/>
+                        </div>   
+                    </div>
+                </div>
+                <MessageMenu setIsReply={setIsReply} setRepliedTo={setRepliedTo} msg={msg} setMessages={setMessages}/>
+                <ReactionMenu msg={msg}/>
             </div>
-        </div>
-        <MessageMenu setIsReply={setIsReply} setRepliedTo={setRepliedTo} msg={msg} setMessages={setMessages}/>
-        <ReactionMenu msg={msg}/>
-      </div>  
+        </div>  
     )
 }

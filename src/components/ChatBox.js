@@ -122,6 +122,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
       // ✅ DO NOT touch scrollTop
     } catch (e) {
       console.error(e);
+      navigate('/crash')
     } finally {
       setLoadingMore(false);
       loadingMoreRef.current = false;
@@ -212,11 +213,15 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
               if (cancelled) return;
               if (d?.notification) socket.emit("notification", d.notification);
             })
-            .catch((err) => console.error(err));
+            .catch((err) => {
+              console.error(err);
+              navigate('/crash')
+            });
         });
       }
     } catch (err) {
       console.error(err);
+      navigate('/crash')
     } finally {
       if (!cancelled) {
         setLoadingMore(false);
@@ -288,7 +293,8 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
         subscribers: data.subscribers
       }))
     }).catch(err => {
-      console.error(err)
+      console.error(err);
+      navigate('/crash')
     })
   }
 
@@ -312,7 +318,8 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
         subscribers: data.subscribers
       }))
     }).catch(err => {
-      console.error(err)
+      console.error(err);
+      navigate('/crash')
     })
   }
 
@@ -387,6 +394,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
               }
             }).catch(err => {
               console.error(err);
+              navigate('/crash')
             });
           setIsReply(false);
           setRepliedTo(null);
@@ -436,10 +444,14 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
               }
             }).catch(err => {
               console.error(err);
+              navigate('/crash')
             })
             socket.emit("typing", { chatId: selectedChat._id, userId: user.id, typing: false });
             setFiles([])
             setMessage("");
+          }).catch(err => {
+            console.error(err);
+            navigate('/crash')
           })
         }
       }
@@ -479,14 +491,39 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
           return response.json();
         }).then(data => {
           const media = data.media;
-          const newMessage = {
+          const newMessageBody = {
             from: user.id,
             chatId: selectedChat._id,
             type: 'audio',
             message: ' ',
             media,
           }
-          socket.emit('message', newMessage);
+          fetch('/api/message', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'authorization': `Bearer ${accessToken}`,
+              },
+              body: JSON.stringify(newMessageBody),
+            }).then(res => {
+              if(!res.ok){
+                throw new Error();
+              }
+              return res.json();
+            }).then(data => {
+              if(data.message){
+                socket.emit("message", data.message);    
+              }
+            }).catch(err => {
+              console.error(err);
+              navigate('/crash')
+            })
+            socket.emit("typing", { chatId: selectedChat._id, userId: user.id, typing: false });
+            setFiles([])
+            setMessage("");
+        }).catch(err => {
+          console.error(err);
+          navigate('/crash')
         })
       };
 
@@ -541,7 +578,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
             </div>
             <p className='chat-live-count'><img className='chat-live-count-img' src={eyeIcon}/> {chatLiveCount}</p>
             <div className='chat-btns-container'>
-              <button className='show-live-chat-btn' onClick={() => setShowLiveChat(prev => !prev)}><MyIcon fill='#c5cad3' style={{height: '20px', width: '20px', color: '#c5cad3'}}/></button>
+              <button className='show-live-chat-btn' onClick={() => setShowLiveChat(prev => !prev)}><MyIcon fill='#c5cad3' style={{height: '15px', width: '15px', color: '#c5cad3'}}/></button>
               <button className='chat-info-btn' onClick={() => setChatInfoClass('')}><img className='chat-info-img' src={dotsImg}/></button>
               <button className='chat-close-btn' onClick={handleCloseChat}><img className='chat-close-img' src={closeImg}/></button>
             </div>
