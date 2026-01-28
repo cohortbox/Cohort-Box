@@ -33,6 +33,11 @@ const userSchema = mongoose.Schema({
   dob: {
     type: Date,
   },
+  status: {
+    type: String,
+    enum: ['active', 'warned', 'banned'],
+    default: 'active',
+  },
   dp: {
     type: String,
     default: 'https://res.cloudinary.com/dzhvgedcy/image/upload/v1762806265/user-dps/rffbg5mugkfttsmsytri.png'
@@ -44,6 +49,10 @@ const userSchema = mongoose.Schema({
   isVerified: { type: Boolean, default: false },
   verificationCode: String,
   verificationExpires: Date,
+  passwordChangeCode: String,
+  passwordChangeExpires: Date,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
   createdAt: {
     type: Date,
     default: Date.now

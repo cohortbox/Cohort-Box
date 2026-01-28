@@ -86,7 +86,7 @@ function Login(){
                             <input type='password' placeholder='Password' className='login-input' id='password'/>
                             <p className='invalid-password' id='invalidPassword'>Invalid Password</p>
                         </div>
-                        <button type='button' className='forgot-password-btn'>Forgot Password?</button>
+                        <Link to='/forgot-password' className='link-to-signup' style={{textDecoration: 'none', color: '#878792'}}><button type='button' className='forgot-password-btn'>Forgot Password?</button></Link>
                     </div>
                     <button type='submit' className='login-btn' typeof='submit'>Login</button>
                     <Link to='/signup' className='link-to-signup'>Need a new account!</Link>

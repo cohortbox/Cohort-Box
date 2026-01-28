@@ -2,10 +2,10 @@
     import { Link } from 'react-router-dom';
     import { useState } from 'react';
     import reportImg from '../../images/report.png';
-    import profileImg from '../images/profile-user.png';
-    import peopleImg from '../images/group.png';
-    import logoImg from '../images/logo.png';
-    import menuImg from '../images/menu.png';
+    import profileImg from '../../images/profile-user.png';
+    import peopleImg from '../../images/group.png';
+    import logoImg from '../../images/logo.png';
+    import menuImg from '../../images/menu.png';
 
     function NavBar(){
         const [open, setOpen] = useState(false);

@@ -61,33 +61,33 @@ export default function VerifyEmail(){
     }, [code]);
 
     async function handleResend() {
-    if (!canResend) return;
+        if (!canResend) return;
 
-    const res = await fetch('/api/update-verification-token', {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email }),
-    });
+        const res = await fetch('/api/update-verification-token', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: user.email }),
+        });
 
-    const data = await res.json();
+        const data = await res.json();
 
-    if (data.codeSent) {
-        // restart timer
-        setCanResend(false);
-        setCooldown(60);
+        if (data.codeSent) {
+            // restart timer
+            setCanResend(false);
+            setCooldown(60);
 
-        const interval = setInterval(() => {
-            setCooldown(prev => {
-                if (prev <= 1) {
-                    clearInterval(interval);
-                    setCanResend(true);
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
+            const interval = setInterval(() => {
+                setCooldown(prev => {
+                    if (prev <= 1) {
+                        clearInterval(interval);
+                        setCanResend(true);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
     }
-}
 
 
     return (

@@ -1,9 +1,9 @@
 import './Dashboard.css';
-import NavBar from '../components/NavBar';
+import NavBar from './components/NavBar';
 
 export default function Dashbooard(){
     return (
-        <div className='dashboard'>
+        <div className='admin-dashboard'>
             <NavBar />
             <div className='dashboard-container'>
                 <h1>

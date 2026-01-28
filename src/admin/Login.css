@@ -1,0 +1,120 @@
+.login{
+    height: 100dvh;
+    width: 100vw;
+    margin: 0;
+    background-color: var(--black);
+    background-size: 100% 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 0 5%;
+    box-sizing: border-box;
+    font-family: "GB";
+}
+
+.login-box{
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    max-height: 600px;
+    max-width: 450px;
+    height: 100%;
+    width: 100%;
+    padding: 0 4%;
+    background-color: var(--black);
+    border: 1px solid var(--small);
+    border-radius: 10px;
+}
+
+.login-head{
+    font-size: 40px;
+    margin: 30px 5px;
+    color: var(--green);
+}
+
+.login-form{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.inputs-container{
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width:100%;
+}
+
+.login-input{
+    box-sizing: border-box;
+    border-radius: 5px;
+    height: 35px;
+    width: 100%;
+    padding: 0px 10px;
+    border: 1px solid var(--small);
+    background-color: var(--searchBoxBg);
+    font-size: 17px;
+    transition-duration: 0.4s;
+    color: var(--fontColor);
+}
+
+.login-input:focus{
+    outline: 1px solid var(--small);
+}
+
+.login-btn{
+    height: 38px;
+    width: 100%;
+    padding: 0px 10px;
+    border-radius: 5px;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: var(--green);
+    color: var(--black);
+    transition-duration: 0.2s;
+    font-family: 'GM';
+    cursor: pointer;
+}
+
+.invalid-email{
+    display: none;
+}
+
+.invalid-password{
+    display: none;
+}
+
+.email-container{
+    display: flex;
+    gap: 5px;
+    flex-direction: column;
+    color: red;
+}
+
+.forgot-password-btn{
+    color: var(--small);
+    font-size: 0.8rem;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+}
+
+.password-container{
+    display: flex;
+    gap: 5px;
+    flex-direction: column;
+    color: red;
+}
+
+.link-to-signup{
+    text-decoration: none;
+    color: rgb(97, 97, 97);
+}

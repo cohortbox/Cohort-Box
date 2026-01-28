@@ -1,0 +1,102 @@
+.admin-reports {
+    display: flex;
+    height: 100dvh;
+    width: 100%;
+}
+
+.admin-reports-container{
+    height: 100dvh;
+    width: 100%;
+    color: var(--fontColor);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 2rem;
+    box-sizing: border-box;
+    overflow-y: scroll;
+    scrollbar-color: var(--small) var(--chatBoxBg); /* thumb, track */
+    scrollbar-width: thin;
+}
+
+.report-container{
+    border-radius: 4px;
+    border: 1px solid var(--green);
+    padding: 1rem 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.6rem;
+}
+
+.reported-container{
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+}
+
+.reported-message-media-container{
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.reported-message-media{
+    width: 100px;
+    height: 100px;
+    display: grid;
+    place-items: center;
+    object-fit: contain;
+    overflow: hidden;
+}
+
+.reported-message-media img, .reported-message-media video, .reported-message-media audio  {
+    height: 99px;
+}
+
+.reported-container .report-btns-container{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reported-container .report-btns-container .report-btn{
+    min-width: 90px;
+    height: 35px;
+    display: grid;
+    place-items: center;
+    border-radius: 4px;
+    border: none;
+    background-color: var(--green);
+    color: var(--black);
+    font-size: 1rem;
+    font-family: 'GR';
+    cursor: pointer;
+    transition: 0.3s all ease;
+}
+
+.reported-container .report-btns-container .report-btn:hover {
+    background-color: var(--black);
+    border: 1px solid var(--green);
+    color: var(--green);
+}
+
+.reported-container .report-btns-container .dismiss{
+    border: 1px solid var(--green);
+    background-color: var(--black);
+    color: var(--green);
+}
+
+.reported-container .report-btns-container .dismiss:hover {
+    border: none;
+    color: var(--black);
+    background-color: var(--green);
+}
+
+.text-small{
+    color: var(--small);
+}
+
+.text-green{
+    color: var(--green);
+}

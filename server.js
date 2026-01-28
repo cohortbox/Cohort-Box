@@ -13,6 +13,7 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
 const { upload, uploadUserDp, uploadChatDp } = require('./config/CloudinaryConfig.js');
 const path = require('path');
@@ -74,24 +75,19 @@ const authTokenSocketIO = (socket, next) => {
 }
 
 const adminAuthAPI = async (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) {
-    return res.status(401).json({ message: 'Admin token required' });
-  }
+    try {
+        const token = req.cookies.adminToken; // read HttpOnly cookie
+        if (!token) return res.status(401).json({ message: 'Unauthorized' });
 
-  try {
-    const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
-    const admin = await Admin.findById(decoded.adminId);
+        const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
+        const admin = await Admin.findById(decoded.adminId);
+        if (!admin) return res.status(401).json({ message: 'Unauthorized' });
 
-    if (!admin || !admin.active) {
-      return res.status(401).json({ message: 'Invalid admin' });
+        req.admin = admin;
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: 'Unauthorized' });
     }
-
-    req.admin = admin;
-    next();
-  } catch {
-    res.status(401).json({ message: 'Invalid admin token' });
-  }
 }
 
 io.use(authTokenSocketIO);
@@ -181,7 +177,7 @@ app.post('/api/signup', async (req, res) => {
 
 })
 
-app.get('/api/update-verification-token', async (req, res) => {
+app.post('/api/update-verification-token', async (req, res) => {
     try {
         const { email } = req.body;
 
@@ -306,7 +302,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-app.post('/api/admin/login', async (req, res) => {
+app.post('/api/admin/auth/login', async (req, res) => {
     const { email, password } = req.body;
 
     const admin = await Admin.findOne({ email, active: true });
@@ -325,7 +321,15 @@ app.post('/api/admin/login', async (req, res) => {
         { expiresIn: '2h' }
     );
 
-    res.json({ token });
+    res.cookie('adminToken', token, {
+        httpOnly: true,      // cannot be accessed by JS
+        secure: false, // HTTPS only in production
+        sameSite: 'Strict',  // or 'None' if using cross-origin
+        maxAge: 2 * 60 * 60 * 1000 // 2 hours
+    });
+
+    res.json({ message: 'Login successful' });
+
 });
 
 app.get('/api/admin/auth/me', async (req, res) => {
@@ -346,6 +350,123 @@ app.get('/api/admin/auth/me', async (req, res) => {
         res.status(200).json({ ok: true });
     } catch {
         res.status(401).json({ message: 'Invalid token' });
+    }
+});
+
+app.get('/api/admin/reports', adminAuthAPI, async (req, res) => {
+    try {
+        // req.admin is already set by middleware
+        const reports = await Report.find({status: 'pending'})
+            .populate('from', 'email username firstName lastName')   // reporter email
+            .populate({
+                path: 'target',
+                populate: [ 
+                    {
+                        path: 'from',
+                        select: 'email username firstName lastName dp',
+                        strictPopulate: false
+                    },
+                    {
+                        path: 'chatId',
+                        select: '_id chatName',
+                        strictPopulate: false
+                    }
+                ]
+            })         // optional target data
+            .sort({ createdAt: 1 });
+
+        const formattedReports = reports.map(r => ({
+            _id: r._id,
+            fromUser: r.from,
+            targetType: r.targetModel,
+            target: r.target,
+            reason: r.reason || 'No reason provided',
+            createdAt: r.createdAt,
+        }));
+
+        res.json({ reports: formattedReports });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error fetching reports' });
+    }
+});
+
+app.post('/api/admin/report/action/:reportId/:action', adminAuthAPI, async (req, res) => {
+    try{
+        const action = req.params.action;
+        if(action !== 'del' && action !== 'warn' && action !== 'dismiss'){
+            return res.status(400).json({message: 'Invalid Action!'});
+        }
+        const reportId = req.params.reportId;
+        if (!mongoose.Types.ObjectId.isValid(reportId)) {
+            return res.status(400).json({ success: false, message: 'Invalid report ID' });
+        }
+        const report = await Report.findById(reportId);
+        if (!report){
+            return res.status(404).json({success: false, message: "Report not found 404!"})
+        }
+        if (report.targetModel !== 'Message' && report.targetModel !== 'User') {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid report target'
+            });
+        }
+        if (report.resolved) {
+            return res.status(409).json({
+                success: false,
+                message: 'Report already resolved'
+            });
+        }
+        if(action === 'del'){
+            if(report.targetModel === 'User') {
+                const bannedUser = await User.updateOne({_id: report.target}, {status: 'banned'});
+                if(bannedUser.matchedCount === 0){
+                    return res.status(404).json({success: false, message: "User Wasn't banned!"})
+                }
+            }
+            if(report.targetModel === 'Message') {
+                const deletedMessage = await Message.deleteOne({_id: report.target});
+                if(deletedMessage.deletedCount === 0){
+                    return res.status(404).json({success: false, message: "Message Wasn't deleted!"})
+                }
+            }
+            report.resolved = true;
+            report.status = 'actioned';
+            await report.save();
+            return res.status(200).json({success: true});
+        }
+        if(action === 'warn'){
+            if(report.targetModel === 'User') {
+                const bannedUser = await User.updateOne({_id: report.target}, {status: 'warned'});
+                if(bannedUser.matchedCount === 0){
+                    return res.status(404).json({success: false, message: "User Wasn't banned!"})
+                }
+            }
+
+            if(report.targetModel === 'Message') {
+                const reportedMessage = await Message.findById(report.target);
+                if(!reportedMessage){
+                    return res.status(404).json({success: false, message: "Reported Message Could not be found"})
+                }
+                const reportedUser = await User.updateOne({_id: reportedMessage.from}, {status: 'warned'});
+                if(reportedUser.matchedCount === 0){
+                    return res.status(404).json({success: false, message: "User Wasn't warned"});
+                }
+            }
+            report.resolved = true;
+            report.status = 'actioned';
+            await report.save();
+            return res.status(200).json({ success: true });
+        }
+        if(action === 'dismiss'){
+            report.resolved = true;
+            report.status = 'dismissed';
+            await report.save();
+            return res.status(200).json({ success: true });
+        }
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Server Error!' });
     }
 });
 
@@ -507,6 +628,245 @@ app.get('/api/check-chatname', async (req, res) => {
     });
   }
 });
+
+app.get('/api/forgot-password/user/:email', async (req, res) => {
+    try {
+        const email = req.body.email.trim();
+
+        // Always return success (prevents email enumeration)
+        if (!email) {
+            return res.status(200).json({
+                success: true,
+                message: 'If an account exists, a reset code has been sent.'
+            });
+        }
+
+        const user = await User.findOne({ email });
+
+        if (user) {
+            // 6-digit numeric code (same UX style as signup)
+            const passwordChangeCode = Math.floor(
+                100000 + Math.random() * 900000
+            ).toString();
+
+            user.passwordChangeCode = passwordChangeCode;
+            user.passwordChangeExpires = Date.now() + 1000 * 60 * 15; // 15 minutes
+
+            await user.save();
+
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
+                }
+            });
+
+            const mailOptions = {
+                from: '"Cohort-Box" <no-reply@cohortbox.com>',
+                to: user.email,
+                subject: 'CohortBox Password Reset Code',
+                html: `
+                <h3>Password Reset Request</h3>
+                <p>Use the code below to reset your password:</p>
+
+                <h2 style="font-size: 32px; letter-spacing: 4px;">
+                    ${passwordChangeCode}
+                </h2>
+
+                <p>This code expires in <strong>15 minutes</strong>.</p>
+                <p>If you did not request a password reset, you can safely ignore this email.</p>
+                `
+            };
+
+            await transporter.sendMail(mailOptions);
+        }
+
+        // Always respond the same
+        return res.status(200).json({
+            success: true,
+            message: 'If an account exists, a reset code has been sent.'
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+})
+
+app.post('/api/forgot-password/verify-code', async (req, res) => {
+    try {
+        const { email, passwordChangeCode } = req.body;
+
+        if (!email || !passwordChangeCode) {
+            return res.status(400).json({
+                message: "Email and code are required",
+                verified: false
+            });
+        }
+
+        const user = await User.findOne({
+            email,
+            passwordChangeCode,
+            passwordChangeExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                message: "Invalid or expired code",
+                verified: false
+            });
+        }
+
+        // Generate secure reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+
+        // Store hashed version for security
+        user.passwordResetToken = crypto
+            .createHash('sha256')
+            .update(resetToken)
+            .digest('hex');
+
+        user.passwordResetExpires = Date.now() + 1000 * 60 * 15; // 15 minutes
+
+        // Invalidate verification code
+        user.passwordChangeCode = undefined;
+        user.passwordChangeExpires = undefined;
+
+        await user.save();
+
+        return res.status(200).json({
+            verified: true,
+            resetToken
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: "Internal Server Error",
+            verified: false
+        });
+    }
+});
+
+app.post('/api/forgot-password/update-password-change-code', async (req, res) => {
+  try {
+    const email = req.body.email?.toLowerCase().trim();
+
+    // Always return success (prevents enumeration)
+    if (!email) {
+      return res.status(200).json({
+        success: true,
+        message: 'If an account exists, a reset code has been sent.'
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (user) {
+      const passwordChangeCode = Math.floor(
+        100000 + Math.random() * 900000
+      ).toString();
+
+      user.passwordChangeCode = passwordChangeCode;
+      user.passwordChangeExpires = Date.now() + 1000 * 60 * 15; // 15 minutes
+
+      await user.save();
+
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        }
+      });
+
+      const mailOptions = {
+        from: '"Cohort-Box" <no-reply@cohortbox.com>',
+        to: email,
+        subject: 'CohortBox Password Reset Code',
+        html: `
+          <h3>Password Reset Request</h3>
+          <p>Use the code below to reset your password:</p>
+
+          <h2 style="font-size: 32px; letter-spacing: 4px;">
+            ${passwordChangeCode}
+          </h2>
+
+          <p>This code expires in <strong>15 minutes</strong>.</p>
+          <p>If you did not request a password reset, you can safely ignore this email.</p>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'If an account exists, a reset code has been sent.'
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.post('/api/forgot-password/reset', async (req, res) => {
+    try {
+        const { resetToken, password } = req.body;
+
+        if (!resetToken || !password) {
+            return res.status(400).json({
+                message: 'Reset token and new password are required'
+            });
+        }
+
+        if (password.length < 8) {
+            return res.status(400).json({
+                message: 'Password must be at least 8 characters long'
+            });
+        }
+
+        // Hash incoming reset token to compare with DB
+        const hashedToken = crypto
+            .createHash('sha256')
+            .update(resetToken)
+            .digest('hex');
+
+        const user = await User.findOne({
+            passwordResetToken: hashedToken,
+            passwordResetExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                message: 'Invalid or expired reset token'
+            });
+        }
+
+        // Update password
+        user.password_hash = await bcrypt.hash(password, saltRounds);
+
+        // Invalidate reset token
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
+
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Password reset successful'
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            message: 'Internal Server Error'
+        });
+    }
+});
+
 
 // helpers
 function escapeRegex(str) {

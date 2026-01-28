@@ -11,7 +11,7 @@ export const AdminAuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await adminAPI.get('/auth/me'); 
+        await adminAPI.get('/auth/me', {withCredentials: true}); 
         setIsAuthenticated(true);
       } catch {
         setIsAuthenticated(false);
@@ -24,11 +24,13 @@ export const AdminAuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    await adminAPI.post(
+    const res = await adminAPI.post(
       '/auth/login',
       { email, password },
       { withCredentials: true }
     );
+
+    console.log(res);
 
     setIsAuthenticated(true);
   };
