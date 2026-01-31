@@ -102,21 +102,24 @@ function Home() {
       return chat;
     }));
     if(selectedChat._id === chatId){
-      setMessages(prev => [...prev, msg]);
+      setMessages(prev => [msg, ...prev]);
     }
   })
 
-  useSocketEvent('participantAdded', ({ addedUser, chatId, msg }) => {
+  useSocketEvent('participantAccepted', ({ chatId, user }) => {
     setChats(prev => prev.map(chat => {
       if (chat._id === chatId) {
         const updatedChat = {
           ...chat,
-          participants: [ ...chat.participants, addedUser ],
+          participants: [ ...chat.participants, user ],
         };
         return updatedChat;
       }
       return chat;
     }));
+  })
+
+  useSocketEvent('participantRequested', ({ chatId, msg }) => {
     if(selectedChat._id === chatId){
       setMessages(prev => [msg, ...prev]);
     }

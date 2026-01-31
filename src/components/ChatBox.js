@@ -10,6 +10,7 @@ import dotsImg from '../images/dots.png';
 import closeImg from '../images/close-gray.png';
 import sendImg from '../images/send.png';
 import micImg from '../images/microphone.png';
+import {ReactComponent as MyFilterIcon} from '../images/filter-6556.svg';
 import recordingIcon from '../images/voice.png';
 import { useNavigate } from 'react-router-dom';
 import MediaView from './MediaView.js';
@@ -41,7 +42,9 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
   const [loadingMore, setLoadingMore] = useState(false);
   const [isReply, setIsReply] = useState(false);
   const [repliedTo, setRepliedTo] = useState(null);
+  const [visible, setVisible] = useState(false);
 
+  const timeoutRef = useRef(null);
   const messagesBoxRef = useRef(null);
   const loadingMoreRef = useRef(false);
   const recorderRef = useRef(null);
@@ -64,6 +67,27 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
       setChatLiveCount(count);
     }
   })
+
+  useEffect(() => {
+    const parent = messagesBoxRef.current;
+    if (!parent) return;
+
+    const onScroll = () => {
+      setVisible(true);
+
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        setVisible(false);
+      }, 4000);
+    };
+
+    parent.addEventListener('scroll', onScroll);
+
+    return () => {
+      parent.removeEventListener('scroll', onScroll);
+      clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
 
@@ -607,6 +631,9 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
             <ChatInfoMessage msg={msg}/>
           )
         })}
+        <button className={`filter-btn ${visible ? 'visible' : ''}`}>
+          <MyFilterIcon style={{fill: '#c5cad3', color: '#c5cad3', height: '20px', width: '20px'}} />
+        </button>
       </div>  
       { selectedChat && selectedChat.participants.some(p => p._id === user.id) && (
           <form className='msg-input-form' onSubmit={sendMessage}>

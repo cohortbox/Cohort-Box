@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import accept from '../images/check-gray.png';
 import cancel from '../images/close-gray.png';
-import deleteIcon from '../images/trash-fontColor.png';
+import deleteIcon from '../images/trash-fontcolor.png';
 import Toast from './Toast'
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -97,6 +97,7 @@ export default function Notification({notification, setNotifications}){
                 console.log('hoguya');
                 const data = await messageRes.json();
                 socket.emit('message', data.message);
+                socket.emit('participantAccepted', {chatId: notification.chat._id})
                 setNotifications(prev => prev.filter(currNotification => currNotification._id !== notification._id))
             } catch (err) {
                 console.error(err);
@@ -177,9 +178,11 @@ export default function Notification({notification, setNotifications}){
                     </div>
                 )
             }
-            <div className='delete-container' onClick={deleteNotification}>
-                <img src={deleteIcon} className='delete'/>
-            </div>
+            { notification.type !== 'added_to_group_request' && notification.type !== 'friend_request_received' &&
+                <div className='delete-container' onClick={deleteNotification}>
+                    <img src={deleteIcon} className='delete'/>
+                </div>
+            }
             <Toast message={toastMsg} show={showToast} onClose={() => setShowToast(false)} />
         </div>
     )

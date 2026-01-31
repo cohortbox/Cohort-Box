@@ -2556,13 +2556,15 @@ io.on('connection', (socket) => {
         try{
             console.log('Received particpantRemoved');
             if(!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(chatId)) return;
-            const removedUser = await User.findById(userId)
+            const removedUser = await User.findById(userId);
+            if(!removedUser) return;
             const chat = await Chat.findById(chatId).select('chatAdmin');
+            if(!chat) return;
             if(String(socket.user.id) !== String(chat.chatAdmin)) return;
             const newMessage = await Message.create({
                 from: chat.chatAdmin,
                 chatId,
-                message: `Admin Removed ${removedUser.firstName + ' ' + removedUser.lastName}`,
+                message: `Admin Removed ${removedUser.username}`,
                 type: 'chatInfo',
                 media: [],
                 reactions: []
@@ -2574,7 +2576,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('participantAdded', async ({ userId, chatId, message }) => {
+    socket.on('participantRequested', async ({ userId, chatId, message }) => {
         try{
             console.log('Received particpantAdded');
             if(!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(chatId)) return;
@@ -2582,12 +2584,29 @@ io.on('connection', (socket) => {
             if(String(socket.user.id) !== String(chat.chatAdmin)) return;
             const addedUser = await User.findById(userId).select('_id firstName lastName username dp').lean();
             if(!addedUser) return
-            io.to(chatId).emit('participantAdded', { addedUser, chatId, msg: message });
+            io.to(chatId).emit('participantRequested', { chatId, msg: message });
         } catch (err) {
             console.log(err);
             return;
         }
     });
+
+    socket.on('participantAccepted', async ({chatId}) => {
+        try{
+            console.log('Received participantAccepted');
+            const userId = socket.user.id;
+            if(!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(chatId)) return;
+            const chat = await Chat.findOne({_id: chatId, participants: userId});
+            if(!chat) return;
+            const user = await User.findById(userId).select('_id username firstName lastName dp');
+            if(!user) return;
+            console.log('Hogya participantAccepted');
+            io.to(chatId).emit('participantAccepted', {chatId, user});
+        } catch (err) {
+            console.log(err);
+            return;
+        }
+    })
 
     socket.on('participantJoined', async ({chatId}) => {
         try{

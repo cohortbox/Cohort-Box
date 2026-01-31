@@ -35,7 +35,7 @@ export default function TextMessage({ setIsReply, setRepliedTo, msg, sender, set
                 </div>
             }
             <div className='msg-menu-btns-container'>
-                <div className={msg.from._id === user.id ? "my-msg" : "other-msg"}>
+                <div className={msg.from._id === user.id ? "my-msg" : "other-msg left"}>
                     {msg.from._id !== user.id && sender && (
                         <h4 className='sender-name' style={{ color: `${senderColors[senderIndex]}` }}>{sender.firstName + ' ' + sender.lastName}</h4>
                     )}

@@ -153,6 +153,32 @@
   scrollbar-width: thin;
 }
 
+.filter-btn{
+  height: 40px;
+  width: 40px;
+  border-radius: 35px;
+  border: 1px solid var(--borderColor);
+  background-color: var(--hover);
+  padding: 2px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 80px;
+  right: 25px;
+  opacity: 0;
+  transition: 0.3s all ease;
+  cursor: pointer;
+}
+
+.filter-btn.visible{
+  opacity: 1;
+}
+
+.filter-btn img{
+  height: 25px;
+}
+
 .typing-indicator {
   display: flex;
   align-items: center;
@@ -252,7 +278,7 @@
   text-align: left;
   margin: 5px 0;
   width: fit-content;
-  background: linear-gradient(to right, var(--triadColor1Pastel), var(--triadColor2Pastel));
+  background-color: var(--otherMsgBg);
   color: var(--fontColor);
   padding: 2px 4px;
   border-radius: 5px;
@@ -296,11 +322,26 @@
   width: fit-content;
   background-color: var(--otherMsgBg);
   color: var(--fontColor);
-  padding: 5px 4px;
+  padding: 5px 8px;
   border-radius: 5px;
   display: flex;
   flex-direction: column;
   max-width: 300px;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border: 8px solid transparent;
+  }
+
+  &.left::after {
+    left: -8px;
+    border-right-color: var(--otherMsgBg);
+  }
 }
 
 .reaction-bubble {
@@ -587,8 +628,8 @@
   background-color: var(--hover);
   color: var(--fontColor);
   font-family:
-      'RR',
-      'Emoji';
+    'RR',
+    'Emoji';
   height: 22px;
   font-size: 1rem;
   resize: none;
