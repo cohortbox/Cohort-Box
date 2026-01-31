@@ -30,7 +30,7 @@ function Home() {
   useEffect(() => {
     if (!accessToken || !paramChatId || loading) return;
 
-    fetch(`/api/return-chats/${paramChatId}`, {
+    fetch(`/api/chats/${paramChatId}`, {
       method: 'GET',
       headers: { 'authorization': `Bearer ${accessToken}` }
     })
@@ -51,7 +51,7 @@ function Home() {
   useEffect(() => {
     if (!accessToken || loading) return;
 
-    fetch(`/api/return-chats`, {
+    fetch(`/api/chats`, {
       method: 'GET',
       headers: { 'authorization': `Bearer ${accessToken}` },
       credentials: 'include'
@@ -70,7 +70,7 @@ function Home() {
   useEffect(() => {
     if (!accessToken || loading) return;
     
-    fetch('/api/return-users', {
+    fetch('/api/users', {
       method: 'GET',
       headers: { 'authorization': `Bearer ${accessToken}` }
     })
@@ -118,13 +118,9 @@ function Home() {
       return chat;
     }));
     if(selectedChat._id === chatId){
-      setMessages(prev => [...prev, msg]);
+      setMessages(prev => [msg, ...prev]);
     }
   })
-
-  useSocketEvent("returnMessages", (msgs) => {
-    setMessages(msgs);
-  }, []);
 
   useSocketEvent("message", (msg) => {
     const isForSelected = selectedChat && String(msg.chatId) === String(selectedChat._id);
@@ -169,11 +165,6 @@ function Home() {
   useSocketEvent("deleteMessage", (serverMsg) => {
     if (!selectedChat || String(serverMsg.chatId) !== String(selectedChat._id)) return;
     setMessages(prev => prev.filter(msg => String(msg._id) !== String(serverMsg._id)));
-  }, [selectedChat?._id]);
-
-  useSocketEvent("deleteMessages", (chatId) => {
-    if (!selectedChat || String(chatId) !== String(selectedChat._id)) return;
-    setMessages([]);
   }, [selectedChat?._id]);
 
   useSocketEvent("typing", (data) => {

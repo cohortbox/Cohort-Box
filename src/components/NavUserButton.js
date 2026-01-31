@@ -55,7 +55,7 @@ function NavUserButton({ user, isFriend, sentRequest, gotRequest }) {
     e.preventDefault();
     try {
       const result = await callApi(`/api/friends/request/${user._id}`, 'DELETE');
-      socket.emit('cancelFriendRequest', result);
+      socket.emit('cancelFriendRequest', result.request);
     } catch (err) {
       console.error(err);
     }

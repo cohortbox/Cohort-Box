@@ -148,7 +148,7 @@
     color: white;
     background-color: var(--black);
     height: 30px;
-    font-family: 'GSM';
+    font-family: 'GR';
     border: 1px solid var(--green);
     padding: 0 20px;
     transition: 0.2s;
@@ -179,10 +179,18 @@
 
 .search-bar-add-participant-btn{
     width: 100%;
-    border-radius: 5px;
+    border-radius: 100px;
     color: var(--black);
     background-color: var(--green);
-    font-family: 'GM';
+    font-family: 'GR';
+    border: none;
+    font-size: 1rem;
+    height: 30px;
+    transition: 0.3s all ease;
+}
+
+.search-bar-add-participant-btn:hover{
+    border-radius: 4px;
 }
 
 .search-background{

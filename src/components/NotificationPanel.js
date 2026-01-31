@@ -14,7 +14,7 @@ export default function NotificationPanel({notificationBtnRef, openNotification,
     })
     useEffect(() => {
         if(!accessToken) return;
-        fetch('/api/return-notification', {
+        fetch('/api/notification', {
             method: 'GET',
             headers: {
                 'authorization': `Bearer ${accessToken}`

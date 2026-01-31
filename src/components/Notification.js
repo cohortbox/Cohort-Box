@@ -4,15 +4,18 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import accept from '../images/check-gray.png';
 import cancel from '../images/close-gray.png';
+import deleteIcon from '../images/trash-fontColor.png';
 import Toast from './Toast'
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Notification({notification, setNotifications}){
     console.log(notification)
     const { user, accessToken } = useAuth();
     const { socket } = useSocket();
     const [toastMsg, setToastMsg] = useState('');
-    const [showToast, setShowToast] = useState(false)
+    const [showToast, setShowToast] = useState(false);
+    const navigate = useNavigate();
 
     function showAlert(msg){
         setToastMsg(msg);
@@ -49,6 +52,7 @@ export default function Notification({notification, setNotifications}){
             setNotifications(prev => prev.filter(currNotification => currNotification._id !== notification._id))
         } catch (err) {
             console.error(err);
+            navigate('/crash')
         }
     };
 
@@ -57,7 +61,7 @@ export default function Notification({notification, setNotifications}){
         try {
             const result = await callApi(`/api/friends/reject/${notification.sender._id}`, 'POST');
             socket.emit('rejectFriendRequest', result);
-            socket.emit('notification', result.notification)
+            socket.emit('notification', result.notification);
             setNotifications(prev => prev.filter(currNotification => currNotification._id !== notification._id))
         } catch (err) {
             console.error(err);
@@ -65,15 +69,40 @@ export default function Notification({notification, setNotifications}){
     };
 
         const handleChatAccept = async (e) => {
-        e.preventDefault();
-        try {
-            const result = await callApi(`/api/chat/accept/${notification.chat._id}`, 'POST');
-            socket.emit('notification', result.notification)
-            setNotifications(prev => prev.filter(currNotification => currNotification._id !== notification._id))
-        } catch (err) {
-            console.error(err);
-        }
-    };
+            e.preventDefault();
+            try {
+                const result = await callApi(`/api/chat/accept/${notification.chat._id}`, 'POST');
+                socket.emit('notification', result.notification);
+                console.log(result.notification)
+                const messageRes = await fetch('/api/message', {
+                    method: 'POST',
+                    headers: {
+                        'authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        from: result.notification.chat.chatAdmin,
+                        chatId: notification.chat._id,
+                        type: 'chatInfo',
+                        message: `${user.username} has joined this chat.`,
+                        isReply: false,
+                        repliedTo: null,
+                        media: [],
+                        reactions: []
+                    })
+                })
+                if (!messageRes.ok) {
+                    throw new Error();
+                }
+                console.log('hoguya');
+                const data = await messageRes.json();
+                socket.emit('message', data.message);
+                setNotifications(prev => prev.filter(currNotification => currNotification._id !== notification._id))
+            } catch (err) {
+                console.error(err);
+                navigate('/crash')
+            }
+        };
 
     const handleChatReject = async (e) => {
         e.preventDefault();
@@ -85,14 +114,35 @@ export default function Notification({notification, setNotifications}){
         }
     };
 
+    const deleteNotification = async (e) => {
+        try{
+            const res = await fetch(`/api/notification/${notification._id}`, {
+                method: 'DELETE',
+                headers: {
+                    'authorization': `Bearer ${accessToken}`,
+                },
+            })
+            if(!res.ok){
+                throw new Error();
+            }
+            setNotifications(prev => prev.filter(n => n._id !== notification._id))
+        } catch (err) {
+            console.error(err);
+            navigate('/crash');
+        }
+    }
+
     let message = '';
     if (notification.type === 'friend_request_received') {
-        message = `${notification.sender.firstName + ' ' + notification.sender.lastName} sent you a Friend Request!`
+        message = `${notification.sender.username} sent you a Friend Request!`
     } else if (notification.type === 'friend_request_accepted') {
-        message = `${notification.sender.firstName + ' ' + notification.sender.lastName} accepted your Friend Request!`
+        message = `${notification.sender.username} accepted your Friend Request!`
     } else if (notification.type === 'added_to_group_request') {
-        message = `${notification.sender.firstName + ' ' + notification.sender.lastName} wants you to join a new CohortBox: ${notification.chat.chatName}`
+        message = `${notification.sender.username} wants you to join a new CohortBox: ${notification.chat.chatName}`
+    } else if (notification.type === 'accepted_group_request') {
+        message = `${notification.sender.username} accepted your request to join the CohortBox: ${notification.chat.chatName}`
     }
+    if(notification.type === 'chat_participant_joined') return;
     return (
         <div className='notification-container'>
             <img className='notification-img' src={sampleImg}/>
@@ -127,6 +177,9 @@ export default function Notification({notification, setNotifications}){
                     </div>
                 )
             }
+            <div className='delete-container' onClick={deleteNotification}>
+                <img src={deleteIcon} className='delete'/>
+            </div>
             <Toast message={toastMsg} show={showToast} onClose={() => setShowToast(false)} />
         </div>
     )

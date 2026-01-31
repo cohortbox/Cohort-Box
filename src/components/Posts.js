@@ -1,29 +1,28 @@
 import './Posts.css'
-import NavBar from './NavBar';
 import Post from './Post';
-import testImg from '../images/sample2.png'
-import testImgii from '../images/test.jpg'
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import FeedAd from './FeedAd.js';
+import { useNavigate } from 'react-router-dom';
 
 function Posts(){
 
     const [posts, setPosts] = useState([]);
     const { accessToken, loading } = useAuth();
+    const navigate = useNavigate();
     
     useEffect(() => {
         if (!accessToken) return;
         if(loading) return;
 
-        fetch(`/api/return-posts`, {
+        fetch(`/api/posts`, {
             method: 'GET',
             headers: {
                 'authorization': `Bearer ${accessToken}`
             }
         }).then(response => {
             if(response.status === 404){
-                return null;
+                return;
             }
             if(!response.ok){
                 throw new Error('Request Failed!');
@@ -35,6 +34,9 @@ function Posts(){
                 return;
             }
             setPosts(data.posts)
+        }).catch(err => {
+            console.error(err);
+            navigate('/crash')
         })
     },[accessToken])
 

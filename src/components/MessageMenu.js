@@ -10,12 +10,14 @@ import "./MessageMenu.css";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 import ReportMenu from "./ReportMenu";
+import { useNavigate } from "react-router-dom";
 
 function MessageMenu({ setIsReply, setRepliedTo, msg, setMessages }) {
   const {socket} = useSocket();
   const [open, setOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [showReport, setShowReport] = useState(false);
+  const navigate = useNavigate();
 
   const { refs, floatingStyles } = useFloating({
     placement: "bottom-start",
@@ -49,10 +51,26 @@ function MessageMenu({ setIsReply, setRepliedTo, msg, setMessages }) {
       console.error(err)
     }
   }
-  const handleDelete = () => {
-    socket.emit('deleteMessage', msg);
-    setMessages(prev => prev.filter(prevMsg => prevMsg._id !== msg._id ));
-    setOpen(false)
+  const handleDelete = async () => {
+    if(!accessToken) return;
+    if(!msg) return;
+    try{
+      const res = await fetch(`/api/message/${msg._id}`, {
+        method: 'DELETE',
+        headers: {
+          'authorization': `Bearer ${accessToken}`,
+        }
+      })
+      if(!res.ok) {
+        throw new Error();
+      }
+      socket.emit('deleteMessage', msg);
+      setMessages(prev => prev.filter(prevMsg => prevMsg._id !== msg._id));
+      setOpen(false);
+    } catch (err) {
+      console.error(err);
+      navigate('/crash')
+    }
   }
 
   function handleReport(e){

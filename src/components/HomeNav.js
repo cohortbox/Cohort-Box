@@ -42,8 +42,8 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
 
     try {
       const url = lastId
-        ? `/api/return-chats?lastId=${encodeURIComponent(lastId)}`
-        : `/api/return-chats`;
+        ? `/api/chats?lastId=${encodeURIComponent(lastId)}`
+        : `/api/chats`;
 
       const res = await fetch(url, {
         method: 'GET',
@@ -102,8 +102,8 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
 
     try {
       const url = lastId
-        ? `/api/return-users?lastId=${encodeURIComponent(lastId)}`
-        : `/api/return-users`;
+        ? `/api/users?lastId=${encodeURIComponent(lastId)}`
+        : `/api/users`;
 
       const res = await fetch(url, {
         method: 'GET',
@@ -153,25 +153,34 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
   
 
   async function handleSearch(e){
-    e.preventDefault();
-    if(searchInput.trim() === '') return;
-
-    const result = await fetch(`/api/search?q=${encodeURIComponent(searchInput)}`, {
-      method: 'GET',
-      headers: {
-        'authorization': `Bearer ${accessToken}`
+    try{
+      e.preventDefault();
+      if(searchInput.trim() === '') return;
+      if(searchInput.length < 2) {
+        showAlert('Please Search with more than 2 letters');
+        return;
       }
-    })
 
-    if(!result.ok){
-      showAlert('Search was Unsuccessful!');
-      return;
+      const result = await fetch(`/api/search?q=${encodeURIComponent(searchInput)}`, {
+        method: 'GET',
+        headers: {
+          'authorization': `Bearer ${accessToken}`
+        }
+      })
+
+      if(!result.ok){
+        showAlert('Search was Unsuccessful!');
+        return;
+      }
+      const {chats, users} = await result.json();
+      setSearchQuery(searchInput);
+      setSearchChats(chats);
+      setSearchUsers(users);
+      setSearchState(true);
+    } catch (err) {
+      console.error(err);
+      navigate('/crash')
     }
-    const {chats, users} = await result.json();
-    setSearchQuery(searchInput);
-    setSearchChats(chats);
-    setSearchUsers(users);
-    setSearchState(true);
   }
 
   useEffect(() => {
@@ -229,7 +238,7 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
 
   useEffect(() => {
     if (!accessToken || loading) return;
-    fetch(`/api/return-friends`, {
+    fetch(`/api/friends`, {
       method: 'GET',
       headers: { authorization: `Bearer ${accessToken}` },
       credentials: 'include',
@@ -238,19 +247,22 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
         if (!r.ok) {
           if (r.status === 404) {
             setFriends([]);
-            return null;
+            return;
           }
           throw new Error('Request Failed with Status: ' + r.status);
         }
         return r.json();
       })
       .then(data => data && setFriends(data.friends || []))
-      .catch(err => console.error('Error fetching friends:', err));
+      .catch(err => {
+        console.error('Error fetching friends:', err);
+        navigate('/crash');
+      });
   }, [accessToken, loading]);
 
   useEffect(() => {
     if (!accessToken || loading) return;
-    fetch(`/api/return-friend-requests`, {
+    fetch(`/api/friend-requests`, {
       method: 'GET',
       headers: { authorization: `Bearer ${accessToken}` },
       credentials: 'include',
@@ -260,7 +272,10 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
         return r.json();
       })
       .then(data => setFriendRequests(data.requests || []))
-      .catch(err => console.error('Error fetching friend requests:', err));
+      .catch(err => {
+        console.error('Error fetching friend requests:', err);
+        navigate('/crash');
+      });
   }, [accessToken, loading]);
 
   useSocketEvent(

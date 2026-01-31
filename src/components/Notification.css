@@ -7,14 +7,20 @@
     border-radius: 5px;
     padding: 0px 5px;
     box-sizing: border-box;
+    position: relative;
 }
 
 .notification-container:hover{
     background-color: var(--hover);
 }
 
+.notification-container:hover .delete-container{
+    opacity: 1;
+}
+
 .notification-img{
-    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
     border: 1px solid var(--green);
     border-radius: 25px;
     overflow: hidden;
@@ -24,4 +30,22 @@
     font-size: 1rem;
     color: var(--fontColor);
     font-family: 'GR';
+    text-overflow: ellipsis;
+}
+
+.notification-container .delete-container{
+    width: 45px;
+    height: 100%;
+    position: absolute;
+    right: 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: 0.3s all ease;
+    background: linear-gradient(to left, var(--black), transparent);
+}
+
+.notification-container .delete-container .delete{
+    width: 25px;
 }

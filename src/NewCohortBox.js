@@ -153,7 +153,7 @@ function NewCohortBox(){
         }
 
         try {
-            const response = await fetch('/api/start-chat', {
+            const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

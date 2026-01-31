@@ -21,10 +21,7 @@ import AdminLogin from './admin/Login';
 import AdminDashboard from './admin/Dashboard';
 import AdminUsers from './admin/Users';
 import AdminReports from './admin/Reports';
-<<<<<<< Updated upstream
-=======
 import ForgotPassword from './ForgotPassword';
->>>>>>> Stashed changes
 
 function App() {
   return (
@@ -61,11 +58,8 @@ function App() {
           <Route path="/change-dp/:method/:id" element={<PhotoStep />} />
           <Route path="/welcome" element={<LandingPage />} />
           <Route path="/settings" element={<Settings />} />
-<<<<<<< Updated upstream
           <Route path="/crash" element={<Crash />} />
-=======
           <Route path="/forgot-password" element={<ForgotPassword />} />
->>>>>>> Stashed changes
 
           {/* HOME / CHAT */}
           <Route path="/:chatId?" element={<Home />} />

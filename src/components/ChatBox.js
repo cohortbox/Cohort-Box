@@ -103,7 +103,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
       if (!oldest?._id) return;
 
       const res = await fetch(
-        `/api/return-messages/${encodeURIComponent(selectedChat._id)}?limit=${PAGE_SIZE}&before=${oldest._id}`,
+        `/api/messages/${encodeURIComponent(selectedChat._id)}?limit=${PAGE_SIZE}&before=${oldest._id}`,
         {
           method: "GET",
           headers: { authorization: `Bearer ${accessToken}` },
@@ -141,7 +141,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
       loadingMoreRef.current = true;
 
       const res = await fetch(
-        `/api/return-messages/${encodeURIComponent(selectedChat._id)}?limit=${PAGE_SIZE}`,
+        `/api/messages/${encodeURIComponent(selectedChat._id)}?limit=${PAGE_SIZE}`,
         {
           method: "GET",
           headers: { authorization: `Bearer ${accessToken}` },

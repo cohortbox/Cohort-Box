@@ -20,6 +20,9 @@ export const AuthProvider = ({ children }) => {
             console.log('Logging Out!')
             await fetch(`/api/logout`, {
                 method: 'POST',
+                headers: {
+                    'authorization': `Bearer ${accessToken}`
+                },
                 credentials: 'include'
             }) 
             if (refreshIntervalID.current) {

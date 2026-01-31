@@ -280,16 +280,6 @@ function ChatInfo({
       .catch((err) => console.log(err));
   }
 
-  function handleDeleteMessages(e) {
-    e.preventDefault();
-    setMessages([]);
-    socket.emit('deleteMessages', {
-      chatId: selectedChat._id,
-      targetId: selectedChat.participants.find((p) => p._id !== user.id)._id
-    });
-    setChatInfoClass(' hidden');
-  }
-
   function handleDeleteChat(e) {
     e.preventDefault();
     fetch(`/api/chat/${encodeURIComponent(selectedChat._id)}`, {
@@ -379,10 +369,6 @@ function ChatInfo({
           </button>
         )}
 
-        <button className={'delete-chat-msgs-btn' + chatInfoClass} onClick={handleDeleteMessages}>
-          Delete Chat Messages
-        </button>
-
         {selectedChat.chatAdmin === user?.id && (
           <button className={'delete-chat-btn' + chatInfoClass} onClick={handleDeleteChat}>
             Delete CohortBox
@@ -405,6 +391,7 @@ function ChatInfo({
         setMembers={setMembers}
         chatId={selectedChat._id}
         addParticipant={true}
+        selectedChat={selectedChat}
       />
 
       <div className={'chat-info-background' + chatInfoClass} onClick={() => setChatInfoClass(' hidden')}></div>

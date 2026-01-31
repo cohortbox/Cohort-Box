@@ -6,11 +6,22 @@ import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 import EmojiPicker from "emoji-picker-react";
 
+function getMyReaction(message, userId) {
+  if (!message?.reactions || !userId) return null;
+
+  const reaction = message.reactions.find(
+    (r) => String(r.userId) === String(userId)
+  );
+
+  return reaction ? reaction.emoji : null;
+}
+
 function ReactionMenu({ msg, isPost = false, onReactLocal }) {
   const { socket } = useSocket();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [myReaction, setMyReaction] = useState(getMyReaction(msg, user.id));
 
   // Floating UI for main reactions menu
   const { refs: menuRefs, floatingStyles: menuStyles } = useFloating({
@@ -28,6 +39,10 @@ function ReactionMenu({ msg, isPost = false, onReactLocal }) {
 
   const menuBtnRef = menuRefs.setReference;
   const emojiBtnRef = emojiRefs.setReference;
+
+  useEffect(() => {
+    setMyReaction(getMyReaction(msg, user.id))
+  }, [msg, user.id])
 
   // Click outside handling
   useEffect(() => {
@@ -67,6 +82,8 @@ function ReactionMenu({ msg, isPost = false, onReactLocal }) {
   const handleReact = (emoji) => {
     if (!emoji) return;
 
+    const isRemoving = myReaction === emoji;
+
     // Optimistic UI update for posts
     if (isPost && typeof onReactLocal === "function") {
       onReactLocal(emoji, user.id);
@@ -78,7 +95,7 @@ function ReactionMenu({ msg, isPost = false, onReactLocal }) {
       msgId: msg._id,
       userId: user.id,
       chatId: msg.chatId,
-      isPost,
+      removing: isRemoving,
     });
 
     setOpen(false);
@@ -102,8 +119,14 @@ function ReactionMenu({ msg, isPost = false, onReactLocal }) {
         }}
         type="button"
       >
-        <img className="rm-btn-img" src={reactImg} alt="menu" />
-        {isPost && "React"}
+        { !myReaction ? (
+            <img className="rm-btn-img" src={reactImg} alt="menu" />
+          ) : (
+            <p className="my-reaction">{myReaction}</p>
+          )
+        }
+        {isPost && !myReaction && "React"}
+        {isPost && myReaction && "Reacted"}
       </button>
 
       {/* Main reactions menu */}

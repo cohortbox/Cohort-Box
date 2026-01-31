@@ -16,10 +16,12 @@ function NavChatButton({ chat, selectedChat, setSelectedChat }){
                     <h5 className='ncbs-sub-heading'>{chat.subscribers.length} Subscribers</h5>
                 </div>
             </div>
-            <div className='ncbs-live-count-container'>
-                <img src={eyeImg}/>
-                {chat.liveViewerCount}
-            </div>
+            { chat.liveViewerCount > 0 &&
+                <div className='ncbs-live-count-container'>
+                    <img src={eyeImg}/>
+                    {chat?.liveViewerCount}
+                </div>
+            }
         </div>
     )
 }

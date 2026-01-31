@@ -1,25 +1,32 @@
 import './SearchBar.css'
 import searchImg from '../images/magnifying-glass.png';
 import closeImg from '../images/close.png';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
+import Toast from './Toast';
 
-function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, chatId, addParticipant }){
+function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, chatId, addParticipant, selectedChat = null }){
     const navigate = useNavigate();
     const [users, setUsers] = useState([])
     const [query, setQuery] = useState('');
+    const [toastMessage, setToastMessage] = useState("");
+    const [showToast, setShowToast] = useState(false)
     const { accessToken, user } = useAuth();
     const { socket } = useSocket();
+
+    function showAlert(msg) {
+        setToastMessage(msg);
+        setShowToast(true);
+    }
 
     function HideSearch(){
         setSearchBarClass(' hidden')
     }
 
-    function handleSearch(e){
-        e.preventDefault();
-        fetch(`/api/return-users?q=${encodeURIComponent(query)}`, {
+    useEffect(() => {
+        fetch(`/api/friends`, {
             method: 'GET',
             headers: {
                 'authorization': `Bearer ${accessToken}`
@@ -31,9 +38,32 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
             }
             return response.json();
         }).then(data => {
-            setUsers(data.users);
+            setUsers(data.friends);
         }).catch(err => {
             console.error(err);
+            navigate('/crash');
+        })
+    }, [])
+
+    function handleSearch(e){
+        e.preventDefault();
+        if(!query || !query.trim()) return;
+        fetch(`/api/friends?q=${encodeURIComponent(query)}`, {
+            method: 'GET',
+            headers: {
+                'authorization': `Bearer ${accessToken}`
+            },
+            credentials: 'include'
+        }).then(response => {
+            if(!response.ok){
+                throw new Error('Request Failed!');
+            }
+            return response.json();
+        }).then(data => {
+            setUsers(data.friends);
+        }).catch(err => {
+            console.error(err);
+            navigate('/crash');
         })
     }
 
@@ -54,7 +84,8 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
 
     function handleAddParticipants(e){
         e.preventDefault();
-
+        if(!selectedChat) return;
+        if(!chatId) return;
         if(members.length === 0) return;
 
         const participants = [];
@@ -80,14 +111,71 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
             if(!response.ok){
                 throw new Error('Request Failed!');
             }else{
-                setMembers([]);
                 for (let participant of participants){
-                    socket.emit('participantAdded', { userId: participant, chatId });
+                    const intendedMember = members.find(
+                        m => String(m._id) === String(participant)
+                    );
+
+                    if (!intendedMember) continue;
+
+                    fetch('/api/notification', {
+                        method: 'POST',
+                        headers: {
+                            'authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            user: participant,
+                            sender: selectedChat.chatAdmin,
+                            type: 'added_to_group_request',
+                            chat: selectedChat._id,
+                            message: null,
+                            text: '',
+                        })
+                    }).then(res => {
+                        if(!res.ok){
+                            throw new Error();
+                        }
+                        return res.json();
+                    }).then(data => {
+                        const notification = data.notification;
+                        socket.emit('notification', notification);
+                    })
+
+                    fetch('/api/message', {
+                        method: 'POST',
+                        headers: {
+                            'authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            from: user.id,
+                            chatId,
+                            type: 'chatInfo',
+                            message: `Admin requested ${intendedMember.username} to join this chat.`,
+                            isReply: false,
+                            repliedTo: null,
+                            media: [],
+                            reactions: []
+                        })
+                    }).then(res => {
+                        if(!res.ok){
+                            throw new Error();
+                        }
+                        return res.json();
+                    }).then(data => {
+                        socket.emit('participantAdded', { userId: participant, chatId, message: data.message });
+                    }).catch(err => {
+                        console.error(err);
+                        navigate('/crash')
+                    })
                 }
+                setMembers([]);
                 setSearchBarClass(' hidden');
             }
         }).catch(err => {
             console.error(err);
+            navigate('/crash')
         })
     }
 
@@ -113,7 +201,36 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
                 </div>
                 <div className={'users-box' + searchBarClass}>
                     <div>
-                        {
+                        { addParticipant ? 
+                            users
+                                .filter(u => {
+                                    if (u._id === user.id) return false;
+
+                                    if (addParticipant && selectedChat?.participants) {
+                                        return !selectedChat.participants.some(
+                                            p => String(p._id) === String(u._id)
+                                        );
+                                    }
+
+                                    return true;
+                                })
+                                .map((u, index) => (
+                                    <div key={index} className={'user' + searchBarClass}>
+                                        <h2>{u.firstName + ' ' + u.lastName}</h2>
+
+                                        {members.some(m => m._id === u._id) ? (
+                                            <button className='add-friend-btn' disabled>Added</button>
+                                        ) : (
+                                            <button
+                                                className='add-friend-btn'
+                                                onClick={(e) => handleAdd(e, u)}
+                                            >
+                                                Add
+                                            </button>
+                                        )}
+                                    </div>
+                                ))
+                            :
                             users.length > 0 ? 
                                 users.map((u, index) => {
                                     if(u._id === user.id) return;
@@ -140,6 +257,11 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
             </div>
             <div className={'search-background' + searchBarClass} onClick={HideSearch}></div>
             {/* <button className='search-btn' onClick={() => { setSearchBarClass('') }}><img className='search-img' src= {searchImg} alt='Search Icon' /></button> */}
+            <Toast
+                message={toastMessage}
+                show={showToast}
+                onClose={() => setShowToast(false)}
+            />
         </div>
     )
 }

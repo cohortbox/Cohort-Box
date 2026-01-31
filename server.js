@@ -123,8 +123,6 @@ app.post('/api/signup', async (req, res) => {
 
         const userDB = await User.create(user);
 
-        const link = `${process.env.CLIENT_URL}/verify-email/${verificationCode}`;
-
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -154,7 +152,8 @@ app.post('/api/signup', async (req, res) => {
             id: userDB._id,
             email: user.email,
             firstName: user.firstName,
-            lastName: user.lastName
+            lastName: user.lastName,
+            username: user.username
         }
 
         const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_KEY, { expiresIn: "10m" });
@@ -271,7 +270,8 @@ app.post('/api/login', async (req, res) => {
             id: user._id,
             email: user.email,
             firstName: user.firstName,
-            lastName: user.lastName
+            lastName: user.lastName,
+            username: user.username
         }
 
         const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_KEY, { expiresIn: "10m" });
@@ -470,7 +470,7 @@ app.post('/api/admin/report/action/:reportId/:action', adminAuthAPI, async (req,
     }
 });
 
-app.post('/api/logout', (req, res) => {
+app.post('/api/logout', authTokenAPI,(req, res) => {
     res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: false,
@@ -482,25 +482,46 @@ app.post('/api/logout', (req, res) => {
 
 app.post('/api/verify-code', async (req, res) => {
     try {
-        const {email, code} = req.body;
-        console.log(`Email: ${email} \nCode: ${code} \n`)
+        const email = req.body.email?.toLowerCase().trim();
+        const code = req.body.code?.toString().trim();
+
         if (!email || !code) {
             return res.status(400).json({
                 message: "Email & code are required",
                 verified: false
             });
         }
-        const user = await User.findOne({ email: email, verificationCode: code, verificationExpires: { $gt: Date.now() } });
-        if (!user) return res.status(400).json({ message: 'Invalid or expired token.', verified: false });
 
+        const user = await User.findOne({
+            email,
+            verificationCode: code,
+            verificationExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                message: 'Invalid or expired token.',
+                verified: false
+            });
+        }
+
+        // Mark email as verified
         user.isVerified = true;
         user.verificationCode = undefined;
         user.verificationExpires = undefined;
+
         await user.save();
 
-        res.json({ message: 'Email verified!', verified: true });
+        return res.status(200).json({
+            message: 'Email verified!',
+            verified: true
+        });
+
     } catch (err) {
-        res.status(500).json({ message: 'Internal Server Error!', verified: false })
+        return res.status(500).json({
+            message: 'Internal Server Error!',
+            verified: false
+        });
     }
 });
 
@@ -750,66 +771,67 @@ app.post('/api/forgot-password/verify-code', async (req, res) => {
 });
 
 app.post('/api/forgot-password/update-password-change-code', async (req, res) => {
-  try {
-    const email = req.body.email?.toLowerCase().trim();
+    try {
+        const email = req.body.email?.toLowerCase().trim();
 
-    // Always return success (prevents enumeration)
-    if (!email) {
-      return res.status(200).json({
-        success: true,
-        message: 'If an account exists, a reset code has been sent.'
-      });
-    }
-
-    const user = await User.findOne({ email });
-
-    if (user) {
-      const passwordChangeCode = Math.floor(
-        100000 + Math.random() * 900000
-      ).toString();
-
-      user.passwordChangeCode = passwordChangeCode;
-      user.passwordChangeExpires = Date.now() + 1000 * 60 * 15; // 15 minutes
-
-      await user.save();
-
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
+        // Always return success (prevents enumeration)
+        if (!email) {
+            return res.status(200).json({
+                success: true,
+                message: 'If an account exists, a reset code has been sent.'
+            });
         }
-      });
 
-      const mailOptions = {
-        from: '"Cohort-Box" <no-reply@cohortbox.com>',
-        to: email,
-        subject: 'CohortBox Password Reset Code',
-        html: `
-          <h3>Password Reset Request</h3>
-          <p>Use the code below to reset your password:</p>
+        const user = await User.findOne({ email });
 
-          <h2 style="font-size: 32px; letter-spacing: 4px;">
-            ${passwordChangeCode}
-          </h2>
+        if (user) {
+            const passwordChangeCode = Math.floor(
+                100000 + Math.random() * 900000
+            ).toString();
 
-          <p>This code expires in <strong>15 minutes</strong>.</p>
-          <p>If you did not request a password reset, you can safely ignore this email.</p>
-        `
-      };
+            user.passwordChangeCode = passwordChangeCode;
+            user.passwordChangeExpires = Date.now() + 1000 * 60 * 15; // 15 minutes
 
-      await transporter.sendMail(mailOptions);
+            await user.save();
+
+            try {
+                const transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASS
+                    }
+                });
+
+                const mailOptions = {
+                    from: '"Cohort-Box" <no-reply@cohortbox.com>',
+                    to: email,
+                    subject: 'CohortBox Password Reset Code',
+                    html: `
+            <h3>Password Reset Request</h3>
+            <p>Use the code below to reset your password:</p>
+            <h2 style="font-size: 32px; letter-spacing: 4px;">${passwordChangeCode}</h2>
+            <p>This code expires in <strong>15 minutes</strong>.</p>
+            <p>If you did not request a password reset, you can safely ignore this email.</p>
+          `
+                };
+
+                await transporter.sendMail(mailOptions);
+            } catch (mailErr) {
+                console.error('Failed to send reset code email:', mailErr);
+                // Do NOT fail the request, still return success to prevent enumeration
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'If an account exists, a reset code has been sent.'
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Server error' });
     }
-
-    return res.status(200).json({
-      success: true,
-      message: 'If an account exists, a reset code has been sent.'
-    });
-
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: 'Server error' });
-  }
 });
 
 app.post('/api/forgot-password/reset', async (req, res) => {
@@ -867,62 +889,128 @@ app.post('/api/forgot-password/reset', async (req, res) => {
     }
 });
 
-
-// helpers
 function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 app.get('/api/search', authTokenAPI, async (req, res) => {
-    try{
-        const query = (req.query.q || '').trim();
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(400).json({ message: 'User ID not found in request!' });
+        }
+
+        const rawQuery = (req.query.q || '').trim();
+        if (rawQuery.length < 2 || rawQuery.length > 50) {
+            return res.status(400).json({ message: 'Invalid search query' });
+        }
+
+        // Escape regex special characters
+        const query = rawQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const LIMIT = 10;
+
         const userFilter = {
-            _id: { $ne: req.user.id },
+            _id: { $ne: userId },
             $or: [
-                { firstName: { $regex: query, $options: 'i' } },
-                { lastName: { $regex: query, $options: 'i' } }
+                { username: { $regex: `${query}`, $options: 'i' } },
+                { firstName: { $regex: `^${query}`, $options: 'i' } },
+                { lastName: { $regex: `^${query}`, $options: 'i' } }
             ]
         };
 
         const chatFilter = {
-            _id: { $ne: req.user.id },
-            $or: [
-                { chatName: { $regex: query, $options: 'i' } },
-            ]
+            chatName: { $regex: `^${query}`, $options: 'i' },
+            status: 'active'
         };
 
-        let users = await User.find(userFilter).lean();
-        let chats = await Chat.find(chatFilter).lean();
+        const [users, chats] = await Promise.all([
+            User.find(userFilter)
+                .select('_id username firstName lastName dp')
+                .limit(LIMIT)
+                .lean(),
+            Chat.find(chatFilter)
+                .select('_id chatName participants subscribers chatDp')
+                .limit(LIMIT)
+                .lean()
+        ]);
 
-        if(!chats) chats = [];
-        if(!users) users = [];
-
-        res.status(200).json({ chats, users });
+        return res.status(200).json({ users, chats });
     } catch (err) {
-        console.log(err);
-        res.status(500).json({message: 'Internal Server Error!'});
+        console.error('[Search API error]:', err);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
-})
+});
 
-app.get('/api/return-notification', authTokenAPI, async (req, res) => {
+app.get('/api/notification', authTokenAPI, async (req, res) => {
     try {
-        const userId = req.user.id;
-        const notifications = await Notification.find({user: userId}).populate('sender', '_id firstName lastName dp').populate('chat', '_id chatName chatDp').populate('message', '_id message type');
-        return res.status(200).json({notifications})
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({message: 'Internal Server Error!'});
-    }
-})
+        const userId = req.user?.id;
 
-app.get('/api/return-users', authTokenAPI, async (req, res) => {
+        if (!userId) {
+            return res.status(400).json({ message: 'User ID not found in request!' });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
+
+        const notifications = await Notification.find({ user: userId })
+            .populate('sender', '_id firstName lastName username dp')
+            .populate('chat', '_id chatName chatAdmin chatDp')
+            .populate('message', '_id message type')
+            .lean();
+
+        return res.status(200).json({ notifications });
+    } catch (error) {
+        console.error('[Get notifications error]:', error);
+        return res.status(500).json({ message: 'Internal Server Error!' });
+    }
+});
+
+app.delete('/api/notification/:notificationId', authTokenAPI, async (req, res) => {
+    try {
+        const { notificationId } = req.params;
+        const userId = req.user.id;
+
+        // 1. Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+            return res.status(400).json({ message: 'Invalid notification ID!' });
+        }
+
+        // 2. Find notification
+        const notification = await Notification.findById(notificationId).select('user');
+        if (!notification) {
+            return res.status(404).json({ message: 'Notification not found!' });
+        }
+
+        // 3. Authorization check
+        if (String(notification.user) !== String(userId)) {
+            return res.status(403).json({ message: 'Not authorized to delete this notification!' });
+        }
+
+        // 4. Delete notification
+        await Notification.deleteOne({ _id: notificationId });
+        console.log('Notification Deleted: ', notificationId);
+        return res.status(200).json({ message: 'Notification deleted successfully!' });
+
+    } catch (err) {
+        console.error('Delete notification error:', err);
+        return res.status(500).json({ message: 'Internal Server Error!' });
+    }
+});
+
+app.get('/api/users', authTokenAPI, async (req, res) => {
     try {
         const lastId = req.query.lastId;
         const query = (req.query.q || '').trim();
         const limit = Math.min(Number(req.query.limit) || 30, 200);
 
+        if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
+
         const filter = { _id: { $ne: req.user.id } };
 
+        // Search by name if query exists
         if (query) {
             filter.$or = [
                 { firstName: { $regex: query, $options: 'i' } },
@@ -930,8 +1018,12 @@ app.get('/api/return-users', authTokenAPI, async (req, res) => {
             ];
         }
 
+        // Defensive check for lastId
         if (lastId) {
-            filter._id.$lt = lastId;
+            if (!mongoose.Types.ObjectId.isValid(lastId)) {
+                return res.status(400).json({ message: 'Invalid lastId!' });
+            }
+            filter._id.$lt = new mongoose.Types.ObjectId(lastId);
         }
 
         const users = await User.find(filter)
@@ -941,136 +1033,285 @@ app.get('/api/return-users', authTokenAPI, async (req, res) => {
             .limit(limit)
             .lean();
 
-
         res.status(200).json({ users });
     } catch (err) {
-        console.error(err);
+        console.error('[Get users error]:', err);
         res.status(500).json({ message: 'Server Error!' });
     }
 });
 
-app.get('/api/return-users/:userId', async (req, res) => {
-    try {
-        const userId = req.params.userId;
-        const userDB = await User.findById(userId).populate('friends', '_id firstName lastName dp username').lean();
-        console.log(userDB)
-        return res.status(200).json({ userDB });
-    } catch (err) {
-        res.status(500).json({ message: 'Server Error!' });
+app.get('/api/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // 1. Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
     }
+
+    // 2. Fetch user with controlled fields only
+    const userDB = await User.findById(userId)
+      .select('_id firstName lastName username dp friends')
+      .populate('friends', '_id firstName lastName username dp')
+      .lean();
+
+    // 3. Handle not found
+    if (!userDB) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // 4. Defensive defaults
+    userDB.friends = userDB.friends || [];
+
+    // 5. Respond
+    res.status(200).json({ userDB });
+
+  } catch (err) {
+    console.error('GET /api/user/:userId error:', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
-app.get('/api/return-friends', authTokenAPI, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id).populate('friends', '_id firstName lastName username').lean();
-        res.json({ friends: user.friends });
-    } catch (err) {
-        res.status(500).json({ message: 'Server error' });
+app.get('/api/friends', authTokenAPI, async (req, res) => {
+  try {
+    const id = req.user.id;
+    const query = (req.query.q || '').trim();
+
+    // Validate that the ID is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
     }
+
+    // Fetch user's friends IDs
+    const user = await User.findById(id).select('friends').lean();
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    let friendsQuery = { _id: { $in: user.friends } };
+
+    // If search query exists, filter by username, firstName, or lastName
+    if (query) {
+      friendsQuery.$or = [
+        { username: { $regex: query, $options: 'i' } },
+        { firstName: { $regex: query, $options: 'i' } },
+        { lastName: { $regex: query, $options: 'i' } },
+      ];
+    }
+
+    const friends = await User.find(friendsQuery)
+      .select('_id firstName lastName username dp')
+      .lean();
+
+    res.status(200).json({ friends: friends || [] });
+  } catch (err) {
+    console.error('return-friends/:id error:', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
-app.get('/api/return-friends/:id', authTokenAPI, async (req, res) => {
-    try {
-        const id = req.params.id;
-        const user = await User.findById(id).populate('friends', '_id firsName lastName username').lean();
-        res.json({ friends: user.friends });
-    } catch (err) {
-        res.status(500).json({ message: 'Server error' });
+app.get('/api/friends/:id', authTokenAPI, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate that the ID is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
     }
+
+    const user = await User.findById(id)
+      .select('friends')
+      .populate('friends', '_id firstName lastName username avatar')
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Always return an array
+    res.status(200).json({
+      friends: user.friends || [],
+    });
+  } catch (err) {
+    console.error('return-friends/:id error:', err);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
 });
 
-app.get('/api/return-friend-requests', authTokenAPI, async (req, res) => {
+app.get('/api/friend-requests', authTokenAPI, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req?.user?.id;
 
+        // Production hardening: validate auth context
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        // Production hardening: validate ObjectId (prevents cast errors / weird queries)
+        // If your IDs are NOT Mongo ObjectIds, remove this check.
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: "Invalid user id" });
+        }
+
+        // Keep original query + sorting + populates + lean
         const requests = await FriendRequest.find({
-            $or: [{ from: userId }, { to: userId }]
+            $or: [{ from: userId }, { to: userId }],
         })
             .sort({ createdAt: -1 })
-            .populate('from', '_id firstName lastName username')
-            .populate('to', '_id firstName lastName username')
-            .lean();
+            .select("_id from to status createdAt updatedAt") // production hardening: return only needed fields
+            .populate("from", "_id firstName lastName username")
+            .populate("to", "_id firstName lastName username")
+            .lean({ virtuals: false }); // avoid accidental virtual expansion
 
-        res.status(200).json({ requests });
+        return res.status(200).json({ requests });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server Error!' });
     }
 });
 
-app.get('/api/return-posts', authTokenAPI, async (req, res) => {
-    const { lastId } = req.query;
-    const limit = 30;
-    let filter = { type: 'media' }
-    if (lastId) {
-        filter._id = { $lt: new mongoose.Types.ObjectId(lastId) }
-    }
+app.get('/api/posts', authTokenAPI, async (req, res) => {
     try {
-        const posts = await Message.find(filter).sort({ _id: -1 }).populate('from', '_id firstName lastName').populate('chatId', '_id chatName chatDp').limit(limit);
-        if (posts.length === 0) {
+        const { lastId } = req.query;
+        const limit = 30;
+        const filter = { type: 'media' };
+
+        // Validate lastId if provided
+        if (lastId) {
+            if (!mongoose.Types.ObjectId.isValid(lastId)) {
+                return res.status(400).json({ message: 'Invalid lastId!' });
+            }
+            filter._id = { $lt: new mongoose.Types.ObjectId(lastId) };
+        }
+
+        const posts = await Message.find(filter)
+            .sort({ _id: -1 })
+            .populate('from', '_id firstName lastName')
+            .populate('chatId', '_id chatName chatDp')
+            .limit(limit)
+            .lean(); // optional, improves performance if no Mongoose methods needed
+
+        if (!posts || posts.length === 0) {
             return res.status(404).json({ message: 'No posts found!' });
         }
-        res.status(200).json({ posts })
+
+        return res.status(200).json({ posts });
     } catch (err) {
-        res.status(500).json({ message: 'Server Error!' })
-    }
-})
-
-app.get('/api/return-chats', authTokenAPI, async (req, res) => {
-    const { lastId } = req.query;
-    const limit = 30;
-    let filter = {}
-    if (lastId) {
-        filter._id = { $lt: lastId }
-    }
-
-    try {
-        const chats = await Chat.find(filter).sort({ _id: -1 }).populate('participants', '_id firstName lastName').populate('liveComments.from', '_id firstName lastName').limit(limit).lean({ defaults: true });
-        if (chats.length === 0) {
-            return res.status(404).json({ message: 'No chats found!' });
-        }
-        const chatsWithViewers = chats.map(chat => {
-            const count = liveViewers.has(chat._id.toString()) ? liveViewers.get(chat._id.toString()).size : 0;
-            return { ...chat, liveViewerCount: count };
-        });
-
-        res.status(200).json({ chats: chatsWithViewers });
-    } catch (err) {
-        res.status(500).json({ message: 'Server Error!' });
+        console.error('[Get posts error]:', err);
+        return res.status(500).json({ message: 'Server Error!' });
     }
 });
 
-app.get('/api/return-chats/:id', authTokenAPI, async (req, res) => {
-    const id = req.params.id;
-    console.log('return-chats:id')
+app.get('/api/chats', authTokenAPI, async (req, res) => {
+    const { lastId } = req.query;
+    const limit = 30;
+    let filter = {};
+
     try {
-        console.log('\n return-chats Request!')
-        const chat = await Chat.findById(id).populate('participants', '_id firstName lastName').lean();
+        // Validate lastId only if present
+        if (lastId) {
+            if (!mongoose.Types.ObjectId.isValid(lastId)) {
+                console.warn('[GET /api/chats] INVALID_LAST_ID', lastId);
+                return res.status(400).json({ message: 'Invalid lastId!' });
+            }
+            filter._id = { $lt: lastId };
+        }
+
+        const chats = await Chat.find(filter)
+            .sort({ _id: -1 })
+            .populate('participants', '_id firstName lastName')
+            .populate('liveComments.from', '_id firstName lastName')
+            .limit(limit)
+            .lean({ defaults: true });
+
+        if (!chats || chats.length === 0) {
+            return res.status(404).json({ message: 'No chats found!' });
+        }
+
+        const chatsWithViewers = chats.map(chat => {
+            const chatId = chat._id?.toString();
+            const count = chatId && liveViewers.has(chatId)
+                ? liveViewers.get(chatId).size
+                : 0;
+
+            return {
+                ...chat,
+                liveViewerCount: count
+            };
+        });
+
+        return res.status(200).json({ chats: chatsWithViewers });
+
+    } catch (err) {
+        console.error('[GET /api/chats] SERVER_ERROR', err);
+        return res.status(500).json({ message: 'Server Error!' });
+    }
+});
+
+app.get('/api/chats/:id', authTokenAPI, async (req, res) => {
+    const { id } = req.params;
+    console.log('[GET /api/chats/:id] REQUEST', id);
+
+    try {
+        // Prevent BSON crash on invalid ObjectId
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            console.warn('[GET /api/chats/:id] INVALID_CHAT_ID', id);
+            return res.status(400).json({ message: 'Invalid chat id!' });
+        }
+
+        const chat = await Chat.findById(id)
+            .populate('participants', '_id firstName lastName')
+            .lean();
+
         if (!chat) {
             return res.status(404).json({ message: 'No chats found!' });
         }
-        const count = liveViewers.has(chat._id.toString()) ? liveViewers.get(chat._id.toString()).size : 0;
-        res.status(200).json({ chat: { ...chat, liveViewerCount: count } });
+
+        const chatId = chat._id;
+        const count =
+            chatId && liveViewers.has(chatId)
+                ? liveViewers.get(chatId).size
+                : 0;
+
+        return res.status(200).json({
+            chat: {
+                ...chat,
+                liveViewerCount: count
+            }
+        });
+
     } catch (err) {
-        console.log(err)
-        res.status(500).json({ message: 'Server Error!' });
+        console.error('[GET /api/chats/:id] SERVER_ERROR', err);
+        return res.status(500).json({ message: 'Server Error!' });
     }
 });
 
-app.get('/api/return-user-chats/:id', authTokenAPI, async (req, res) => {
-    const id = req.params.id;
+app.get('/api/user-chats/:id', authTokenAPI, async (req, res) => {
+    const { id } = req.params;
+    console.log('[GET /api/user-chats/:id] REQUEST', id);
+
     try {
-        const chats = await Chat.find({ chatAdmin: id });
-        if (!chats) {
+        // Validate ObjectId to prevent BSON errors
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            console.warn('[GET /api/user-chats/:id] INVALID_USER_ID', id);
+            return res.status(400).json({ message: 'Invalid user id!' });
+        }
+
+        const chats = await Chat.find({ chatAdmin: id }).lean();
+
+        if (!chats || chats.length === 0) {
             return res.status(404).json({ message: 'No chats found!' });
         }
-        res.status(200).json({ chats });
+
+        return res.status(200).json({ chats });
+
     } catch (err) {
-        res.status(500).json({ message: 'Server Error!' });
+        console.error('[GET /api/user-chats/:id] SERVER_ERROR', err);
+        return res.status(500).json({ message: 'Server Error!' });
     }
 });
 
-app.get('/api/return-messages/:chatId', authTokenAPI, async (req, res) => {
+app.get('/api/messages/:chatId', authTokenAPI, async (req, res) => {
     try {
         console.log('return-msgs');
         const { chatId } = req.params;
@@ -1115,35 +1356,76 @@ app.get('/api/return-messages/:chatId', authTokenAPI, async (req, res) => {
     }
 });
 
-app.get('/api/user', authTokenAPI, async (req, res) => {
+app.delete('/api/message/:msgId', authTokenAPI, async (req, res) => {
     try{
-        const userId = new mongoose.Types.ObjectId(req.user.id);
-        if(!userId){
-            return res.json(400).status({message: 'Got no User ID!'});
+        const userId = req.user.id;
+        const msgId = req.params.msgId;
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: 'Invalid User ID' });
         }
-        const user = await User.findById(userId).select('_id firstName lastName dp username about').lean();
-        if(!user){
-            return res.json(404).status({message: 'No User Found!'});
+
+        if (!mongoose.Types.ObjectId.isValid(msgId)) {
+            return res.status(400).json({ message: 'Invalid Message ID' });
         }
-        return res.status(200).json({user})
+
+        const deletedMessage = await Message.deleteOne({_id: msgId, from: userId});
+
+        if(deletedMessage.deletedCount === 0) {
+            return res.status(400).json({message: "Couldn't delete message"});
+        }
+
+        return res.status(200).json({message: 'Message deleted Successfully!'});
+
     } catch (err) {
         console.log(err);
-        res.status(500).json({ message: 'Server Error!' });
+        return res.status(500).json({message: 'Server Error!'})
+    }
+});
+
+app.get('/api/user', authTokenAPI, async (req, res) => {
+     try {
+        // Validate user ID
+        if (!req.user.id || !mongoose.Types.ObjectId.isValid(req.user.id)) {
+            return res.status(400).json({ message: 'Got no valid User ID!' });
+        }
+
+        const userId = new mongoose.Types.ObjectId(req.user.id);
+
+        // Fetch user
+        const user = await User.findById(userId)
+            .select('_id firstName lastName dp username about')
+            .lean();
+
+        if (!user) {
+            return res.status(404).json({ message: 'No User Found!' });
+        }
+
+        return res.status(200).json({ user });
+    } catch (err) {
+        console.error('[Get user error]:', err);
+        return res.status(500).json({ message: 'Server Error!' });
     }
 })
 
 app.patch('/api/user/display-name', authTokenAPI, async (req, res) => {
-    try{
+    try {
         const { firstName, lastName } = req.body;
 
-        if (!firstName || !lastName) {
+        // Validate input presence
+        if (!firstName || !firstName.trim() || !lastName || !lastName.trim()) {
             return res.status(400).json({
                 message: 'First name and last name are required'
             });
         }
 
+        // Validate user ID
+        if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
+
+        // Update user
         const updatedUser = await User.findByIdAndUpdate(
-            req.user.id, // set by authTokenAPI
+            req.user.id,
             {
                 firstName: firstName.trim(),
                 lastName: lastName.trim(),
@@ -1163,7 +1445,7 @@ app.patch('/api/user/display-name', authTokenAPI, async (req, res) => {
             user: updatedUser,
         });
     } catch (err) {
-        console.log(err);
+        console.error('[Display name update error]:', err);
         res.status(500).json({ message: 'Server Error!' });
     }
 });
@@ -1172,31 +1454,30 @@ app.patch('/api/user/about', authTokenAPI, async (req, res) => {
     try {
         const { about } = req.body;
 
-        if (!about) {
-            return res.status(400).json({
-                message: 'About field is required',
-            });
+        // Validate input presence
+        if (!about || !about.trim()) {
+            return res.status(400).json({ message: 'About field is required' });
         }
 
+        // Validate length
         if (about.length > 120) {
-            return res.status(400).json({
-                message: 'About must be 100 characters or less',
-            });
+            return res.status(400).json({ message: 'About must be 120 characters or less' });
         }
 
+        // Validate user ID
+        if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
+
+        // Update user about
         const updatedUser = await User.findByIdAndUpdate(
-            req.user.id, // set by authTokenAPI
+            req.user.id,
             { about: about.trim() },
-            {
-                new: true,
-                runValidators: true,
-            }
+            { new: true, runValidators: true }
         ).select('_id firstName lastName username dp about');
 
         if (!updatedUser) {
-            return res.status(404).json({
-                message: 'User not found',
-            });
+            return res.status(404).json({ message: 'User not found' });
         }
 
         return res.status(200).json({
@@ -1205,7 +1486,7 @@ app.patch('/api/user/about', authTokenAPI, async (req, res) => {
         });
 
     } catch (err) {
-        console.error(err);
+        console.error('[About update error]:', err);
         return res.status(500).json({ message: 'Server Error!' });
     }
 });
@@ -1215,41 +1496,45 @@ app.patch('/api/user/password', authTokenAPI, async (req, res) => {
         const currentPassword = req.body.currentPassword?.trim();
         const newPassword = req.body.newPassword?.trim();
 
+        // Validate input presence
         if (!currentPassword || !newPassword) {
             return res.status(400).json({
                 message: 'Current and new passwords are required',
             });
         }
 
+        // Validate new password length
         if (newPassword.length < 8) {
             return res.status(400).json({
                 message: 'Password must be at least 8 characters long',
             });
         }
 
-        const user = await User.findById(req.user.id).select('+password_hash');
+        // Validate user ID
+        if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
 
+        // Fetch user with password hash
+        const user = await User.findById(req.user.id).select('+password_hash');
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Compare current password
         const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
-
         if (!isMatch) {
-            return res.status(401).json({
-                message: 'Current password is incorrect',
-            });
+            return res.status(401).json({ message: 'Current password is incorrect' });
         }
 
+        // Hash and update new password
         user.password_hash = await bcrypt.hash(newPassword, saltRounds);
         await user.save();
 
-        return res.status(200).json({
-            message: 'Password updated successfully',
-        });
+        return res.status(200).json({ message: 'Password updated successfully' });
 
     } catch (err) {
-        console.error(err);
+        console.error('[Password update error]:', err);
         return res.status(500).json({ message: 'Server Error!' });
     }
 });
@@ -1258,16 +1543,23 @@ app.patch('/api/user/dob', authTokenAPI, async (req,res) => {
     try {
         const { dob } = req.body;
 
+        // Validate presence
         if (!dob) {
             return res.status(400).json({ message: 'Date of birth is required' });
         }
 
+        // Validate date format
         const parsedDOB = new Date(dob);
-
         if (isNaN(parsedDOB.getTime())) {
             return res.status(400).json({ message: 'Invalid date format' });
         }
 
+        // Validate user ID
+        if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
+
+        // Update user DOB
         const user = await User.findByIdAndUpdate(
             req.user.id,
             { dob: parsedDOB },
@@ -1278,19 +1570,23 @@ app.patch('/api/user/dob', authTokenAPI, async (req,res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        res.json({
+        return res.status(200).json({
             message: 'Date of birth updated successfully',
             dob: user.dob,
         });
+
     } catch (err) {
-        console.error('DOB update error:', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error('[DOB update error]:', err);
+        return res.status(500).json({ message: 'Server error' });
     }
 })
 
 app.delete('/api/user', authTokenAPI, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = new mongoose.Types.ObjectId(req.user.id);
+        if(!userId){
+            return res.status(403).json({message: 'Invalid User ID!'})
+        }
 
         const user = await User.findByIdAndDelete(userId);
 
@@ -1324,9 +1620,15 @@ app.post('/api/message', authTokenAPI, async (req, res) => {
         let {from, chatId, message, isReply, repliedTo, media, type} = req.body;
         console.log(req.body)
         from = new mongoose.Types.ObjectId(from);
-
+        chatId = new mongoose.Types.ObjectId(chatId);
         if (!from || !chatId || (!message && (!media || media.length === 0) || (isReply && !repliedTo))) {
             return res.status(400).json({ message: 'Please send all required fields!' });
+        }
+
+        const chat = await Chat.findById(chatId).select('participants');
+        if (!chat?.participants.some(p => p.equals(from))) {
+            console.log('This user is not allowed to send messages');
+            return res.status(403).json({message: 'This user is not allowed to send messages'});
         }
 
         const newMessage = await Message.create({
@@ -1353,20 +1655,53 @@ app.post('/api/message', authTokenAPI, async (req, res) => {
     }   
 })
 
-app.post('/api/start-chat', authTokenAPI, async (req, res) => {
+app.post('/api/chat', authTokenAPI, async (req, res) => {
     try {
-        console.log('\n start-chat Request! \n')
-        console.log(req.body)
-        const newChat = new Chat({...req.body, status:'pending_requests'})
-        await newChat.save();
-        await newChat.populate('requested_participants', '_id firstName lastName')
-        for(const participant of newChat.requested_participants){
-            const user = await User.findByIdAndUpdate(participant, {$push: { chat_requests: newChat._id }});
+        const {
+            requested_participants = [],
+            chatAdmin,
+            chatName,
+            chatNiche,
+            chatDp
+        } = req.body;
+
+        if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+            return res.status(400).json({ message: 'Invalid user ID!' });
         }
-        res.status(200).json({ newChat });
+        const totalParticipants = (requested_participants?.length || 0) + 1;
+        if (totalParticipants < 3) {
+            console.warn('[start-chat] Not enough participants', { totalParticipants });
+            return res.status(404).json({ message: 'At least 3 participants are required to create a chat!' });
+        }
+
+        const participants = [req.user.id];
+
+        const newChat = new Chat({
+            chatAdmin,
+            chatName,
+            chatNiche,
+            chatDp,
+            requested_participants,
+            participants,
+            status: 'pending_requests'
+        });
+
+        await newChat.save();
+
+        await newChat.populate('requested_participants', '_id firstName lastName username dp');
+
+        // Push chat request to each requested participant
+        for (const participant of newChat.requested_participants) {
+            await User.findByIdAndUpdate(participant, {
+                $push: { chat_requests: newChat._id }
+            });
+        }
+
+        return res.status(200).json({ newChat });
+
     } catch (err) {
-        console.log(err)
-        res.status(500).json({ message: 'Server Error!' })
+        console.error('[start-chat] SERVER_ERROR', err);
+        return res.status(500).json({ message: 'Server Error!' });
     }
 });
 
@@ -1465,274 +1800,587 @@ app.post('/api/live-comment', authTokenAPI, async (req, res) => {
 })
 
 app.delete('/api/chat/:chatId', authTokenAPI, async (req, res) => {
-    try{
-        console.log('Delete Chat request!');
-        const chatId = req.params.chatId;
+    const { chatId } = req.params;
+
+    try {
+        // Validate ObjectId to prevent BSON errors
+        if (!mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ message: 'Invalid chatId!' });
+        }
+
+        // Delete chat
         await Chat.deleteOne({ _id: chatId });
-        await Notification.deleteMany({ chat: chatId })
-        return res.status(200).json({message: 'Chat Deleted!'})
-    } catch(err) {
-        console.log(err)
-        return res.status(500).json({message: 'Internal Server Error!'})
+
+        // Delete related notifications
+        await Notification.deleteMany({ chat: chatId });
+
+        return res.status(200).json({ message: 'Chat Deleted!' });
+
+    } catch (err) {
+        return res.status(500).json({ message: 'Internal Server Error!' });
     }
-})
+});
 
 app.delete('/api/chat/participant/:userId/:chatId', authTokenAPI, async (req, res) => {
+    const { chatId, userId } = req.params;
+
     try {
-        const chatId = req.params.chatId;
-        const userId = req.params.userId;
+        if (!mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ message: 'Invalid chatId!' });
+        }
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: 'Invalid userId!' });
+        }
+
         const updatedChat = await Chat.updateOne(
             { _id: chatId },
             { $pull: { participants: userId } }
-        )
+        );
 
         if (updatedChat.modifiedCount === 0) {
             return res.status(404).json({ message: 'Participant not found or already removed!' });
         }
 
         return res.status(200).json({ message: 'Participant removed Successfully!' });
+
     } catch (err) {
-        console.log(err);
-        res.status(500).json({ message: 'Internal Server Error!' });
+        return res.status(500).json({ message: 'Internal Server Error!' });
     }
-})
+});
 
 app.put('/api/chat/participant', authTokenAPI, async (req, res) => {
     try {
         const { participants, chatId } = req.body;
 
-        if (!participants || !chatId) {
-            return res.status(400).json({ message: 'Missing participants or chatId!' });
+        if (
+            !chatId ||
+            !mongoose.Types.ObjectId.isValid(chatId) ||
+            !Array.isArray(participants) ||
+            participants.length === 0
+        ) {
+            return res.status(400).json({ message: 'Invalid payload!' });
         }
 
-        const updatedChat = await Chat.updateOne(
+        // 1. Ensure chat exists
+        const chat = await Chat.findById(chatId).select('_id chatAdmin requested_participants');
+        if (!chat) {
+            return res.status(404).json({ message: 'Chat not found!' });
+        }
+
+        if(String(chat.chatAdmin) !== String(req.user.id)){
+            return res.status(400).json({message: "This user doesn't have permission to add participants."});
+        }
+
+        // 2. Add users to chat.requested_participants (no duplicates)
+        await Chat.updateOne(
             { _id: chatId },
-            { $addToSet: { participants: { $each: participants } } }
-        )
+            { $addToSet: { requested_participants: { $each: participants } } }
+        );
 
-        if (updatedChat.modifiedCount === 0) {
-            return res.status(404).json({ message: 'Participants not found or already added!' });
-        }
+        // 3. Add chatId to each user's chat_requests (no duplicates)
+        await User.updateMany(
+            { _id: { $in: participants } },
+            { $addToSet: { chat_requests: chatId } }
+        );
 
-        return res.status(200).json({ message: 'Participants Added Successfully!' });
+        return res.status(200).json({
+            message: 'Chat join requests sent successfully!'
+        });
+
     } catch (err) {
-        console.log(err);
+        console.error(err);
         res.status(500).json({ message: 'Internal Server Error!' });
     }
 });
 
 app.patch('/api/chat/subscribe', authTokenAPI, async (req, res) => {
     try {
-        console.log('Hello FROM SUB');
         const { chatId } = req.body;
-        const userId = req.user.id;
-        if(!chatId){
-            return res.status(400).json({ message: 'Chat ID is required!' })
-        }
-        const updatedChat = await Chat.findByIdAndUpdate(chatId, { $addToSet: { subscribers: userId }}, { new: true }).select('subscribers');
+        const userId = req.user?.id;
 
-        if(!updatedChat){
-            return res.status(404).json({message: 'Chat not found!'})
+        // Defensive checks
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
         }
 
-        return res.status(200).json({ message: 'Subscribed', subscribers: updatedChat.subscribers })
+        if (!chatId) {
+            return res.status(400).json({ message: 'Chat ID is required!' });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ message: 'Invalid Chat ID!' });
+        }
+
+        const updatedChat = await Chat.findByIdAndUpdate(
+            chatId,
+            { $addToSet: { subscribers: userId } }, // idempotent
+            { new: true }
+        ).select('subscribers');
+
+        if (!updatedChat) {
+            return res.status(404).json({ message: 'Chat not found!' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Subscribed',
+            subscribers: updatedChat.subscribers,
+        });
 
     } catch (err) {
-        res.status(500).json({ message: 'Internal Server Error!' })
-    } 
+        console.error('[SUBSCRIBE_CHAT_ERROR]', err);
+
+        return res.status(500).json({
+            success: false,
+            message: 'Internal Server Error!',
+        });
+    }
 });
 
 app.patch('/api/chat/unsubscribe', authTokenAPI, async (req, res) => {
     try {
-        console.log('Hello FROM SUB');
         const { chatId } = req.body;
-        const userId = req.user.id;
-        if(!chatId){
-            return res.status(400).json({ message: 'Chat ID is required!' })
-        }
-        const updatedChat = await Chat.findByIdAndUpdate(chatId, { $pull: { subscribers: userId } }, {new: true}).select('subscribers');
+        const userId = req.user?.id;
 
-        if(!updatedChat){
-            return res.status(404).json({message: 'Chat not found!'})
+        // Defensive auth check
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
         }
 
-        return res.status(200).json({ message: 'Unsubscribed', subscribers: updatedChat.subscribers })
+        if (!chatId) {
+            return res.status(400).json({ message: 'Chat ID is required!' });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ message: 'Invalid Chat ID!' });
+        }
+
+        const updatedChat = await Chat.findByIdAndUpdate(
+            chatId,
+            { $pull: { subscribers: userId } }, // idempotent
+            { new: true }
+        ).select('subscribers');
+
+        if (!updatedChat) {
+            return res.status(404).json({ message: 'Chat not found!' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Unsubscribed',
+            subscribers: updatedChat.subscribers,
+        });
 
     } catch (err) {
-        res.status(500).json({ message: 'Internal Server Error!' })
-    } 
+        console.error('[UNSUBSCRIBE_CHAT_ERROR]', err);
+
+        return res.status(500).json({
+            success: false,
+            message: 'Internal Server Error!',
+        });
+    }
 });
 
 app.post('/api/chat/accept/:chatId', authTokenAPI, async (req, res) => {
-    try{
-        console.log('hello from "/api/chat/accept/:userId"');
-        const userId = req.user.id;
-        const {chatId} = req.params;
-        const chat = await Chat.findByIdAndUpdate(chatId, {$push: { participants: userId }, $pull: { requsted_participants: userId }})
-        const user = await User.findByIdAndUpdate(userId, { $pull: { chat_requests: chatId } });
-        const notification = await Notification.create({
+    try {
+        const userId = req.user?.id;
+        const { chatId } = req.params;
+
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        if (!chatId) {
+            return res.status(400).json({ message: 'Chat ID is required!' });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ message: 'Invalid Chat ID!' });
+        }
+
+        const chat = await Chat.findByIdAndUpdate(
+            chatId,
+            {
+                $push: { participants: userId },
+                $pull: { requsted_participants: userId },
+            },
+            { new: true }
+        );
+
+        if (!chat) {
+            return res.status(400).json({ message: 'Chat not Found!' });
+        }
+
+        await User.findByIdAndUpdate(
+            userId,
+            { $pull: { chat_requests: chatId } }
+        );
+
+        let notification = await Notification.create({
             user: chat.chatAdmin,
             sender: userId,
             chat: chatId,
-            type: 'accepted_group_request'
-        })
-        await Notification.deleteOne({user: userId, chat: chatId, type: 'added_to_group_request'});
-        if(!chat){
-            return res.status(400).json({message: 'Chat not Found!'});
-        }
-        if(chat.participants.length >= 3){
+            type: 'accepted_group_request',
+        });
+
+        await Notification.deleteOne({
+            user: userId,
+            chat: chatId,
+            type: 'added_to_group_request',
+        });
+
+        // Preserve your logic exactly
+        if (chat.participants.length >= 3) {
             chat.status = 'active';
-            chat.save();
+            await chat.save();
         }
-        return res.status(200).json({chat, notification});
-    } catch(err) {
-        console.log(err)
-        return res.status(500).json({message: 'Internal Server Error'});
+
+        // ✅ Populate notification
+        notification = await Notification.findById(notification._id)
+            .populate('user', '_id username firstName lastName dp')
+            .populate('sender', '_id username firstName lastName dp')
+            .populate('chat', '_id chatName chatAdmin status');
+
+        return res.status(200).json({
+            success: true,
+            chat,
+            notification,
+        });
+
+    } catch (err) {
+        console.error('[ACCEPT_CHAT_REQUEST_ERROR]', err);
+
+        return res.status(500).json({
+            success: false,
+            message: 'Internal Server Error',
+        });
     }
 })
 
 app.post('/api/chat/reject/:chatId', authTokenAPI, async (req, res) => {
-    try{
-        const userId = req.user.id;
-        const {chatId} = req.params;
-        const chat = await Chat.findByIdAndUpdate(chatId, {requsted_participants: { $pull: userId }});
-        const user = await User.findByIdAndUpdate(userId, { chat_requests: { $pull: chatId } });
-        await Notification.deleteOne({user: userId, chat: chatId, type: 'added_to_group_request'});
-        if(!chat){
-            return res.status(400).json({message: 'Chat not Found!'});
+    try {
+        const userId = req.user?.id;
+        const { chatId } = req.params;
+
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
         }
-        return res.status(200).json({chat});
-    } catch(err) {
-        return res.status(500).json({message: 'Internal Server Error'});
+
+        if (!chatId) {
+            return res.status(400).json({ message: 'Chat ID is required!' });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ message: 'Invalid Chat ID!' });
+        }
+
+        // remove user from requested_participants
+        const chat = await Chat.findByIdAndUpdate(
+            chatId,
+            { $pull: { requsted_participants: userId } },
+            { new: true }
+        );
+
+        if (!chat) {
+            return res.status(400).json({ message: 'Chat not Found!' });
+        }
+
+        // remove chat from user's chat_requests
+        await User.findByIdAndUpdate(
+            userId,
+            { $pull: { chat_requests: chatId } }
+        );
+
+        // delete related notification
+        await Notification.deleteOne({
+            user: userId,
+            chat: chatId,
+            type: 'added_to_group_request',
+        });
+
+        return res.status(200).json({
+            success: true,
+            chat,
+        });
+
+    } catch (err) {
+        console.error('[REJECT_CHAT_REQUEST_ERROR]', err);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 })
 
 app.post('/api/friends/request/:userId', authTokenAPI, async (req, res) => {
     try {
-        const fromUserId = req.user.id;
+        const fromUserId = req.user?.id;
         const toUserId = req.params.userId;
 
-        const request = await FriendRequest.create({ from: fromUserId, to: toUserId });
+        if (!fromUserId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
 
-        const populated = await FriendRequest.findById(request._id)
+        if (!toUserId) {
+            return res.status(400).json({ message: 'Target user ID is required' });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(toUserId)) {
+            return res.status(400).json({ message: 'Invalid target user ID' });
+        }
+
+        // create friend request
+        const request = await FriendRequest.create({
+            from: fromUserId,
+            to: toUserId,
+        });
+
+        // populate request
+        const populatedRequest = await FriendRequest.findById(request._id)
             .populate('from', '_id firstName lastName')
             .populate('to', '_id firstName lastName')
             .lean();
 
-        
+        // create notification
         const notification = await Notification.create({
             user: toUserId,
-            type: "friend_request_received",
-            sender: req.user.id,
-        })
+            type: 'friend_request_received',
+            sender: fromUserId,
+        });
 
+        // populate notification
         const populatedNotification = await Notification.findById(notification._id)
             .populate('sender', '_id firstName lastName dp')
             .lean();
 
-        res.status(201).json({ request: populated, notification:  populatedNotification });
+        return res.status(201).json({
+            success: true,
+            request: populatedRequest,
+            notification: populatedNotification,
+        });
+
     } catch (err) {
-        res.status(500).json({ error: 'Failed to send friend request', details: err.message });
+        console.error('[FRIEND_REQUEST_ERROR]', err);
+        return res.status(500).json({
+            message: 'Failed to send friend request',
+        });
     }
 });
 
 app.delete('/api/friends/request/:userId', authTokenAPI, async (req, res) => {
     try {
-        const fromUserId = req.user.id;
+        const fromUserId = req.user?.id;
         const toUserId = req.params.userId;
 
-        const deleted = await FriendRequest.findOneAndDelete({ from: fromUserId, to: toUserId })
+        if (!fromUserId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        if (!toUserId) {
+            return res.status(400).json({ message: 'Target user ID is required' });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(toUserId)) {
+            return res.status(400).json({ message: 'Invalid target user ID' });
+        }
+
+        const deleted = await FriendRequest.findOneAndDelete({
+            from: fromUserId,
+            to: toUserId,
+        })
             .populate('from', '_id firstName lastName')
-            .populate('to', '_id firstName lastName');
+            .populate('to', '_id firstName lastName')
+            .lean();
 
-        await Notification.deleteOne({user: toUserId, sender: fromUserId, type: "friend_request_received"});
+        // keep logic: notification deletion regardless of request existence
+        await Notification.deleteOne({
+            user: toUserId,
+            sender: fromUserId,
+            type: 'friend_request_received',
+        });
 
-        res.json(deleted);
+        return res.status(200).json({
+            success: true,
+            request: deleted,
+        });
+
     } catch (err) {
-        res.status(500).json({ error: 'Failed to cancel friend request', details: err.message });
+        console.error('[CANCEL_FRIEND_REQUEST_ERROR]', err);
+        return res.status(500).json({
+            message: 'Failed to cancel friend request',
+        });
     }
 });
 
 app.post('/api/friends/accept/:userId', authTokenAPI, async (req, res) => {
     try {
         const fromUserId = req.params.userId;
-        const toUserId = req.user.id;
+        const toUserId = req.user?.id;
+
+        if (!toUserId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        if (!fromUserId) {
+            return res.status(400).json({ message: 'Sender user ID is required' });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(fromUserId)) {
+            return res.status(400).json({ message: 'Invalid sender user ID' });
+        }
 
         const from = await User.findById(fromUserId);
         const to = await User.findById(toUserId);
 
-        if (!from || !to) return res.status(404).json({ error: 'User not found' });
+        if (!from || !to) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
+        // SAME logic
         if (!from.friends.includes(toUserId)) from.friends.push(toUserId);
         if (!to.friends.includes(fromUserId)) to.friends.push(fromUserId);
 
-        await from.save();
-        await to.save();
+        await Promise.all([from.save(), to.save()]);
 
-        await FriendRequest.deleteOne({ from: fromUserId, to: toUserId });
+        await FriendRequest.deleteOne({
+            from: fromUserId,
+            to: toUserId,
+        });
 
-        await Notification.deleteOne({user: toUserId, sender: fromUserId, type: "friend_request_received"});
+        await Notification.deleteOne({
+            user: toUserId,
+            sender: fromUserId,
+            type: 'friend_request_received',
+        });
 
         const notification = await Notification.create({
             user: fromUserId,
-            type: "friend_request_accepted",
+            type: 'friend_request_accepted',
             sender: toUserId,
-        })
+        });
 
         const populatedNotification = await Notification.findById(notification._id)
-            .populate('sender', '_id firstName lastName dp')
+            .populate('sender', '_id username firstName lastName dp')
             .lean();
 
+        return res.status(200).json({
+            success: true,
+            from: fromUserId,
+            to: toUserId,
+            notification: populatedNotification,
+        });
 
-        res.json({ success: true, from: fromUserId, to: toUserId, notification: populatedNotification });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to accept friend request', details: err.message });
+        console.error('[ACCEPT_FRIEND_REQUEST_ERROR]', err);
+        return res.status(500).json({
+            message: 'Failed to accept friend request',
+        });
     }
 });
 
 app.post('/api/friends/reject/:userId', authTokenAPI, async (req, res) => {
     try {
         const fromUserId = req.params.userId;
-        const toUserId = req.user.id;
+        const toUserId = req.user?.id;
 
-        const fr = await FriendRequest.findOne({ from: fromUserId, to: toUserId });
-        if (!fr) {
-            return res.status(404).json({ error: "Friend request not found" });
+        if (!toUserId) {
+            return res.status(401).json({ message: 'Unauthorized' });
         }
 
-        await FriendRequest.deleteOne({ from: fromUserId, to: toUserId });
-        
-        await Notification.deleteOne({user: toUserId, sender: fromUserId, type: "friend_request_received" });
+        if (!fromUserId) {
+            return res.status(400).json({ message: 'Sender user ID is required' });
+        }
 
-        res.json({ success: true, from: fromUserId, to: toUserId });
+        if (!mongoose.Types.ObjectId.isValid(fromUserId)) {
+            return res.status(400).json({ message: 'Invalid sender user ID' });
+        }
+
+        const fr = await FriendRequest.findOne({
+            from: fromUserId,
+            to: toUserId,
+        });
+
+        if (!fr) {
+            return res.status(404).json({ message: 'Friend request not found' });
+        }
+
+        // SAME logic
+        await FriendRequest.deleteOne({
+            from: fromUserId,
+            to: toUserId,
+        });
+
+        await Notification.deleteOne({
+            user: toUserId,
+            sender: fromUserId,
+            type: 'friend_request_received',
+        });
+
+        return res.status(200).json({
+            success: true,
+            from: fromUserId,
+            to: toUserId,
+        });
+
     } catch (err) {
-        res.status(500).json({ error: 'Failed to reject friend request', details: err.message });
+        console.error('[REJECT_FRIEND_REQUEST_ERROR]', err);
+        return res.status(500).json({
+            message: 'Failed to reject friend request',
+        });
     }
 });
 
 app.delete('/api/friends/:userId', authTokenAPI, async (req, res) => {
-    try {
-        const userId = req.user.id;
+     try {
+        const userId = req.user?.id;
         const friendId = req.params.userId;
 
-        await User.findByIdAndUpdate(userId, { $pull: { friends: friendId } });
-        await User.findByIdAndUpdate(friendId, { $pull: { friends: userId } });
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
 
-        const removedFriend = await User.findById(friendId).select('_id firstName lastName');
+        if (!friendId) {
+            return res.status(400).json({ message: 'Friend ID is required' });
+        }
 
-        res.json({ removedFriend });
+        if (!mongoose.Types.ObjectId.isValid(friendId)) {
+            return res.status(400).json({ message: 'Invalid friend ID' });
+        }
+
+        // SAME LOGIC — mutual removal
+        await User.findByIdAndUpdate(userId, {
+            $pull: { friends: friendId },
+        });
+
+        await User.findByIdAndUpdate(friendId, {
+            $pull: { friends: userId },
+        });
+
+        const removedFriend = await User.findById(friendId)
+            .select('_id firstName lastName')
+            .lean();
+
+        if (!removedFriend) {
+            return res.status(404).json({ message: 'Friend not found' });
+        }
+
+        return res.status(200).json({ removedFriend });
+
     } catch (err) {
-        console.log(err);
-        res.status(500).json({ error: 'Failed to Unfriend', details: err.message });
+        console.error('[UNFRIEND_ERROR]', err);
+        return res.status(500).json({
+            message: 'Failed to unfriend user',
+        });
     }
 });
 
 app.post('/api/notification', authTokenAPI, async (req, res) => {
-    try{
-        const {user, sender, type, chat, message, text} = req.body;
-        console.log("\nnotification API call");
-        console.log(req.body);
+    try {
+        const { user, sender, type, chat, message, text } = req.body;
 
+        // Basic validation
+        if (!user || !sender || !type) {
+            return res.status(400).json({ message: 'Missing required notification fields!' });
+        }
+
+        // Create the notification
         const newNotification = await Notification.create({
             user,
             sender,
@@ -1740,14 +2388,26 @@ app.post('/api/notification', authTokenAPI, async (req, res) => {
             chat,
             message,
             text
-        })
-        const populatedNotification = await Notification.findById(newNotification._id).populate('sender', '_id firstName lastName dp').populate('chat', '_id chatName chatDp').populate('message', '_id message type');
-        res.status(200).json({ notification: populatedNotification });
+        });
+
+        // Populate references
+        const populatedNotification = await Notification.findById(newNotification._id)
+            .populate('sender', '_id firstName lastName username dp')
+            .populate('chat', '_id chatAdmin chatName chatDp')
+            .populate('message', '_id message type')
+            .lean(); // optional: return plain JS object
+
+            console.log(populatedNotification);
+        return res.status(200).json({ notification: populatedNotification });
+
     } catch (err) {
-        console.log(err);
-        res.status(500).json({ error: 'Failed to Unfriend', details: err.message });
+        console.error('[POST /api/notification] SERVER_ERROR', err);
+        return res.status(500).json({
+            error: 'Failed to create notification',
+            details: err.message
+        });
     }
-})
+});
 
 app.get('/api/media/:chatId', authTokenAPI, async (req, res) => {
   try {
@@ -1828,121 +2488,161 @@ io.on('connection', (socket) => {
     console.log("A user connected:", socket.user);
 
     socket.on('register', async (userID) => {
-        if (!userID) return;
-        const userDB = await User.findById(userID).select('firstName lastName');
-        if (!userDB) return;
-        onlineUsers[userID] = {
-            socketID: socket.id,
-            username: `${userDB.firstName} ${userDB.lastName}`
-        };
-        console.log(userID, "is online with socket", socket.id);
+        try{
+            if (!userID) return;
+            const userDB = await User.findById(userID).select('firstName lastName');
+            if (!userDB) return;
+            onlineUsers[userID] = {
+                socketID: socket.id,
+                username: `${userDB.firstName} ${userDB.lastName}`
+            };
+            console.log(userID, "is online with socket", socket.id);
+        } catch (err) {
+            console.log(err);
+            return;
+        }
     });
 
     socket.on('joinChat', async ({ chatId, userId }) => {
-        console.log('hello jc')
-        socket.join(chatId);
-        socket.chatId = chatId;
-        socket.userId = userId;
+        try{
+            console.log('hello jc')
+            socket.join(chatId);
+            socket.chatId = chatId;
+            socket.userId = userId;
 
-        if (!liveViewers.has(chatId)) liveViewers.set(chatId, new Set());
-        liveViewers.get(chatId).add(userId);
+            if (!liveViewers.has(chatId)) liveViewers.set(chatId, new Set());
+            liveViewers.get(chatId).add(userId);
 
-        const viewerCount = liveViewers.get(chatId).size;
+            const viewerCount = liveViewers.get(chatId).size;
 
-        io.to(chatId).emit('liveViewerCount', { chatId, count: viewerCount });
+            io.to(chatId).emit('liveViewerCount', { chatId, count: viewerCount });
+        } catch (err){
+            console.log(err);
+            return;
+        }
     });
 
     socket.on('leaveChat', (chatId) => {
-        console.log('leaveChat')
-        const { userId } = socket;
-        socket.chatId = null
-        if (chatId && liveViewers.has(chatId)) {
-            socket.leave(chatId);
-            liveViewers.get(chatId).delete(userId);
-            const count = liveViewers.get(chatId).size;
-            io.to(chatId).emit('liveViewerCount', { chatId, count });
+        try{
+            console.log('leaveChat')
+            const userId = socket.user.id;
+            socket.chatId = null
+            if (chatId && liveViewers.has(chatId)) {
+                socket.leave(chatId);
+                liveViewers.get(chatId).delete(userId);
+                const count = liveViewers.get(chatId).size;
+                io.to(chatId).emit('liveViewerCount', { chatId, count });
+            }
+        } catch (err) {
+            console.log(err);
+            return;
         }
     });
 
     socket.on("chatOpenedByParticipant", async ({ chatId, userId }) => {
-        console.log('hello cobp');
-        await Message.updateMany(
-            { chatId, from: { $ne: userId }, read: false },
-            { $set: { read: true } }
-        );
-
-        const chat = await Chat.findById(chatId);
-        chat.participants.forEach((participant) => {
-            if (onlineUsers[participant] && participant.toString() !== userId.toString()) {
-                const recieverSocketId = onlineUsers[participant].socketID;
-                io.to(recieverSocketId).emit('messagesRead', {
-                    chatId,
-                    reader: userId
-                })
-            }
-        })
+        try{
+            console.log('hello cobp');
+            await Message.updateMany(
+                { chatId, from: { $ne: userId }, read: false },
+                { $set: { read: true } }
+            );
+        } catch (err) {
+            console.log(err);
+            return;
+        }
     });
 
     socket.on('participantRemoved', async ({ userId, chatId }) => {
-        console.log('Received particpantRemoved');
-        const removedUser = await User.findById(userId)
-        const chat = await Chat.findById(chatId);
-        const newMessage = await Message.create({
-            from: chat.chatAdmin,
-            chatId,
-            message: `Admin Removed ${removedUser.firstName + ' ' + removedUser.lastName}`,
-            type: 'chatInfo',
-            media: [],
-            reactions: []
-        });
-        const receiverSockets = [];
-        for (let participant of chat.participants) {
-            if (onlineUsers[participant]) {
-                receiverSockets.push(onlineUsers[participant]);
-            }
+        try{
+            console.log('Received particpantRemoved');
+            if(!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(chatId)) return;
+            const removedUser = await User.findById(userId)
+            const chat = await Chat.findById(chatId).select('chatAdmin');
+            if(String(socket.user.id) !== String(chat.chatAdmin)) return;
+            const newMessage = await Message.create({
+                from: chat.chatAdmin,
+                chatId,
+                message: `Admin Removed ${removedUser.firstName + ' ' + removedUser.lastName}`,
+                type: 'chatInfo',
+                media: [],
+                reactions: []
+            });
+            io.to(chatId).emit('participantRemoved', { userId, chatId, msg: newMessage });
+        } catch (err) {
+            console.log(err);
+            return;
         }
-        for (let receiverSocket of receiverSockets) {
-            io.to(receiverSocket.socketID).emit('participantRemoved', { userId, chatId, msg: newMessage });
-        }
-        io.to(chatId).emit('participantRemoved', { userId, chatId, msg: newMessage });
     });
 
-    socket.on('participantAdded', async ({ userId, chatId }) => {
-        console.log('Received particpantAdded');
-        const addedUser = await User.findById(userId).select('_id firstName lastName dp')
-        const chat = await Chat.findById(chatId);
-        const newMessage = await Message.create({
-            from: chat.chatAdmin,
-            chatId,
-            message: `Admin added ${addedUser.firstName + ' ' + addedUser.lastName}`,
-            type: 'chatInfo',
-            media: [],
-            reactions: []
-        });
-        const receiverSockets = [];
-        for (let participant of chat.participants) {
-            if (onlineUsers[participant]) {
-                receiverSockets.push(onlineUsers[participant]);
-            }
+    socket.on('participantAdded', async ({ userId, chatId, message }) => {
+        try{
+            console.log('Received particpantAdded');
+            if(!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(chatId)) return;
+            const chat = await Chat.findById(chatId).select('chatAdmin');
+            if(String(socket.user.id) !== String(chat.chatAdmin)) return;
+            const addedUser = await User.findById(userId).select('_id firstName lastName username dp').lean();
+            if(!addedUser) return
+            io.to(chatId).emit('participantAdded', { addedUser, chatId, msg: message });
+        } catch (err) {
+            console.log(err);
+            return;
         }
-        for (let receiverSocket of receiverSockets) {
-            io.to(receiverSocket.socketID).emit('participantAdded', { addedUser, chatId, msg: newMessage });
+    });
+
+    socket.on('participantJoined', async ({chatId}) => {
+        try{
+            const userId = socket.user.id;
+            if(!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(chatId)) return;
+            const chat = await Chat.findOne({_id: chatId, participants: userId});
+            if(!chat) return;
+            const user = await User.findById(userId).select('_id username firstName lastName dp').lean();
+            if(!user) return
+            io.to(chatId).emit('participantJoined', {user, chatId});
+        } catch (err) {
+            console.log(err);
+            return;
         }
-        io.to(chatId).emit('participantAdded', { addedUser, chatId, msg: newMessage });
-    })
+    });
 
     socket.on('participantLeft', ({ userId, chatId }) => {
 
     })
 
-    socket.on('message', async ({message}) => {
+    socket.on('message', async ({ message }) => {
         try {
-            io.to(message.chatId).emit('message', message)
+            if (!message) {
+                console.log('Rejected: no message');
+                return;
+            }
 
-            socket.emit('messageSent', message);
+            if (
+                !message.type ||
+                (message.type === 'text' && !message.message?.trim()) ||
+                (message.type === 'media' && (!Array.isArray(message.media) || message.media.length === 0)) ||
+                (message.type === 'audio' && (!Array.isArray(message.media) || message.media.length === 0))
+            ) {
+                return;
+            }
+
+            if (
+                !mongoose.Types.ObjectId.isValid(message.from._id) ||
+                !mongoose.Types.ObjectId.isValid(message.chatId)
+            ) {
+                return;
+            }
+
+            const userObjectId = new mongoose.Types.ObjectId(message.from._id);
+            const chatId = new mongoose.Types.ObjectId(message.chatId);
+
+            const chat = await Chat.findById(chatId).select('participants');
+            if (!chat?.participants.some(p => p.equals(userObjectId))) {
+                return;
+            }
+
+            io.to(message.chatId).emit('message', message);
 
         } catch (err) {
-            console.log("Error saving message:", err);
+            console.error("Message socket error:", err);
         }
     });
 
@@ -1960,32 +2660,50 @@ io.on('connection', (socket) => {
 
     socket.on('reaction', async (data) => {
         try {
+            const { msgId, userId, chatId, emoji, remove } = data;
 
-            let { msgId, userId, chatId, emoji } = data;
+            if (!emoji || typeof emoji !== "string") return;
+
+            const userObjectId = new mongoose.Types.ObjectId(userId);
 
             await Message.updateOne(
                 { _id: msgId },
-                { $pull: { reactions: { userId: new mongoose.Types.ObjectId(userId) } } }
+                [
+                    {
+                        $set: {
+                            reactions: {
+                                $cond: [
+                                    remove,
+                                    {
+                                        $filter: {
+                                            input: "$reactions",
+                                            as: "r",
+                                            cond: { $ne: ["$$r.userId", userObjectId] }
+                                        }
+                                    },
+                                    {
+                                        $concatArrays: [
+                                            {
+                                                $filter: {
+                                                    input: { $ifNull: ["$reactions", []] },
+                                                    as: "r",
+                                                    cond: { $ne: ["$$r.userId", userObjectId] }
+                                                }
+                                            },
+                                            [{ userId: userObjectId, emoji }]
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
             );
 
-            // Push the new reaction
-            await Message.updateOne(
-                { _id: msgId },
-                { $push: { reactions: { userId: new mongoose.Types.ObjectId(userId), emoji } } }
-            );
-            const chat = await Chat.findById(chatId);
-            let receiverSockets = [];
-            for (let p of chat.participants) {
-                if (onlineUsers[p]) {
-                    receiverSockets.push(onlineUsers[p])
-                }
-            }
-            for (let receiverSocket of receiverSockets) {
-                if (receiverSocket) {
-                    io.to(receiverSocket.socketID).emit('reaction', data);
-                }
-            }
-            io.to(chatId).emit('reaction', data);
+
+            // Broadcast to chat participants
+            io.to(chatId).emit('reaction', data)
+
         } catch (err) {
             console.log(err);
         }
@@ -2014,24 +2732,40 @@ io.on('connection', (socket) => {
             }
         } catch (err) {
             console.log('typing error:', err);
+            return;
         }
     });
 
     socket.on('liveComment', async (data) => {
-        try{
-            const {chatId, comment} = data;
-            if(!chatId || !comment) return;
+        try {
+            if (!data) {
+                return;
+            }
 
-            io.to(chatId).emit('liveComment', data)
+            const { chatId, comment } = data;
+
+            if (!chatId) {
+                return;
+            }
+
+            if (typeof comment.message !== 'string' || !comment.message.trim()) {
+                return;
+            }
+
+            if (!mongoose.Types.ObjectId.isValid(chatId)) {
+                return;
+            }
+
+            io.to(chatId).emit('liveComment', data);
 
         } catch (err) {
-            console.log(err)
+            console.error('[liveComment] SOCKET_ERROR', err);
+            return;
         }
-    })
+    });
 
     socket.on('liveCommentPin', async ({ chatId, comment }) => {
         try {
-            console.log('hello')
             if (!chatId || !comment) return;
 
             const chat = await Chat.findById(chatId).select('participants');
@@ -2050,6 +2784,7 @@ io.on('connection', (socket) => {
 
         } catch (err) {
             console.error(err);
+            return;
         }
     });
 
@@ -2062,6 +2797,7 @@ io.on('connection', (socket) => {
             }
         } catch (err) {
             console.log(err);
+            return;
         }
     });
 
@@ -2078,6 +2814,7 @@ io.on('connection', (socket) => {
             }
         } catch (err) {
             console.log(err);
+            return;
         }
     });
 
@@ -2108,6 +2845,7 @@ io.on('connection', (socket) => {
             }
         } catch (err) {
             console.log(err);
+            return;
         }
     });
 
@@ -2120,6 +2858,7 @@ io.on('connection', (socket) => {
             }
         } catch (err) {
             console.log(err);
+            return;
         }
     });
 
@@ -2132,50 +2871,62 @@ io.on('connection', (socket) => {
             }
         } catch (err) {
             console.log(err);
+            return;
         }
     });
 
     socket.on('notification', async (notification) => {
-        const receiverSocket = onlineUsers[notification.user];
-        if(receiverSocket){
-            io.to(receiverSocket.socketID).emit('notification', notification)
+        try{
+            const receiverSocket = onlineUsers[notification.user];
+            if(receiverSocket){
+                io.to(receiverSocket.socketID).emit('notification', notification)
+            }
+        } catch (err) {
+            console.error(err);
+            return;
         }
-    })
+    });
 
     socket.on('deleteMessage', async (msg) => {
         try {
-            await Message.deleteOne({ _id: msg._id });
-            const chat = await Chat.findById(msg.chatId);
-            const receiverSockets = [];
-            for (let participant of chat.participants) {
-                if (participant.toString() !== msg.from.toString()) {
-                    if (onlineUsers[participant]) {
-                        receiverSockets.push(onlineUsers[participant])
-                    }
-                }
+            if (!msg) {
+                return;
             }
-            for (let receiverSocket of receiverSockets) {
-                if (receiverSocket) {
-                    io.to(receiverSocket.socketID).emit('deleteMessage', msg);
-                }
-            }
-        } catch (err) {
-            console.error(err)
-        }
-    })
 
-    socket.on('deleteMessages', async ({ chatId, targetId }) => {
-        try {
-            await Message.deleteMany({ chatId });
-            const receiverSocket = onlineUsers[targetId];
-            console.log(receiverSocket)
-            if (receiverSocket) {
-                io.to(receiverSocket.socketID).emit('deleteMessages', chatId)
+            const messageId = msg._id;
+            const chatId = msg.chatId;
+
+            if (
+                !mongoose.Types.ObjectId.isValid(messageId) ||
+                !mongoose.Types.ObjectId.isValid(chatId)
+            ) {
+                return;
             }
+
+            const userId = socket.user.id;
+            const userObjectId = new mongoose.Types.ObjectId(userId);
+            const chatObjectId = new mongoose.Types.ObjectId(chatId);
+
+            const chat = await Chat.findById(chatObjectId).select('participants');
+            if (!chat) {
+                return;
+            }
+
+            if (!chat.participants.some(p => p.equals(userObjectId))) {
+                return;
+            }
+
+            const message = await Message.findOne({_id: messageId, from: socket.user.id, chatId});
+
+            if(!message) return;
+
+            io.to(chatId).emit('deleteMessage', msg);
+
         } catch (err) {
-            console.log(err)
+            console.error('[deleteMessage] SOCKET_ERROR', err);
+            return;
         }
-    })
+    });
 
     socket.on('disconnect', () => {
         let disconnectedUserId = null;
@@ -2206,11 +2957,6 @@ io.on('connection', (socket) => {
     });
 
 });
-
-// setInterval(() => {
-//         const users = Object.values(onlineUsers).map(u => u.username);
-//         console.log("👥 Online Users:", users.length > 0 ? users.join(", ") : "None");
-// }, 10000);
 
 connectDB(process.env.MONGO_URI)
     .then(() => {

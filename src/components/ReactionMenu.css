@@ -51,6 +51,10 @@
   height: 18px;
 }
 
+.my-reaction{
+  font-family: 'Emoji';
+}
+
 .rm-menu-container {
   display: flex;
   gap: 8px;
