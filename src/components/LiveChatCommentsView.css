@@ -113,8 +113,8 @@
 }
 
 .comment-msg-input-container input {
-    padding: 8px;
-    border-radius: 6px;
+    padding: 8px 14px;
+    border-radius: 25px;
     border: 1px solid var(--small);
     background-color: var(--hover);
     color: var(--fontColor);

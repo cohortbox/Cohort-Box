@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import ChatInfo from './ChatInfo';
 import AttachmentMenu from './AttachmentMenu';
 import eyeIcon from '../images/eye.png';
-import dotsImg from '../images/dots.png';
+import reactImg from "../images/reaction-fontcolor.png";
 import closeImg from '../images/close-gray.png';
 import sendImg from '../images/send.png';
 import micImg from '../images/microphone.png';
@@ -197,7 +197,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
         : false;
 
       // Everyone joins room (so they receive updates like reactions/live counts)
-      socket.emit("joinChat", { chatId, userId: user.id });
+      socket.emit("joinChat", { chatId, role: isParticipant ? 'member' : 'viewer'});
 
       // Only participants trigger "opened by participant" + subscriber notifications
       if (isParticipant) {
@@ -584,6 +584,8 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
     caretPosRef.current = e.target.selectionStart;
   }
 
+  let newSender = false;
+
   return (
     <div className="chat-box">
       { files.length > 0 && <MediaMessagePreview files={files} setFiles={setFiles} selectedChat={selectedChat}/> }
@@ -592,8 +594,10 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
       { selectedChat &&
         (<div className='chat-heading-and-btns-container'>
             <div className='chatName-chatDp-container'>
-              <img className='chatDp' src={selectedChat.chatDp}/>
-              <h3 className='chat-box-heading'>{selectedChat.chatName}</h3>
+              <div className='chatDp-container'>
+                <img onClick={() => setChatInfoClass('')} className='chatDp' src={selectedChat.chatDp}/>
+              </div>
+              <h3 onClick={() => setChatInfoClass('')} className='chat-box-heading'>{selectedChat.chatName}</h3>
               { !selectedChat.participants.some(p => p._id === user.id) && (
                   selectedChat?.subscribers.includes(user.id) ? 
                   ( <button className='unsubscribe-btn' onClick={handleUnsubscribe}>Unsubscribe</button> ) :
@@ -603,7 +607,6 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
             <p className='chat-live-count'><img className='chat-live-count-img' src={eyeIcon}/> {chatLiveCount}</p>
             <div className='chat-btns-container'>
               <button className='show-live-chat-btn' onClick={() => setShowLiveChat(prev => !prev)}><MyIcon fill='#c5cad3' style={{height: '15px', width: '15px', color: '#c5cad3'}}/></button>
-              <button className='chat-info-btn' onClick={() => setChatInfoClass('')}><img className='chat-info-img' src={dotsImg}/></button>
               <button className='chat-close-btn' onClick={handleCloseChat}><img className='chat-close-img' src={closeImg}/></button>
             </div>
           </div>)
@@ -619,14 +622,23 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
           </div>
         )}
 
-        {[...messages].map((msg, index) => { 
+        {[...messages].map((msg, index) => {
+          if(index === messages.length - 1){
+            newSender = true;
+          } else {
+            if(String(msg.from._id) !== String(messages[index + 1].from._id)) {
+              newSender = true;
+            } else {
+              newSender = false
+            }
+          }
           
           return msg.type === 'text' ? (               
-            <TextMessage setIsReply={setIsReply} setRepliedTo={setRepliedTo} key={index} msg={msg} sender={msg.from} setMessages={setMessages} selectedChat={selectedChat} setClickedMsg={setClickedMsg}/>      
+            <TextMessage newSender={newSender} setIsReply={setIsReply} setRepliedTo={setRepliedTo} key={index} msg={msg} sender={msg.from} setMessages={setMessages} selectedChat={selectedChat} setClickedMsg={setClickedMsg}/>      
           ) : ( msg.type === 'media' && msg.media.length > 0 ) ? (
-            <MediaMessage setIsReply={setIsReply} setRepliedTo={setRepliedTo} msg={msg} sender={msg.from} setMessages={setMessages} setClickedMedia={setClickedMedia} selectedChat={selectedChat} setClickedMsg={setClickedMsg}/>
+            <MediaMessage newSender={newSender} setIsReply={setIsReply} setRepliedTo={setRepliedTo} msg={msg} sender={msg.from} setMessages={setMessages} setClickedMedia={setClickedMedia} selectedChat={selectedChat} setClickedMsg={setClickedMsg}/>
           ) : msg.type === 'audio' ? (
-            <AudioMessage setIsReply={setIsReply} setRepliedTo={setRepliedTo} msg={msg} setMessages={setMessages} sender={msg.from} selectedChat={selectedChat} setClickedMsg={setClickedMsg}/>
+            <AudioMessage newSender={newSender} setIsReply={setIsReply} setRepliedTo={setRepliedTo} msg={msg} setMessages={setMessages} sender={msg.from} selectedChat={selectedChat} setClickedMsg={setClickedMsg}/>
           ) : msg.type === 'chatInfo' && (
             <ChatInfoMessage msg={msg}/>
           )
@@ -659,7 +671,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
               )
             }
             <AttachmentMenu setFiles={setFiles}/>
-            <button type='button' className='emoji-btn' ref={refs.setReference} onMouseDown={(e) => e.preventDefault()} onClick={() => setShowEmoji(v => !v)}>😊</button>
+            <button type='button' className='emoji-btn' ref={refs.setReference} onMouseDown={(e) => e.preventDefault()} onClick={() => setShowEmoji(v => !v)}><img src={reactImg}/></button>
 
             {showEmoji && (
               <div ref={(el) => {

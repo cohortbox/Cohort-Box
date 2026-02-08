@@ -127,7 +127,7 @@ function Post({ post }) {
               </Link>
             </h3>
             <p className="post-username">
-              posted by{" "}
+              Posted by{" "}
               <Link
                 to={"/profile/" + postState.from._id.toString()}
                 style={{ textDecoration: "none", color: "#878792" }}

@@ -24,11 +24,12 @@
 }
 
 .ncbs-img-container{
-    height: 40px;
-    width: 40px;
-    border: 1px solid var(--green);
+    height: 55px;
+    width: 55px;
     border-radius: 25px;
     overflow: hidden;
+    display: grid;
+    place-items: center;
 }
 
 .bg-hover{
@@ -36,7 +37,8 @@
 }
 
 .ncbs-img{
-    height: 40px;
+    height: 55px;
+    border-radius: 100px;
 }
 
 .ncbs-heading-container{

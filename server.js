@@ -22,6 +22,54 @@ const saltRounds = 10;
 require('dotenv').config();
 
 const liveViewers = new Map();
+
+function trackViewer(chatId, userId) {
+  if (!liveViewers.has(chatId)) {
+    liveViewers.set(chatId, new Set());
+  }
+
+  liveViewers.get(chatId).add(userId);
+}
+
+function untrackViewer(chatId, userId) {
+  if (!chatId || !userId) return;
+
+  const viewers = liveViewers.get(chatId);
+  if (!viewers) return;
+
+  viewers.delete(userId);
+
+  // cleanup empty rooms to prevent memory leaks
+  if (viewers.size === 0) {
+    liveViewers.delete(chatId);
+  }
+}
+
+function emitViewerCount(chatId) {
+    const count = liveViewers.get(chatId)?.size || 0;
+
+    // who should receive the count? usually everyone watching the chat
+    io.to(`chat:${chatId}:viewers`).emit('liveViewerCount', { chatId, count });
+    io.to(`chat:${chatId}:members`).emit('liveViewerCount', { chatId, count });
+}
+
+const participantsCache = new Map();
+const CACHE_TTL_MS = 60_000;
+
+async function getParticipants(chatId) {
+    const key = String(chatId);
+    const now = Date.now();
+    const cached = participantsCache.get(key);
+    if (cached && cached.exp > now) return cached.participants;
+
+    const chat = await Chat.findById(chatId).select('participants').lean();
+    if (!chat) return null;
+
+    const set = new Set(chat.participants.map(p => String(p)));
+    participantsCache.set(key, { participants: set, exp: now + CACHE_TTL_MS });
+    return set;
+}
+
 const app = express();
 app.use(express.json());
 app.use(cookieParser())
@@ -41,6 +89,65 @@ const io = new Server(server, {
         credentials: true
     }
 });
+
+const messageBatches = new Map();
+const BATCH_MAX = 5;
+const BATCH_WINDOW_MS = 5000;
+
+function queueMessage(chatId, msg) {
+    const id = String(chatId);
+
+    let batch = messageBatches.get(id);
+    if (!batch) {
+        batch = { queue: [], timer: null };
+        messageBatches.set(id, batch);
+    }
+
+    batch.queue.push(msg);
+
+    if (batch.queue.length >= BATCH_MAX) {
+        flushMessages(id);
+        return;
+    }
+
+    if (!batch.timer) {
+        batch.timer = setTimeout(() => flushMessages(id), BATCH_WINDOW_MS);
+    }
+}
+
+function flushMessages(chatId) {
+    const id = String(chatId);
+    const batch = messageBatches.get(id);
+    if (!batch) return;
+
+    if (batch.timer) {
+        clearTimeout(batch.timer);
+        batch.timer = null;
+    }
+
+    if (batch.queue.length === 0) return;
+
+    // ✅ check if viewers room has anyone, WITHOUT using liveViewers map
+    const roomName = `chat:${id}:viewers`;
+    const room = io.sockets.adapter.rooms.get(roomName);
+    const roomSize = room ? room.size : 0;
+
+    if (roomSize === 0) {
+        batch.queue = [];
+        return;
+    }
+
+    const payload = batch.queue;
+    batch.queue = [];
+
+    io.to(roomName).emit('messagesBatch', { chatId: id, messages: payload });
+}
+
+function emitToChat(chatId, event, payload) {
+    const id = String(chatId);
+    io.to(`chat:${id}:members`).emit(event, payload);
+    io.to(`chat:${id}:viewers`).emit(event, payload);
+}
 
 const authTokenAPI = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -1219,8 +1326,8 @@ app.get('/api/chats', authTokenAPI, async (req, res) => {
 
         const chats = await Chat.find(filter)
             .sort({ _id: -1 })
-            .populate('participants', '_id firstName lastName')
-            .populate('liveComments.from', '_id firstName lastName')
+            .populate('participants', '_id firstName lastName username dp')
+            .populate('liveComments.from', '_id username')
             .limit(limit)
             .lean({ defaults: true });
 
@@ -1783,7 +1890,7 @@ app.post('/api/live-comment', authTokenAPI, async (req, res) => {
         const result = await Chat.updateOne({_id: chatId}, { $push: {liveComments: { $each: [payload], $slice: -500 }} })
         if(result.modifiedCount === 0) return res.status(400).json({message: 'Comment could not be creaeted!'});
 
-        const fromUser = await User.findById(from).select('_id firstName lastName');
+        const fromUser = await User.findById(from).select('_id username');
 
         if(fromUser) {
             payload.from = fromUser
@@ -2480,6 +2587,92 @@ app.post('/api/report', authTokenAPI, async (req, res) => {
         console.error("Report API error:", err);
         return res.status(500).json({ message: "Internal Server Error" });
     }
+});
+
+app.post('/api/reaction', authTokenAPI, async (req, res) => {
+    try {
+        const { msgId, chatId, emoji, remove } = req.body;
+
+        // ✅ validate
+        if (!msgId || !mongoose.Types.ObjectId.isValid(msgId)) {
+            return res.status(400).json({ message: "Invalid msgId" });
+        }
+        if (!chatId || !mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ message: "Invalid chatId" });
+        }
+        if (!emoji || typeof emoji !== "string") {
+            return res.status(400).json({ message: "Invalid emoji" });
+        }
+
+        // ✅ always take userId from token (never trust client body)
+        const userId = req.user?.id;
+        if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+        const chatObjectId = new mongoose.Types.ObjectId(chatId);
+
+        // ✅ update reactions exactly like your socket code
+        const result = await Message.updateOne(
+            { _id: msgId, chatId: chatObjectId },
+            [
+                {
+                    $set: {
+                        reactions: {
+                            $cond: [
+                                !!remove,
+                                {
+                                    $filter: {
+                                        input: { $ifNull: ["$reactions", []] },
+                                        as: "r",
+                                        cond: { $ne: ["$$r.userId", userObjectId] }
+                                    }
+                                },
+                                {
+                                    $concatArrays: [
+                                        {
+                                            $filter: {
+                                                input: { $ifNull: ["$reactions", []] },
+                                                as: "r",
+                                                cond: { $ne: ["$$r.userId", userObjectId] }
+                                            }
+                                        },
+                                        [{ userId: userObjectId, emoji }]
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ message: "Message not found for this chat" });
+        }
+
+        // ✅ return what client needs to update UI + emit socket itself
+        const updated = await Message.findById(msgId)
+            .select("_id chatId reactions")
+            .lean();
+
+        return res.status(200).json({
+            success: true,
+            reaction: {
+                msgId,
+                chatId,
+                userId,
+                emoji,
+                remove: !!remove,
+                reactions: updated?.reactions || []
+            }
+        });
+
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({message: 'Internal Server Error!'})
+    }
 })
 
 let onlineUsers = {};
@@ -2503,19 +2696,30 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('joinChat', async ({ chatId, userId }) => {
+    socket.on('joinChat', async ({ chatId, role }) => {
         try{
-            console.log('hello jc')
-            socket.join(chatId);
-            socket.chatId = chatId;
-            socket.userId = userId;
+            const userId = socket.user.id;
 
-            if (!liveViewers.has(chatId)) liveViewers.set(chatId, new Set());
-            liveViewers.get(chatId).add(userId);
+            if (!mongoose.Types.ObjectId.isValid(chatId)) return;
 
-            const viewerCount = liveViewers.get(chatId).size;
+            const chatIdStr = String(chatId);
 
-            io.to(chatId).emit('liveViewerCount', { chatId, count: viewerCount });
+            if (role === "viewer") {
+                socket.join(`chat:${chatIdStr}:viewers`);
+                trackViewer(chatId, userId);
+                emitViewerCount(chatId);
+                socket.currentChatId = chatId;
+                socket.currentRole = "viewer";
+                return;
+            }
+
+            // participant
+            const participants = await getParticipants(chatId);
+            if (!participants?.has(String(userId))) return;
+
+            socket.join(`chat:${chatIdStr}:members`);
+            socket.currentChatId = chatId;
+            socket.currentRole = "member";
         } catch (err){
             console.log(err);
             return;
@@ -2524,28 +2728,14 @@ io.on('connection', (socket) => {
 
     socket.on('leaveChat', (chatId) => {
         try{
-            console.log('leaveChat')
             const userId = socket.user.id;
-            socket.chatId = null
-            if (chatId && liveViewers.has(chatId)) {
-                socket.leave(chatId);
-                liveViewers.get(chatId).delete(userId);
-                const count = liveViewers.get(chatId).size;
-                io.to(chatId).emit('liveViewerCount', { chatId, count });
-            }
-        } catch (err) {
-            console.log(err);
-            return;
-        }
-    });
+            if (!chatId) return;
 
-    socket.on("chatOpenedByParticipant", async ({ chatId, userId }) => {
-        try{
-            console.log('hello cobp');
-            await Message.updateMany(
-                { chatId, from: { $ne: userId }, read: false },
-                { $set: { read: true } }
-            );
+            socket.leave(`chat:${chatId}:viewers`);
+            socket.leave(`chat:${chatId}:members`);
+
+            untrackViewer(chatId, userId);
+            emitViewerCount(chatId);
         } catch (err) {
             console.log(err);
             return;
@@ -2629,6 +2819,9 @@ io.on('connection', (socket) => {
 
     socket.on('message', async ({ message }) => {
         try {
+            if(String(socket.user.id) !== String(message.from._id)){
+                return;
+            }
             if (!message) {
                 console.log('Rejected: no message');
                 return;
@@ -2650,18 +2843,18 @@ io.on('connection', (socket) => {
                 return;
             }
 
-            const userObjectId = new mongoose.Types.ObjectId(message.from._id);
+            const userObjectId = new mongoose.Types.ObjectId(socket.user.id);
             const chatId = new mongoose.Types.ObjectId(message.chatId);
+            const chatIdStr = String(message.chatId);
+            const participants = await getParticipants(chatId);
+            if (!participants || !participants.has(String(userObjectId))) return;
 
-            const chat = await Chat.findById(chatId).select('participants');
-            if (!chat?.participants.some(p => p.equals(userObjectId))) {
-                return;
-            }
-
-            io.to(message.chatId).emit('message', message);
+            queueMessage(chatIdStr, message);
+            io.to(`chat:${chatIdStr}:members`).emit('message', message);
 
         } catch (err) {
             console.error("Message socket error:", err);
+            return;
         }
     });
 
@@ -2679,49 +2872,25 @@ io.on('connection', (socket) => {
 
     socket.on('reaction', async (data) => {
         try {
-            const { msgId, userId, chatId, emoji, remove } = data;
+            const { msgId, chatId, emoji, remove, reactions } = data;
 
+            // basic validation
+            if (!mongoose.Types.ObjectId.isValid(msgId)) return;
+            if (!mongoose.Types.ObjectId.isValid(chatId)) return;
             if (!emoji || typeof emoji !== "string") return;
 
-            const userObjectId = new mongoose.Types.ObjectId(userId);
+            // ✅ enforce userId from token, not client
+            const userId = socket.user.id;
 
-            await Message.updateOne(
-                { _id: msgId },
-                [
-                    {
-                        $set: {
-                            reactions: {
-                                $cond: [
-                                    remove,
-                                    {
-                                        $filter: {
-                                            input: "$reactions",
-                                            as: "r",
-                                            cond: { $ne: ["$$r.userId", userObjectId] }
-                                        }
-                                    },
-                                    {
-                                        $concatArrays: [
-                                            {
-                                                $filter: {
-                                                    input: { $ifNull: ["$reactions", []] },
-                                                    as: "r",
-                                                    cond: { $ne: ["$$r.userId", userObjectId] }
-                                                }
-                                            },
-                                            [{ userId: userObjectId, emoji }]
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                ]
-            );
-
-
-            // Broadcast to chat participants
-            io.to(chatId).emit('reaction', data)
+            // ✅ broadcast to everyone in that chat (members + viewers)
+            emitToChat(chatId, 'reaction', {
+                msgId,
+                chatId,
+                userId,
+                emoji,
+                remove: !!remove,
+                reactions // optional (if you send it from API response)
+            });
 
         } catch (err) {
             console.log(err);
@@ -2749,6 +2918,13 @@ io.on('connection', (socket) => {
                     });
                 }
             }
+            const payload = {
+                chatId,
+                userId: fromId,
+                username,
+                typing: !!typing
+            }
+            io.to(`chat:${String(chatId)}:members`).emit('typing', payload);
         } catch (err) {
             console.log('typing error:', err);
             return;
@@ -2774,9 +2950,7 @@ io.on('connection', (socket) => {
             if (!mongoose.Types.ObjectId.isValid(chatId)) {
                 return;
             }
-
-            io.to(chatId).emit('liveComment', data);
-
+            emitToChat(chatId, 'liveComment', data);
         } catch (err) {
             console.error('[liveComment] SOCKET_ERROR', err);
             return;
@@ -2799,7 +2973,7 @@ io.on('connection', (socket) => {
                 return;
             }
 
-            io.to(chatId).emit('liveCommentPin', { chatId, comment });
+            emitToChat(chatId, 'liveCommentPin', {chatId, comment});
 
         } catch (err) {
             console.error(err);
@@ -2939,7 +3113,7 @@ io.on('connection', (socket) => {
 
             if(!message) return;
 
-            io.to(chatId).emit('deleteMessage', msg);
+            emitToChat(chatId, 'deleteMessage', msg);
 
         } catch (err) {
             console.error('[deleteMessage] SOCKET_ERROR', err);
@@ -2958,18 +3132,10 @@ io.on('connection', (socket) => {
             }
         }
 
-        const chatId = socket.chatId;
-
-        if (chatId && disconnectedUserId && liveViewers.has(chatId)) {
-            liveViewers.get(chatId).delete(disconnectedUserId);
-
-            const count = liveViewers.get(chatId).size;
-
-            io.to(chatId).emit('leftChat', {
-                chatId,
-                userId: disconnectedUserId,
-                count
-            });
+        const chatId = socket.currentChatId;   // ✅ FIX
+        if (chatId && disconnectedUserId) {
+            untrackViewer(chatId, disconnectedUserId); // ✅ reuse your function
+            emitViewerCount(chatId);
         }
 
         console.log('Socket disconnected:', socket.id);

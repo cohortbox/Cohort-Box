@@ -11,16 +11,22 @@
     animation: myMove 0.3s ease forwards;
     box-sizing: border-box;
     padding: 10px 10px;
-    border-left: 1px solid var(--small);
-    border-right: 1px solid var(--small);
+    border-left: 1px solid var(--borderColor);
+    border-right: 1px solid var(--borderColor);
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1rem;
 }
 
 .np-container h1{
     font-size: 1rem;
     color: var(--fontColor);
+    height: 39px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--hover);
+    border-radius: 3px;
 }
 
 .notifications-container{

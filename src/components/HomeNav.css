@@ -43,7 +43,7 @@
     width: 100%;
     justify-content: center;
     align-items: center;
-    background-color: var(--searchBoxBg);
+    background-color: var(--hover);
     padding: 5px 30px;
     box-sizing: border-box;
     gap: 10px;
@@ -82,10 +82,11 @@
 .cn-filter-btn{
     font-family: 'GM';
     background-color: #000;
+    border: 1px solid var(--borderColor);
     color: var(--fontColor);
-    border: none;
     height: 30px;
-    border-radius: 5px;
+    border-radius: 30px;
+    padding: 0 10px;
 }
 
 .active-filter-btn{

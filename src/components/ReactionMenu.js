@@ -5,6 +5,8 @@ import "./ReactionMenu.css";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
 import EmojiPicker from "emoji-picker-react";
+import { useNavigate } from "react-router-dom";
+import {ReactComponent as MyPlusIcon} from '../images/plus-icon.svg';
 
 function getMyReaction(message, userId) {
   if (!message?.reactions || !userId) return null;
@@ -18,22 +20,23 @@ function getMyReaction(message, userId) {
 
 function ReactionMenu({ msg, isPost = false, onReactLocal }) {
   const { socket } = useSocket();
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [open, setOpen] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [myReaction, setMyReaction] = useState(getMyReaction(msg, user.id));
+  const navigate = useNavigate();
 
   // Floating UI for main reactions menu
   const { refs: menuRefs, floatingStyles: menuStyles } = useFloating({
     placement: "bottom-start",
-    middleware: [offset(4), flip()],
+    middleware: [offset(-30), flip()],
     whileElementsMounted: autoUpdate,
   });
 
   // Floating UI for emoji picker (separate instance)
   const { refs: emojiRefs, floatingStyles: emojiStyles } = useFloating({
     placement: "bottom-start",
-    middleware: [offset(4), flip()],
+    middleware: [offset(isPost ? 4 : 0 ), flip()],
     whileElementsMounted: autoUpdate,
   });
 
@@ -79,7 +82,7 @@ function ReactionMenu({ msg, isPost = false, onReactLocal }) {
   ];
 
   // Handle reaction click
-  const handleReact = (emoji) => {
+  const handleReact = async (emoji) => {
     if (!emoji) return;
 
     const isRemoving = myReaction === emoji;
@@ -89,14 +92,35 @@ function ReactionMenu({ msg, isPost = false, onReactLocal }) {
       onReactLocal(emoji, user.id);
     }
 
-    // Server update
-    socket.emit("reaction", {
+    const payload =  {
       emoji,
       msgId: msg._id,
       userId: user.id,
       chatId: msg.chatId,
       removing: isRemoving,
-    });
+    }
+
+    try{
+      const res = await fetch('/api/reaction', {
+        method: 'POST',
+        headers: {
+          'authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if(!res.ok) {
+        throw new Error();
+      }
+
+      const data = await res.json();
+
+      socket.emit("reaction", data.reaction)
+    } catch (err) {
+      console.error(err);
+      navigate('/crash')
+    }
 
     setOpen(false);
     setShowEmoji(false);
@@ -151,7 +175,7 @@ function ReactionMenu({ msg, isPost = false, onReactLocal }) {
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setShowEmoji((v) => !v)}
           >
-            😊
+            <MyPlusIcon style={{height: '35px', width: '35px', color: '#c5cad3'}} />
           </button>
         </div>
       )}

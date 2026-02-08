@@ -16,6 +16,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 0 6px;
 }
 
 .post-heading-container .post-chat-name-img-container{
@@ -26,14 +27,13 @@
 }
 
 .post-chat-img-container{
-    height: 30px;
-    width: 30px;
-    border-radius: 15px;
+    height: 42px;
+    width: 42px;
+    border-radius: 30px;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--green);
 }
 
 .post-menu-container{
@@ -41,7 +41,7 @@
 }
 
 .post-chat-img{
-    height: 30px;
+    height: 42px;
 }
 
 .post-names-container{
@@ -141,6 +141,7 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  padding: 0 10px;
 }
 
 .post-reaction-pill{
@@ -151,13 +152,14 @@
   border-radius: 999px;
   color: var(--fontColor);
   font-family: 'GM';
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   background: rgba(255,255,255,0.03);
   font-family: 'Emoji';
 }
 
 .post-reaction-count{
-  color: var(--small);
+  color: var(--fontColor);
+  font-family: 'GM';
 }
 
 .post-reaction-emojis{

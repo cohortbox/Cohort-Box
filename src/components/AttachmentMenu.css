@@ -3,8 +3,8 @@
 }
 
 .am-btn{
-    height: 40px;
-    width: 40px;
+    height: 35px;
+    width: 35px;
     border-radius: 20px;
     display: flex;
     align-items: center;
@@ -18,7 +18,7 @@
 }
 
 .am-btn-img{
-    height: 20px;
+    height: 23px;
 }
 
 .am-menu-container{

@@ -296,6 +296,8 @@ function ChatInfo({
 
   if (!selectedChat) return null;
 
+  console.log(selectedChat.participants)
+
   return (
     <div className={'chat-info-background-container' + chatInfoClass} ref={mediaContainerRef}>
       <div className={'chat-info-container' + chatInfoClass}>
@@ -345,11 +347,16 @@ function ChatInfo({
         <div className={'participant-names-container' + chatInfoClass}>
           {selectedChat.participants.map((participant, index) => (
             <div key={index} className="chat-info-participant-container">
-              <div className="chat-info-participant-name-container">
-                <p className={'participant-name' + chatInfoClass}>
-                  {participant._id === user?.id ? 'you' : participant.firstName + ' ' + participant.lastName}
-                </p>
-                {selectedChat.chatAdmin === participant._id && <p className="admin">Admin</p>}
+              <div className='chat-info-participant-dp-container'>
+                <div className='participant-img-container'>
+                  <img src={participant.dp}/>
+                </div>
+                <div className="chat-info-participant-name-container">
+                  <p className={'participant-name' + chatInfoClass}>
+                    {participant._id === user?.id ? 'You' : participant.firstName + ' ' + participant.lastName}
+                  </p>
+                  {selectedChat.chatAdmin === participant._id && <p className="admin">Admin</p>}
+                </div>
               </div>
               {selectedChat.chatAdmin === user?.id && participant._id !== user?.id && (
                 <button

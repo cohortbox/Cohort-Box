@@ -97,7 +97,7 @@ function NavUserButton({ user, isFriend, sentRequest, gotRequest }) {
         {isFriend ? (
           <button className="nub-btn" onClick={handleUnfriend}>Unfriend</button>
         ) : sentRequest ? (
-          <button className="nub-btn" onClick={handleCancelSentRequest}>Cancel</button>
+          <button className="nub-btn cancel" onClick={handleCancelSentRequest}>Cancel</button>
         ) : gotRequest ? (
           <div className="nub-btn got-request-btn">
             <div className="request-btns">

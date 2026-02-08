@@ -144,6 +144,40 @@ function Home() {
     }
   }, [selectedChat?._id, user?.id]);
 
+  useSocketEvent(
+    "messagesBatch",
+    ({ chatId, messages }) => {
+      if (!Array.isArray(messages) || messages.length === 0) return;
+
+      const isForSelected =
+        selectedChat && String(chatId) === String(selectedChat._id);
+
+      if (isForSelected) {
+        const stampedMessages = messages.map(msg => ({
+          ...msg,
+          timestamp: Date.now()
+        }));
+        // prepend messages to current chat
+        // reverse only if backend sends oldest → newest
+        setMessages(prev => [...[...stampedMessages].reverse(), ...prev]);
+      } else {
+        // increment unread count by batch size
+        setChats(prev =>
+          prev.map(chat =>
+            String(chat._id) === String(chatId)
+              ? {
+                ...chat,
+                noOfUnreadMessages:
+                  (chat.noOfUnreadMessages || 0) + messages.length
+              }
+              : chat
+          )
+        );
+      }
+    },
+    [selectedChat?._id]
+  );
+
   useSocketEvent("messageSent", ({newMessage}) => {
     console.log('Message sent Successfully!', newMessage)
   }, []);
@@ -156,6 +190,7 @@ function Home() {
   }, [selectedChat?._id]);
 
   useSocketEvent("reaction", ({ emoji, msgId, userId }) => {
+    console.log('reaction')
     setMessages(prev =>
       prev.map(msg =>
         String(msg._id) === String(msgId)

@@ -40,7 +40,7 @@ const userSchema = mongoose.Schema({
   },
   dp: {
     type: String,
-    default: 'https://res.cloudinary.com/dzhvgedcy/image/upload/v1762806265/user-dps/rffbg5mugkfttsmsytri.png'
+    default: 'https://res.cloudinary.com/dzhvgedcy/image/upload/v1770500632/user-dps/zo7vothj0j1zh11xpoeg.png'
   },
   chat_requests: [{ type: mongoose.Types.ObjectId, ref: 'Chat' }]
   ,

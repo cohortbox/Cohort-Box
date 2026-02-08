@@ -18,7 +18,7 @@
 
 /* Expanded state */
 .nav-container.open {
-    width: 250px; /* expanded width like YouTube */
+    width: 270px; /* expanded width like YouTube */
     align-items: flex-start;
     padding-left: 10px;
 }
@@ -59,7 +59,7 @@
     background-color: inherit;
     border: none;
     border-radius: 10px;
-    gap: 15px;
+    gap: 10px;
     padding: 0 10px;
     cursor: pointer;
     font-family: 'GR';

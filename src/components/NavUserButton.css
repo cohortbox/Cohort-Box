@@ -21,15 +21,14 @@
 }
 
 .nub-img-container{
-    height: 40px;
-    width: 40px;
-    border: 1px solid var(--green);
-    border-radius: 25px;
+    height: 55px;
+    width: 55px;
+    border-radius: 100px;
     overflow: hidden;
 }
 
 .nub-img{
-    height: 40px;
+    height: 55px;
 }
 
 .nub-name-container{
@@ -52,12 +51,18 @@
 }
 
 .nub-btn{
-    font-family: 'GM';
+    font-family: 'GB';
     height: 30px;
-    border-radius: 5px;
+    width: 113px;
+    border-radius: 30px;
     border: none;
     color: var(--black);
     background-color: var(--green);
+    font-size: 0.9rem;
+}
+
+.cancel{
+    background-color: var(--fontColor);
 }
 
 .got-request-btn{

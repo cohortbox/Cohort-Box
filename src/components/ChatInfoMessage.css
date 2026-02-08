@@ -6,18 +6,18 @@
 
 .chat-info-msg{
     margin: 5px 0;
-    padding: 0 5px;
+    padding: 0 9px;
     height: 25px;
     display: flex;
     align-items: center;
     justify-content: center;
     width: fit-content;
-    background-color: var(--searchBoxBg);
-    border-radius: 5px;
+    background-color: #232326;
+    border-radius: 9px;
 }
 
 .chat-info-msg-text{
-    font-size: 1rem;
+    font-size: 12px;
     font-family: 'RR';
-    color: var(--fontColor);
+    color: var(--green);
 }

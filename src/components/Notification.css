@@ -35,15 +35,16 @@
 
 .notification-container .delete-container{
     width: 45px;
-    height: 100%;
+    height: 95%;
     position: absolute;
+    border: 2px solid var(--borderColor);
     right: 0px;
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
     transition: 0.3s all ease;
-    background: linear-gradient(to left, var(--black), transparent);
+    background-color: var(--black);
 }
 
 .notification-container .delete-container .delete{

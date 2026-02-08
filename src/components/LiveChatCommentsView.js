@@ -103,7 +103,7 @@ export default function LiveChatView({selectedChat, setShowLiveChat}){
                     pinnedComment && 
                     <div className='pinned-comment-container'>
                         <div className='comment'>
-                            <p className='comment-username' style={{color: senderColors[Math.floor(Math.random() * senderColors.length - 1)]}}>{pinnedComment?.from?.firstName + ' ' + pinnedComment?.from?.lastName}:</p>
+                            <p className='comment-username' style={{color: senderColors[Math.floor(Math.random() * senderColors.length - 1)]}}>{pinnedComment?.from.username}:</p>
                             <p className='comment-msg'>{pinnedComment?.message}</p>
                         </div>
                     </div>
@@ -113,7 +113,7 @@ export default function LiveChatView({selectedChat, setShowLiveChat}){
                         <p>No Comments!</p>
                     ) : comments.map((value, index) => (
                         <div key={index} className='comment'>
-                            <p className='comment-username' style={{color: senderColors[index%senderColors.length]}}>{value.from.firstName + ' ' + value.from.lastName}:</p>
+                            <p className='comment-username' style={{color: senderColors[index%senderColors.length]}}>{value.from.username}:</p>
                             <p className='comment-msg'>{value.message}</p>
                             <LiveCommentMenu selectedChat={selectedChat} comment={value}/>
                         </div>

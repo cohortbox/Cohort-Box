@@ -371,7 +371,7 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
         <div className='cn-searchbar-container'>
           <img className='cn-search-icon' src={searchIcon}/>
           <form className='form' onSubmit={handleSearch}>
-            <input className='cn-search-input'  placeholder='SEARCH COHORTIAN/COHORT BOX' value={searchInput} onInput={(e) => setSearchInput(e.target.value)}/>
+            <input className='cn-search-input'  placeholder='Search Cohortian/CohortBox' value={searchInput} onInput={(e) => setSearchInput(e.target.value)}/>
           </form>
         </div>
 
