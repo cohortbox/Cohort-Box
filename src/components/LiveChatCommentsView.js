@@ -129,7 +129,7 @@ export default function LiveChatView({selectedChat, setShowLiveChat}){
                     onKeyDown={(e) => e.key === 'Enter' && sendComment()}
                     placeholder='Comment Live'
                 />
-                <button onClick={sendComment}><MyIcon fill='#c5cad3' style={{width: '35px', height: '35px', fill: '#c5cad3'}}/></button>
+                <button onClick={sendComment}><MyIcon fill='#c5cad3' style={{width: '30px', height: '30px', fill: '#c5cad3'}}/></button>
             </div>
         </div>
     )

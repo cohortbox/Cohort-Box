@@ -9,6 +9,7 @@
     box-sizing: border-box;
     height: fit-content;
     width: 500px;
+    min-width: 500px;
     margin: 1rem 10rem;
 }
 

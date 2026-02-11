@@ -48,7 +48,7 @@
 
 @font-face {
   font-family: 'Emoji';
-  src: url('../fonts/NotoColorEmoji-Regular.ttf');
+  src: url('../fonts/twemoji.ttf');
 }
 
 body {

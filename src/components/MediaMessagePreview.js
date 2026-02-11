@@ -4,6 +4,7 @@ import closeImg from '../images/close-gray.png';
 import sendImg from '../images/send.png'
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import { useNavigate } from 'react-router-dom';
 
 function MediaMessage({ files, setFiles, selectedChat }){
     const { socket } = useSocket();
@@ -11,6 +12,7 @@ function MediaMessage({ files, setFiles, selectedChat }){
     const [message, setMessage] = useState('');
     const [index, setIndex] = useState(0);
     const { user, accessToken } = useAuth();
+    const navigate = useNavigate();
 
     useEffect(() => {
         function handleKeydown(e){
@@ -49,22 +51,45 @@ function MediaMessage({ files, setFiles, selectedChat }){
             if(!response.ok){
                 throw new Error('Request Failed!')
             }
-            return response.json();
+              return response.json();
           }).then(data => {
-            const media = data.media;
-            console.log(media)
-            const newMessage = {
-              from: user.id,
-              chatId: selectedChat._id,
-              type: 'media',
-              message: message.trim() ? message.trim() : ' ',
-              media,
-            }
-            socket.emit("message", newMessage);
-            setMessage("");
-            setIndex(0);
-            setFiles([]);
-          })
+              const media = data.media;
+              console.log(media)
+              const newMessage = {
+                  from: user.id,
+                  chatId: selectedChat._id,
+                  type: 'media',
+                  message: message.trim() ? message.trim() : ' ',
+                  media,
+              }
+
+              fetch('/api/message', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'authorization': `Bearer ${accessToken}`,
+                  },
+                  body: JSON.stringify(newMessage),
+              }).then(res => {
+                  if (!res.ok) {
+                      throw new Error();
+                  }
+                  return res.json();
+              }).then(data => {
+                  if (data.message) {
+                    socket.emit("message", {message: data.message});
+                  }
+                  setMessage("");
+                  setIndex(0);
+                  setFiles([]);
+              }).catch(err => {
+                  console.error(err);
+                  navigate('/crash')
+              });
+          }).catch(err => {
+              console.error(err);
+              navigate('/crash')
+          });
     }
 
 

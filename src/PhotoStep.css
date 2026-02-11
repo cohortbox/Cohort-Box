@@ -66,6 +66,20 @@
   object-fit: cover;
 }
 
+.crop-container {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  background: #111;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.zoom-slider {
+  width: 100%;
+  margin-top: 12px;
+}
+
 .profile-photo-step-note{
   font-size: 0.8rem;
   color: var(--small);

@@ -92,6 +92,11 @@ function Profile(){
             }
         }).then(response => {
             if(!response.ok){
+                if(response.status === 404){
+                    setChats([]);
+                    console.log('hello')
+                    return { chats: [] };
+                }
                 throw new Error('Request Failed!: ' + response.status);
             }
             return response.json();

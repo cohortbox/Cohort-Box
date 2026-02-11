@@ -304,14 +304,16 @@ function ChatInfo({
         <div className="chat-info-heading">
           <div className="chat-img-container">
             <img className="chat-img" src={selectedChat.chatDp} alt="" />
-            <div className="photo-change-btn">
-              <img
-                className="photo-change-img"
-                onClick={() => navigate(`/change-dp/cohortbox/${selectedChat._id}`)}
-                src={addPhoto}
-                alt=""
-              />
-            </div>
+            { String(user.id) === String(selectedChat.chatAdmin) &&
+              <div className="photo-change-btn">
+                <img
+                  className="photo-change-img"
+                  onClick={() => navigate(`/change-dp/cohortbox/${selectedChat._id}`)}
+                  src={addPhoto}
+                  alt=""
+                />
+              </div>
+            }
           </div>
           <h4 className="chatname">{selectedChat.chatName}</h4>
         </div>

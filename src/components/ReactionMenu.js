@@ -76,7 +76,7 @@ function ReactionMenu({ msg, isPost = false, onReactLocal }) {
   const reactions = [
     { emoji: "😭", label: "crying" },
     { emoji: "💀", label: "dead" },
-    { emoji: "🥀", label: "rose" },
+    { emoji: "✨", label: "rose" },
     { emoji: "🔥", label: "fire" },
     { emoji: "❤️", label: "love" },
   ];
@@ -182,7 +182,7 @@ function ReactionMenu({ msg, isPost = false, onReactLocal }) {
 
       {/* Emoji picker */}
       {showEmoji && (
-        <div ref={emojiRefs.setFloating} style={emojiStyles} className="rm-menu-container">
+        <div ref={emojiRefs.setFloating} style={{ ...emojiStyles, zIndex: 99999 }}>
           <EmojiPicker onEmojiClick={handleEmojiClick} theme="dark" defaultSkinTone="white" />
         </div>
       )}

@@ -14,16 +14,16 @@ export default function AudioMessage({ newSender, setIsReply, setRepliedTo, msg,
 
     return(
         <div className={user.id === msg.from._id ? 'my-msg-container' : 'other-msg-container'} onClick={() => setClickedMsg(msg)}>
-            {String(msg.from._id) !== String(user.id) && newSender &&
+            {String(msg.from._id) !== String(user.id) &&
                 <div className='msg-user-dp-container'>
                     <img className='msg-user-dp' src={msg.from.dp} />
                 </div>
             }
             <div className='msg-menu-btns-container'>
-                <div className={ msg.from._id === user.id ? `my-media-msg ${newSender ? 'right' : ''}` : `other-media-msg ${newSender ? 'left' : ''}` }>
+                <div className={ msg.from._id === user.id ? `my-media-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${newSender ? 'right' : ''}` : `other-media-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${newSender ? 'left' : ''}` }>
                     <div className='name-menu-container'>
                         { msg.from._id !== user.id && sender && newSender && (
-                            <h4 className='sender-name' style={{color: `${senderColors[senderIndex]}`}}>{sender.firstName + ' ' + sender.lastName }</h4>
+                            <h4 className='sender-name' style={{color: `${senderColors[senderIndex]}`}}>{sender.username }</h4>
                         ) }
                     </div>
                         {msg.isReply && msg.repliedTo && (

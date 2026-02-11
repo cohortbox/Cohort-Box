@@ -5,7 +5,7 @@ import { useFloating, offset, autoUpdate, flip } from '@floating-ui/react';
 import { useAuth } from '../context/AuthContext';
 import ChatInfo from './ChatInfo';
 import AttachmentMenu from './AttachmentMenu';
-import eyeIcon from '../images/eye.png';
+import eyeIcon from '../images/viewer-icon.png';
 import reactImg from "../images/reaction-fontcolor.png";
 import closeImg from '../images/close-gray.png';
 import sendImg from '../images/send.png';
@@ -44,6 +44,8 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
   const [repliedTo, setRepliedTo] = useState(null);
   const [visible, setVisible] = useState(false);
 
+  const MAX_AUDIO_MS = 10 * 60 * 1000; // 10 minutes
+  const stopTimeoutRef = useRef(null);
   const timeoutRef = useRef(null);
   const messagesBoxRef = useRef(null);
   const loadingMoreRef = useRef(false);
@@ -61,12 +63,19 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
   });
   const navigate = useNavigate();
 
+  useEffect(() => {
+    return () => {
+      if (stopTimeoutRef.current) clearTimeout(stopTimeoutRef.current);
+      if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+    };
+  }, []);
+
   useSocketEvent('liveViewerCount', ({chatId, count}) => {
     if(chatId === selectedChat._id){
       console.log('hi from liveViewerCount');
       setChatLiveCount(count);
     }
-  })
+  });
 
   useEffect(() => {
     const parent = messagesBoxRef.current;
@@ -481,84 +490,101 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
       }
   }
 
-  async function handleAudioMessage(e) {
-    e.preventDefault();
+ async function handleAudioMessage(e) {
+  e.preventDefault();
 
-    if (!recording) {
-      // start recording
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      recorderRef.current = recorder;
-      chunksRef.current = [];
+  if (!recording) {
+    // start recording
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream);
+    recorderRef.current = recorder;
+    chunksRef.current = [];
 
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunksRef.current.push(event.data);
-        }
-      };
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) chunksRef.current.push(event.data);
+    };
 
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        recorder.stream.getTracks().forEach(track => track.stop());
-        const formData = new FormData();
-        formData.append('audio', blob);
-        fetch(`/api/upload-audio`, {
-            method: 'POST',
-            headers: {
-                'authorization': `Bearer ${accessToken}`
-            },
-            body: formData
-        }).then(response => {
-          if(!response.ok){
-              throw new Error('Request Failed!', response.status)
-          }
-          return response.json();
-        }).then(data => {
-          const media = data.media;
-          const newMessageBody = {
-            from: user.id,
-            chatId: selectedChat._id,
-            type: 'audio',
-            message: ' ',
-            media,
-          }
-          fetch('/api/message', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'authorization': `Bearer ${accessToken}`,
-              },
-              body: JSON.stringify(newMessageBody),
-            }).then(res => {
-              if(!res.ok){
-                throw new Error();
-              }
-              return res.json();
-            }).then(data => {
-              if(data.message){
-                socket.emit("message", data.message);    
-              }
-            }).catch(err => {
-              console.error(err);
-              navigate('/crash')
-            })
-            socket.emit("typing", { chatId: selectedChat._id, userId: user.id, typing: false });
-            setFiles([])
-            setMessage("");
-        }).catch(err => {
-          console.error(err);
-          navigate('/crash')
-        })
-      };
+    recorder.onstop = async () => {
+      // clear the auto-stop timer
+      if (stopTimeoutRef.current) {
+        clearTimeout(stopTimeoutRef.current);
+        stopTimeoutRef.current = null;
+      }
 
-      recorder.start();
-      setRecording(true);
-    } else {
-      // stop recording
-      recorderRef.current.stop();
-      setRecording(false);
+      recorder.stream.getTracks().forEach(track => track.stop());
+
+      const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+
+      if (blob.size > 30 * 1024 * 1024) return;
+
+      const formData = new FormData();
+      formData.append("audio", blob, "audio.webm");
+
+      try {
+        const upRes = await fetch(`/api/upload-audio`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${accessToken}` },
+          body: formData,
+        });
+
+        if (!upRes.ok) throw new Error("Upload failed");
+        const data = await upRes.json();
+
+        const media = data.media;
+
+        const newMessageBody = {
+          from: user.id,
+          chatId: selectedChat._id,
+          type: "audio",
+          message: " ",
+          media,
+        };
+
+        const msgRes = await fetch("/api/message", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(newMessageBody),
+        });
+
+        if (!msgRes.ok) throw new Error("Message send failed");
+        const msgData = await msgRes.json();
+
+        if (msgData.message) socket.emit("message", msgData.message);
+
+        socket.emit("typing", { chatId: selectedChat._id, userId: user.id, typing: false });
+        setFiles([]);
+        setMessage("");
+      } catch (err) {
+        console.error(err);
+        navigate("/crash");
+      }
+    };
+
+    recorder.start();
+    setRecording(true);
+
+    // ✅ auto-stop at 10 minutes
+    stopTimeoutRef.current = setTimeout(() => {
+      if (recorderRef.current && recorderRef.current.state === "recording") {
+        recorderRef.current.stop();
+        setRecording(false);
+        // optionally show toast: "Max 10 minutes reached"
+      }
+    }, MAX_AUDIO_MS);
+
+  } else {
+    // stop recording manually
+    if (stopTimeoutRef.current) {
+      clearTimeout(stopTimeoutRef.current);
+      stopTimeoutRef.current = null;
     }
+    recorderRef.current.stop();
+    setRecording(false);
   }
+}
 
   function onEmojiClick(emojiData) {
     const emoji = emojiData.emoji;
@@ -623,15 +649,23 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
         )}
 
         {[...messages].map((msg, index) => {
-          if(index === messages.length - 1){
+          if (index === messages.length - 1) {
             newSender = true;
           } else {
-            if(String(msg.from._id) !== String(messages[index + 1].from._id)) {
+            if (String(msg.from._id) !== String(messages[index + 1].from._id)) {
               newSender = true;
             } else {
               newSender = false
             }
+            if (messages[index + 1].type === 'chatInfo') {
+              newSender = true;
+            }
+            if (msg.type === 'media' || msg.type === 'audio') {
+              newSender = true;
+            }
           }
+
+          
           
           return msg.type === 'text' ? (               
             <TextMessage newSender={newSender} setIsReply={setIsReply} setRepliedTo={setRepliedTo} key={index} msg={msg} sender={msg.from} setMessages={setMessages} selectedChat={selectedChat} setClickedMsg={setClickedMsg}/>      
@@ -696,6 +730,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
                 onClick={saveCaret}
                 onKeyUp={saveCaret}
                 spellCheck='false'
+                placeholder='Enter Message'
               />
               )
             }

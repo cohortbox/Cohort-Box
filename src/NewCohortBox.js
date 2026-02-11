@@ -6,6 +6,7 @@ import './NewCohortBox.css';
 import { useAuth } from './context/AuthContext';
 import Toast from './components/Toast';
 import { useSocket } from './context/SocketContext';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 function NewCohortBox(){
     const [searchBarClass, setSearchBarClass] = useState(' hidden');
@@ -19,6 +20,7 @@ function NewCohortBox(){
     const [showToast, setShowToast] = useState(false);
     const { socket } = useSocket();
     const [chatNameAvailable, setChatNameAvailable] = useState(null); // null | true | false
+    const navigate = useNavigate();
 
     const chatNameDebounceRef = useRef(null);
 
@@ -198,6 +200,8 @@ function NewCohortBox(){
                     socket.emit('notification', notification);
                 })
             );
+
+            navigate(`/${newChat._id}`);
 
         } catch (err) {
             console.error(err);

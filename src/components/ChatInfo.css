@@ -31,7 +31,6 @@
     position: relative;
     height: 65px;
     width: 65px;
-    border: 2px solid var(--green);
     border-radius: 70px;
 }
 
@@ -139,14 +138,13 @@
 .chat-info-participant-dp-container{
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .participant-img-container{
-    width: 30px;
-    height: 30px;
-    border-radius: 30px;
-    border: 2px solid var(--green);
+    width: 35px;
+    height: 35px;
+    border-radius: 35px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -154,7 +152,7 @@
 }
 
 .participant-img-container img{
-    height: 30px;
+    height: 35px;
 }
 
 .participant-remove-btn{

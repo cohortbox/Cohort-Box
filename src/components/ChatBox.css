@@ -44,8 +44,8 @@
 }
 
 .subscribe-btn{
-  height: 30px;
-  font-size: 0.9rem;
+  height: 27px;
+  font-size: 0.8rem;
   background-color: var(--green);
   color: var(--black);
   border: none;
@@ -62,11 +62,11 @@
 
 .unsubscribe-btn{
   border-radius: 50px;
-  height: 30px;
-  font-size: 0.9rem;
-  background-color: var(--black);
-  color: var(--green);
-  border: 1px solid var(--green);
+  height: 27px;
+  font-size: 0.8rem;
+  background-color: var(--fontColor);
+  color: var(--black);
+  border: none;
   padding: 0 8px;
   font-family: 'GB';
   cursor: pointer;
@@ -78,7 +78,7 @@
 }
 
 .chat-live-count{
-  color: var(--fontColor);
+  color: var(--green);
   font-size: 1rem;
   display: flex;
   align-items: center;
@@ -86,7 +86,7 @@
 }
 
 .chat-live-count-img{
-  height: 25px;
+  height: 32px;
 }
 
 .chat-btns-container{
@@ -286,17 +286,17 @@
 }
 
 .msg-user-dp-container{
-  width: 35px;
-  height: 35px;
+  width: 50px;
+  height: 50px;
   display: grid;
   place-items: center;
   overflow: hidden;
   margin-top: 25px;
-  border-radius: 20px;
+  border-radius: 50px;
 }
 
 .msg-user-dp{
-  height: 35px;
+  height: 50px;
   object-fit: contain;
 }
 
@@ -306,10 +306,10 @@
   width: fit-content;
   background-color: var(--otherMsgBg);
   color: var(--fontColor);
-  padding: 5px 7px;
+  padding: 5px 9px;
   border-right: 4px solid #1abb02;
-  border-radius: 5px 2px 2px 5px;
-  max-width: 300px;
+  border-radius: 8px 2px 2px 8px;
+  max-width: 520px;
   display: flex;
   flex-direction: column;
   min-width: 90px;
@@ -349,13 +349,13 @@
   width: fit-content;
   background-color: var(--otherMsgBg);
   color: var(--fontColor);
-  padding: 5px 7px;
-  border-radius: 5px;
+  padding: 5px 12px 5px 8px;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
-  max-width: 300px;
+  max-width: 520px;
   min-width: 72px;
-  margin-left: 47px;
+  margin-left: 60px;
 }
 
 .has-reactions{
@@ -399,7 +399,7 @@
 }
 
 .sender-name{
-  font-family: 'RR';
+  font-family: 'RM';
   margin: 0 0 3px 0;
 }
 
@@ -432,9 +432,10 @@
 }
 
 .my-media-msg{
-  padding: 4px;
-  background: linear-gradient(to right, var(--triadColor1Pastel), var(--triadColor2Pastel));
-  border-radius: 5px;
+  padding: 7px;
+  background-color: var(--otherMsgBg);
+  border-right: 4px solid #1abb02;
+  border-radius: 8px 5px 5px 8px;
   position: relative;
   min-width: 100px;
   display: flex;
@@ -443,9 +444,9 @@
 }
 
 .other-media-msg{
-  padding: 4px;
+  padding: 7px;
   background-color: var(--otherMsgBg);
-  border-radius: 5px;
+  border-radius: 8px;
   position: relative;
   min-width: 100px;
   display: flex;
@@ -456,6 +457,10 @@
 
 .other-media-msg .msg-text{
   color: var(--fontColor);
+}
+
+.right{
+  margin-top: 26px;
 }
 
 .left{
@@ -673,7 +678,7 @@
 
 .msg-input{
   width: 100%;
-  padding: 8px;
+  padding: 8px 12px;
   border-radius: 25px;
   border: 1px solid var(--small);
   background-color: var(--hover);

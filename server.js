@@ -13,13 +13,34 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+require('dotenv').config();
 const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
-const { upload, uploadUserDp, uploadChatDp } = require('./config/CloudinaryConfig.js');
+//const { upload, uploadUserDp, uploadChatDp } = require('./config/CloudinaryConfig.js');
+const mime = require('mime-types')
 const path = require('path');
+const multer = require('multer');
+const {uploadBufferToR2} = require('./config/r2.js');
 const { default: mongoose } = require('mongoose');
 const saltRounds = 10;
-require('dotenv').config();
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype?.startsWith("image/")) return cb(new Error("Only images allowed"));
+    cb(null, true);
+  },
+});
+
+const uploadAudio = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 30 * 1024 * 1024 }, // example: 30MB (tune this)
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype?.startsWith("audio/")) return cb(new Error("Only audio allowed"));
+    cb(null, true);
+  },
+});
 
 const liveViewers = new Map();
 
@@ -1436,7 +1457,7 @@ app.get('/api/messages/:chatId', authTokenAPI, async (req, res) => {
         let query = Message.find(filter)
             .sort({ _id: -1 }) // newest first
             .limit(limit)
-            .populate('from', '_id firstName lastName dp') // always populate sender
+            .populate('from', '_id firstName lastName username dp') // always populate sender
             .lean();
 
         // Optionally populate repliedTo if isReply is true
@@ -1812,61 +1833,167 @@ app.post('/api/chat', authTokenAPI, async (req, res) => {
     }
 });
 
-app.post('/api/upload-images', authTokenAPI, upload.array('media', 10), (req, res) => {
+app.post("/api/upload-images", authTokenAPI, upload.array("media", 10), async (req, res) => {
     try {
-        const media = req.files.map((media_, index) => {
-            return {
-                url: media_.path,
-                type: media_.mimetype.startsWith('image/') ? 'image' : 'video'
-            };
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: "No files uploaded" });
+      }
+
+      const uploads = await Promise.all(
+        req.files.map(async (file) => {
+          const isImage = file.mimetype?.startsWith("image/");
+          const isVideo = file.mimetype?.startsWith("video/");
+
+          if (!isImage && !isVideo) {
+            throw new Error(`Unsupported file type: ${file.mimetype}`);
+          }
+
+          const ext =
+            mime.extension(file.mimetype) ||
+            path.extname(file.originalname).replace(".", "") ||
+            (isImage ? "jpg" : "mp4");
+
+          const folder = isImage ? "media/images" : "media/videos";
+          const key = `${folder}/${crypto.randomUUID()}.${ext}`;
+
+          const { url } = await uploadBufferToR2({
+            key,
+            buffer: file.buffer,
+            contentType: file.mimetype,
+            // Optional: different caching for videos
+            // cacheControl: isVideo ? "public, max-age=86400" : "public, max-age=31536000, immutable",
+          });
+
+          if (!url) throw new Error("R2_PUBLIC_BASE not configured");
+
+          return {
+            url,
+            key,
+            type: isImage ? "image" : "video",
+            mimetype: file.mimetype,
+            size: file.size,
+          };
+        })
+      );
+
+      return res.status(200).json({ media: uploads });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server Error!" });
+    }
+  }
+);
+
+app.post("/api/upload-user-dp", authTokenAPI, upload.single('image'), async (req, res) => {
+    try {
+        console.log(req.file)
+        if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+        const ext =
+            mime.extension(req.file.mimetype) ||
+            path.extname(req.file.originalname).replace(".", "") ||
+            "jpg";
+
+        const key = `user-dp/${crypto.randomUUID()}.${ext}`;
+
+        const { url } = await uploadBufferToR2({
+            key,
+            buffer: req.file.buffer,
+            contentType: req.file.mimetype,
+            // cacheControl: "public, max-age=31536000, immutable", // optional override
         });
-        return res.status(200).json({ media });
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ message: 'Server Error!' })
-    }
-});
 
-app.post('/api/upload-user-dp', authTokenAPI, uploadUserDp.single('image'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ message: 'No image received' });
+        if (!url) {
+            // Happens if R2_PUBLIC_BASE is missing in env
+            return res.status(500).json({ message: "R2_PUBLIC_BASE not configured" });
         }
-        const url = req.file.secure_url || req.file.path;
         await User.findByIdAndUpdate(req.user.id, { dp: url });
-        return res.status(200).json({ url });
+        return res.status(200).json({ url, key });
     } catch (err) {
-        console.log(err);
-        res.status(500).json({ message: 'Server Error!' });
+        console.error("R2 upload error:", err);
+        return res.status(500).json({ message: "Upload failed" });
     }
 });
 
-app.post('/api/upload-chat-dp', authTokenAPI, uploadChatDp.single('image'), async (req, res) => {
+app.post("/api/upload-chat-dp", authTokenAPI, upload.single("image"), async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ message: 'No image received' });
-        }
-        const url = req.file.secure_url || req.file.path;
-        if (req.body.chatId) {
-            await Chat.findByIdAndUpdate(req.body.chatId, { chatDp: url });
-        }
-        return res.status(200).json({ url });
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ message: 'Server Error!' });
-    }
-});
+      const { chatId } = req.body;
+      const userId = req.user.id;
 
-app.post('/api/upload-audio', authTokenAPI, upload.single('audio'), (req, res) => {
+      if (!chatId) return res.status(400).json({ message: "Please send chat ID!" });
+      if (!mongoose.Types.ObjectId.isValid(chatId)) {
+        return res.status(400).json({ message: "Please send a valid chat ID!" });
+      }
+
+      const chat = await Chat.findById(chatId).select("chatAdmin");
+      if (!chat) return res.status(404).json({ message: "No Chat found" });
+
+      if (String(chat.chatAdmin) !== String(userId)) {
+        return res.status(403).json({ message: "User not Authorized!" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No image received" });
+      }
+
+      const ext =
+        mime.extension(req.file.mimetype) ||
+        path.extname(req.file.originalname || "").replace(".", "") ||
+        "jpg";
+
+      const key = `chat-dp/${chatId}/${crypto.randomUUID()}.${ext}`;
+
+      const { url } = await uploadBufferToR2({
+        key,
+        buffer: req.file.buffer,
+        contentType: req.file.mimetype,
+        cacheControl: "public, max-age=31536000, immutable",
+      });
+
+      if (!url) return res.status(500).json({ message: "R2_PUBLIC_BASE not configured" });
+
+      await Chat.findByIdAndUpdate(chatId, { chatDp: url });
+
+      return res.status(200).json({ url, key });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server Error!" });
+    }
+  }
+);
+
+app.post("/api/upload-audio", authTokenAPI, uploadAudio.single("audio"), async (req, res) => {
     try {
+        if (!req.file) return res.status(400).json({ message: "No audio uploaded" });
+
+        const ext =
+            mime.extension(req.file.mimetype) ||
+            path.extname(req.file.originalname || "").replace(".", "") ||
+            "webm";
+
+        const key = `audio/${crypto.randomUUID()}.${ext}`;
+
+        const { url } = await uploadBufferToR2({
+            key,
+            buffer: req.file.buffer,
+            contentType: req.file.mimetype,
+            cacheControl: "public, max-age=31536000, immutable",
+        });
+
+        if (!url) return res.status(500).json({ message: "R2_PUBLIC_BASE not configured" });
+
         const media = {
-            url: req.file.path,
-            type: 'audio',
+            url,
+            key,
+            type: "audio",
+            mimetype: req.file.mimetype,
+            size: req.file.size,
         };
+
         return res.status(200).json({ media });
     } catch (err) {
-        console.log(err);
-        return res.status(500).json({ message: 'Server Error!' })
+        console.error(err);
+        return res.status(500).json({ message: "Server Error!" });
     }
 });
 

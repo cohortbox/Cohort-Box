@@ -21,7 +21,7 @@
 }
 
 .profile-heading{
-    font-size: 1rem;
+    font-size: 2rem;
     font-family: 'GB';
     color: var(--fontColor);
 }
@@ -51,7 +51,7 @@
 
 .profile-username{
     color: var(--fontColor);
-    font-size: 2rem;
+    font-size: 1.6rem;
     letter-spacing: 0.05rem;
 }
 
@@ -95,11 +95,11 @@
 .name-username-container{
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .profile-username{
-    font-size: 1.3rem;
+    font-size: 2rem;
     color: var(--fontColor);
 }
 

@@ -17,7 +17,7 @@
 .nub-name-img-container{
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 13px;
 }
 
 .nub-img-container{
@@ -34,6 +34,7 @@
 .nub-name-container{
     display: flex;
     flex-direction: column;
+    gap: 4px;
 }
 
 .nub-username{
@@ -71,6 +72,7 @@
 
 .request-btns{
   display: flex;
+  justify-content: center;
   gap: 10px;
 }
 
@@ -89,4 +91,15 @@
   height: 10px;
 }
 
+.nub-container button {
+    cursor: pointer;
+}
+
+button.nub-btn{
+    transition: 0.3s all ease;
+}
+
+button.nub-btn:hover {
+    border-radius: 4px;
+}
 
