@@ -4,7 +4,7 @@ import paperClip from '../images/clip.png';
 import Toast from './Toast';
 
 function AttachmentMenu({ setFiles }) {
-    const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 2MB
     const MAX_FILES = 5;
 
     const fileInputRef = useRef(null);
@@ -33,7 +33,7 @@ function AttachmentMenu({ setFiles }) {
 
         const hasInvalidFile = selectedFiles.some(file => {
             if (file.size > MAX_FILE_SIZE) {
-                showAlert(`${file.name} exceeds 2MB size limit.`);
+                showAlert(`${file.name} exceeds 10MB size limit.`);
                 return true;
             }
             return false;
