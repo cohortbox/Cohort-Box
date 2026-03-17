@@ -5,7 +5,7 @@ import NavBar from './components/NavBar';
 import { useAuth } from './context/AuthContext';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState, useEffect, useMemo } from 'react';
-import { useSocketEvent } from './context/SocketContext';
+import { useSocketEvent, useSocket } from './context/SocketContext';
 import NavChatButton from './components/NavChatButton';
 import NavUserButton from './components/NavUserButton';
 import accept from './images/check-gray.png';
@@ -16,6 +16,7 @@ import ReportMenu from './components/ReportMenu';
 import LoadingScreen from './components/LoadingScreen';
 
 function Profile() {
+    
 
     const [profileLoading, setProfileLoading] = useState(true);
     const { user, accessToken, logout, loading } = useAuth();
@@ -27,6 +28,82 @@ function Profile() {
     const [friends, setFriends] = useState([]);
     const [friendRequests, setFriendRequests] = useState([]);
     const [showReport, setShowReport] = useState(false);
+
+    const { socket } = useSocket();
+
+    const callApi = async (url, method, body = null) => {
+        const res = await fetch(`${url}`, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'authorization': `Bearer ${accessToken}`
+            },
+            credentials: 'include',
+            body: body ? JSON.stringify(body) : null,
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || `API failed: ${url}`);
+        }
+
+        return res.json();
+    };
+
+    const handleUnfriend = async (e) => {
+        e.preventDefault();
+        try {
+            const result = await callApi(`/api/friends/${id}`, 'DELETE');
+
+            socket.emit('unfriend', id);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleAddFriend = async (e) => {
+        e.preventDefault();
+        try {
+            const result = await callApi(`/api/friends/request/${id}`, 'POST');
+            setFriendRequests(prev => [...prev, result.request])
+            socket.emit('friendRequest', result.request); // notify other user
+            socket.emit('notification', result.notification);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleCancelSentRequest = async (e) => {
+        e.preventDefault();
+        try {
+            const result = await callApi(`/api/friends/request/${id}`, 'DELETE');
+            setFriendRequests(prev => prev.filter((fr => fr._id !== result.request._id)))
+            socket.emit('cancelFriendRequest', result.request);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleAccept = async (e) => {
+        e.preventDefault();
+        try {
+            const result = await callApi(`/api/friends/accept/${id}`, 'POST');
+            socket.emit('acceptFriendRequest', id);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleReject = async (e) => {
+        e.preventDefault();
+        try {
+            const result = await callApi(`/api/friends/reject/${id}`, 'POST');
+            socket.emit('rejectFriendRequest', result);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
 
     const isMe = useMemo(() => {
         if (!user || !id) return false;
@@ -241,37 +318,36 @@ function Profile() {
                                                 <div className='profile-actions'>
                                                     {(() => {
                                                         const id = String(userObj._id);
-                                                        if (friendIds.has(id)) {
+                                                        if (friendIds.has(String(id))) {
                                                             return (
-                                                                <button className='profile-action-btn unfriend-btn'>
+                                                                <button className='profile-action-btn unfriend-btn' onClick={handleUnfriend}>
                                                                     Unfriend
                                                                 </button>
                                                             );
-                                                        }
-                                                        if (outgoingPending.has(id)) {
+                                                        } else if (outgoingPending.has(String(id))) {
                                                             return (
-                                                                <button className='profile-action-btn cancel-btn'>
+                                                                <button className='profile-action-btn cancel-btn' onClick={handleCancelSentRequest}>
                                                                     Cancel Request
                                                                 </button>
                                                             );
-                                                        }
-                                                        if (incomingPending.has(id)) {
+                                                        } else if (incomingPending.has(String(id))) {
                                                             return (
                                                                 <div className='profile-request-actions'>
-                                                                    <button className='accept-btn'>
+                                                                    <button className='accept-btn' onClick={handleAccept}>
                                                                         <img className="request-btn-img" src={accept} alt="accept" />
                                                                     </button>
-                                                                    <button className='reject-btn'>
+                                                                    <button className='reject-btn' onClick={handleReject}>
                                                                         <img className="request-btn-img" src={cancel} alt="reject" />
                                                                     </button>
                                                                 </div>
                                                             );
+                                                        } else {
+                                                            return (
+                                                                <button className='profile-action-btn add-btn' onClick={handleAddFriend}>
+                                                                    Add Friend
+                                                                </button>
+                                                            );
                                                         }
-                                                        return (
-                                                            <button className='profile-action-btn add-btn'>
-                                                                Add Friend
-                                                            </button>
-                                                        );
                                                     })()}
                                                 </div>
                                             )}
