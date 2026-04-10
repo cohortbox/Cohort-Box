@@ -24,26 +24,26 @@ export default function MediaMessage({ newSender, setIsReply, setRepliedTo, msg,
   }, [msg.timestamp]);
 
 
-  function groupReactions(reactions = []) {
-    const map = {};
-    for (let r of reactions) {
-      if (!map[r.emoji]) map[r.emoji] = 0;
-    }
-    return Object.entries(map).map(([emoji, count]) => ({ emoji, count }));
-  }
+  // function groupReactions(reactions = []) {
+  //   const map = {};
+  //   for (let r of reactions) {
+  //     if (!map[r.emoji]) map[r.emoji] = 0;
+  //   }
+  //   return Object.entries(map).map(([emoji, count]) => ({ emoji, count }));
+  // }
 
-  const senderIndex = sender
-    ? selectedChat.participants.findIndex(p => p._id === sender._id)
-    : 0;
+  // const senderIndex = sender
+  //   ? selectedChat.participants.findIndex(p => p._id === sender._id)
+  //   : 0;
 
 
-  function groupReactions(reactions = []) {
-    const map = {};
-    for (let r of reactions) {
-      if (!map[r.emoji]) map[r.emoji] = 0;
-    }
-    return Object.entries(map).map(([emoji, count]) => ({ emoji, count }));
-  }
+  // function groupReactions(reactions = []) {
+  //   const map = {};
+  //   for (let r of reactions) {
+  //     if (!map[r.emoji]) map[r.emoji] = 0;
+  //   }
+  //   return Object.entries(map).map(([emoji, count]) => ({ emoji, count }));
+  // }
 
   function formatTime(ts) {
     const date = new Date(ts);

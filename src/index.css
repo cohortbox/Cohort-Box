@@ -32,6 +32,16 @@
 }
 
 @font-face {
+  font-family: 'GEB';
+  src: url('../fonts/Gabarito-ExtraBold.ttf');
+}
+
+@font-face {
+  font-family: 'GBL';
+  src: url('../fonts/Gabarito-Black.ttf');
+}
+
+@font-face {
   font-family: 'RR';
   src: url('../fonts/Roboto/Roboto-Regular.ttf');
 }

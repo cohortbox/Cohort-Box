@@ -24,6 +24,13 @@ import AdminReports from './admin/Reports';
 import ForgotPassword from './ForgotPassword';
 
 function App() {
+
+  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    return <MobilePage />;
+  }
+
   return (
     <AdminAuthProvider>
       <Router>

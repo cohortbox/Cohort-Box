@@ -65,7 +65,9 @@ function Login(){
             return response.json();
         }).then(data => {
             login(data.accessToken);
-            navigate('/')
+            navigate('/', {
+                state: { justLoggedIn: true }
+            });
         }).catch(err => {
             console.error(err);
         })

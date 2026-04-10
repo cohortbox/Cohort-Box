@@ -10,6 +10,7 @@ import Posts from './components/Posts'
 import LiveChatView from './components/LiveChatCommentsView';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import LoadingScreen from './components/LoadingScreen';
+import HomePopup from './components/HomePopup';
 
 function Home() {
   const paramChatId = useParams().chatId;
@@ -25,6 +26,7 @@ function Home() {
   const [isNewMessage, setIsNewMessage] = useState(false);
   const [newMessageChatIds, setNewMessageChatIds] = useState([]);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [hasLoggedIn, setHasLoggedIn] = useState(false);
   const location = useLocation();
   const focusMessageId = location.state?.focusMessageId ?? null;
 
@@ -35,10 +37,24 @@ function Home() {
   };
 
   useEffect(() => {
-    if(!accessToken && !loading){
+    if (!accessToken && !loading) {
       navigate('/login');
     }
-  },[accessToken, loading]);
+  }, [accessToken, loading]);
+
+  useEffect(() => {
+    if (location.state?.justLoggedIn) {
+      console.log("User just logged in!");
+
+      setHasLoggedIn(true);
+
+      // Example: show welcome toast
+      // showToast("Welcome back!");
+
+      // Optional: clear state so it doesn't persist on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
 
   useEffect(() => {
     if (!accessToken || !paramChatId || loading) return;
@@ -71,7 +87,7 @@ function Home() {
     })
       .then(response => {
         if (!response.ok) {
-          if(response.status === 404){
+          if (response.status === 404) {
             setChats([]);
             return;
           }
@@ -88,7 +104,7 @@ function Home() {
 
   useEffect(() => {
     if (!accessToken || loading) return;
-    
+
     fetch('/api/users', {
       method: 'GET',
       headers: { 'authorization': `Bearer ${accessToken}` }
@@ -103,9 +119,9 @@ function Home() {
       });
   }, [accessToken, loading]);
 
-   useEffect(() => {
+  useEffect(() => {
     if (!accessToken || loading) return;
-    
+
     fetch(`/api/user-chats/${encodeURIComponent(user.id)}`, {
       method: 'GET',
       headers: { 'authorization': `Bearer ${accessToken}` }
@@ -131,7 +147,7 @@ function Home() {
     return [...filtered, { userId: data.userId, emoji: data.emoji }];
   };
 
-  useSocketEvent('participantRemoved', ({userId, chatId, msg}) => {
+  useSocketEvent('participantRemoved', ({ userId, chatId, msg }) => {
     setChats(prev => prev.map(chat => {
       if (chat._id === chatId) {
         const updatedChat = {
@@ -142,7 +158,7 @@ function Home() {
       }
       return chat;
     }));
-    if(selectedChat._id === chatId){
+    if (selectedChat._id === chatId) {
       setMessages(prev => [msg, ...prev]);
     }
   })
@@ -152,7 +168,7 @@ function Home() {
       if (chat._id === chatId) {
         const updatedChat = {
           ...chat,
-          participants: [ ...chat.participants, user ],
+          participants: [...chat.participants, user],
         };
         return updatedChat;
       }
@@ -161,7 +177,7 @@ function Home() {
   })
 
   useSocketEvent('participantRequested', ({ chatId, msg }) => {
-    if(selectedChat._id === chatId){
+    if (selectedChat._id === chatId) {
       setMessages(prev => [msg, ...prev]);
     }
   })
@@ -245,7 +261,7 @@ function Home() {
     [selectedChat?._id]
   );
 
-  useSocketEvent("messageSent", ({newMessage}) => {
+  useSocketEvent("messageSent", ({ newMessage }) => {
     console.log('Message sent Successfully!', newMessage)
   }, []);
 
@@ -287,7 +303,7 @@ function Home() {
 
   useEffect(() => {
     if (!selectedChat) return;
-    
+
 
     setChats(prev =>
       prev.map(chat =>
@@ -314,35 +330,38 @@ function Home() {
     <>
       {
         initialLoad ?
-        <LoadingScreen /> :
+          <LoadingScreen /> :
 
-        <div className="home">
-        <title>Home | CohortBox</title>
-        <NavBar selectedChat={selectedChat}/>
-        <HomeNav newMessageChatIds={newMessageChatIds} setNewMessageChatIds={setNewMessageChatIds} isNewMessage={isNewMessage} setIsNewMessage={setIsNewMessage} users={users} setUsers={setUsers} chats={chats} setChats={setChats} selectedChat={selectedChat} setSelectedChat={setSelectedChat} userChats={userChats} setUserChats={setUserChats} />
-        {selectedChat ? (
-          <div className='chat-box-live-chat-container'>
-            <ChatBox
-              setChats={setChats}
-              paramChatId={paramChatId}
-              selectedChat={selectedChat}
-              setSelectedChat={setSelectedChat}
-              messages={messages}
-              setMessages={setMessages}
-              typingUsers={typingUsers}
-              setShowLiveChat={setShowLiveChat}
-              showLiveChat={showLiveChat}
-              focusMessageId={focusMessageId}
-              clearFocus={clearFocus}
-            />
-            { showLiveChat &&
-              <LiveChatView selectedChat={selectedChat} setShowLiveChat={setShowLiveChat}/>
-            }  
+          <div className="home">
+            {hasLoggedIn && (
+              <HomePopup setSelfState={setHasLoggedIn}/>
+            )}
+            <title>Home | CohortBox</title>
+            <NavBar selectedChat={selectedChat} />
+            <HomeNav newMessageChatIds={newMessageChatIds} setNewMessageChatIds={setNewMessageChatIds} isNewMessage={isNewMessage} setIsNewMessage={setIsNewMessage} users={users} setUsers={setUsers} chats={chats} setChats={setChats} selectedChat={selectedChat} setSelectedChat={setSelectedChat} userChats={userChats} setUserChats={setUserChats} />
+            {selectedChat ? (
+              <div className='chat-box-live-chat-container'>
+                <ChatBox
+                  setChats={setChats}
+                  paramChatId={paramChatId}
+                  selectedChat={selectedChat}
+                  setSelectedChat={setSelectedChat}
+                  messages={messages}
+                  setMessages={setMessages}
+                  typingUsers={typingUsers}
+                  setShowLiveChat={setShowLiveChat}
+                  showLiveChat={showLiveChat}
+                  focusMessageId={focusMessageId}
+                  clearFocus={clearFocus}
+                />
+                {showLiveChat &&
+                  <LiveChatView selectedChat={selectedChat} setShowLiveChat={setShowLiveChat} />
+                }
+              </div>
+            ) : (
+              <Posts />
+            )}
           </div>
-        ) : (
-          <Posts />
-        )}
-      </div>
       }
     </>
   );

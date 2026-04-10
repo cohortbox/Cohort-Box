@@ -27,7 +27,7 @@ const saltRounds = 10;
 
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB (videos usually need larger size)
+    limits: { fileSize: 30 * 1024 * 1024 }, // 30MB (videos usually need larger size)
     fileFilter: (req, file, cb) => {
         const allowed = file.mimetype?.startsWith("image/") || file.mimetype?.startsWith("video/");
 
