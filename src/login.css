@@ -19,11 +19,11 @@
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    max-height: 600px;
-    max-width: 450px;
+    max-height: 530px;
+    max-width: 380px;
     height: 100%;
     width: 100%;
-    padding: 0 4%;
+    padding: 0 2%;
     background-color: var(--black);
     border: 1px solid var(--small);
     border-radius: 10px;
@@ -117,4 +117,18 @@
 .link-to-signup{
     text-decoration: none;
     color: rgb(97, 97, 97);
+}
+
+@media (max-width: 786px) {
+    .login{
+        padding: 10px;
+        box-sizing: border-box;
+        width: 100vw;
+        height: 100dvh;
+    }
+    .login-box{
+        max-width: 100%;
+        border: none;
+        border-radius: 0;
+    }
 }

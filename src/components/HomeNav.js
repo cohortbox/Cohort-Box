@@ -9,7 +9,7 @@ import { useSocketEvent } from '../context/SocketContext';
 import close from '../images/close-gray.png'
 import Toast from './Toast';
 
-function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedChat, userChats, setUserChats, isNewMessage, setIsNewMessage, setNewMessageChatIds, newMessageChatIds }) {
+function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedChat, userChats = [], setUserChats = () => {}, isNewMessage = false, setIsNewMessage = () => {}, setNewMessageChatIds = () => {}, newMessageChatIds= [], isMobile = false }) {
   const { user, accessToken, loading } = useAuth();
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
@@ -541,8 +541,12 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
         <div className='cn-filter-container'>
           <button className={'cn-filter-btn' + (currFilter === 'cb' ? ' active-filter-btn' : '')} onClick={() => setCurrFilter('cb')}>Cohortboxes</button>
           <button className={'cn-filter-btn' + (currFilter === 'people' ? ' active-filter-btn' : '')} onClick={(e) => { e.preventDefault(); setCurrFilter('people') }}>People</button>
-          <button className={'cn-filter-btn' + (currFilter === 'sub' ? ' active-filter-btn' : '')} onClick={(e) => { e.preventDefault(); setCurrFilter('sub') }}>Subscriptions</button>
-          <button className={'cn-filter-btn' + (currFilter === 'my' ? ' active-filter-btn' : '')} onClick={(e) => { e.preventDefault(); setCurrFilter('my'); setIsNewMessage(false) }}>My Cohortboxes { isNewMessage && <div className='new-indicator'></div>}</button>
+          {isMobile || (
+            <button className={'cn-filter-btn' + (currFilter === 'sub' ? ' active-filter-btn' : '')} onClick={(e) => { e.preventDefault(); setCurrFilter('sub') }}>Subscriptions</button>
+          )}
+          {isMobile || (
+            <button className={'cn-filter-btn' + (currFilter === 'my' ? ' active-filter-btn' : '')} onClick={(e) => { e.preventDefault(); setCurrFilter('my'); setIsNewMessage(false) }}>My Cohortboxes { isNewMessage && <div className='new-indicator'></div>}</button>
+          )}
         </div>
 
         <div className='cn-chats-container' ref={chatsContainerRef}>

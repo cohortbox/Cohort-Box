@@ -1,11 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
-import './Login.css';
+import './AdminLogin.css';
 import { useAdminAuth } from './context/AdminAuthContext';
 import { useState } from 'react';
 import Toast from '../components/Toast';
 
 
-export default function Login(){
+export default function AdminLogin(){
 
     const navigate = useNavigate();
     const { login } = useAdminAuth();
@@ -47,23 +47,23 @@ export default function Login(){
     }
 
     return (
-        <div className='login'>
+        <div className='admin-login'>
             <title>Admin Login - CohortBox</title>
-            <div className='login-box'>
-                <h1 className='login-head'>Admin Login</h1>
-                <form className='login-form' onSubmit={onLogIn}>
+            <div className='admin-login-box'>
+                <h1 className='admin-login-head'>Admin Login</h1>
+                <form className='admin-login-form' onSubmit={onLogIn}>
                     <div className='inputs-container'>
                         <div className='email-container'>
-                            <input type='text' placeholder='Email' className='login-input' id='email' value={email} onChange={(e) => setEmail(e.target.value)}/>
+                            <input type='text' placeholder='Email' className='admin-login-input' id='email' value={email} onChange={(e) => setEmail(e.target.value)}/>
                             <p className='invalid-email' id='invalidEmail'>Invalid Email</p>
                         </div>
                         <div className='password-container'>
-                            <input type='password' placeholder='Password' className='login-input' id='password' value={password} onChange={(e) => setPassword(e.target.value)} />
+                            <input type='password' placeholder='Password' className='admin-login-input' id='password' value={password} onChange={(e) => setPassword(e.target.value)} />
                             <p className='invalid-password' id='invalidPassword'>Invalid Password</p>
                         </div>
                         <Link to='/' className='link-to-signup'><button type='button' className='forgot-password-btn'>Forgot Password?</button></Link>
                     </div>
-                    <button type='submit' className='login-btn' typeof='submit'>Login</button>
+                    <button type='submit' className='admin-login-btn' typeof='submit'>Login</button>
                     <Link to='/signup' className='link-to-signup'>Need a new account!</Link>
                 </form>
 

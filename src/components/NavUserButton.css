@@ -51,10 +51,21 @@
     color: var(--small);
 }
 
+.nub-name-img-container .badge-container{
+    height: 100%;
+    width: 50px;
+    display: grid;
+    place-items: center;
+}
+
+.nub-name-img-container .badge-container img{
+    height: 40px;
+}
+
 .nub-btn{
     font-family: 'GB';
     height: 30px;
-    width: 113px;
+    width: 90px;
     border-radius: 30px;
     border: none;
     color: var(--black);

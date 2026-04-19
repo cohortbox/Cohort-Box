@@ -1,5 +1,5 @@
 import './NavUserButton.css';
-import sampleImg from '../images/sample.png';
+import pioneerImg from '../images/pioneer2.png';
 import { useSocket } from '../context/SocketContext';
 import accept from '../images/check-gray.png';
 import cancel from '../images/close-gray.png';
@@ -90,6 +90,9 @@ function NavUserButton({ user, isFriend, sentRequest, gotRequest }) {
         <div className="nub-name-container">
           <h1 className="nub-username">{user.username}</h1>
           <h1 className="nub-name">{user.firstName + ' ' + user.lastName}</h1>
+        </div>
+        <div className='badge-container'>
+          <img src={pioneerImg} alt="pioneer" />
         </div>
       </div>
 

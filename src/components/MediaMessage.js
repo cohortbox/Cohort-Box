@@ -32,9 +32,9 @@ export default function MediaMessage({ newSender, setIsReply, setRepliedTo, msg,
   //   return Object.entries(map).map(([emoji, count]) => ({ emoji, count }));
   // }
 
-  // const senderIndex = sender
-  //   ? selectedChat.participants.findIndex(p => p._id === sender._id)
-  //   : 0;
+  const senderIndex = sender
+    ? selectedChat.participants.findIndex(p => p._id === sender._id)
+    : 0;
 
 
   // function groupReactions(reactions = []) {

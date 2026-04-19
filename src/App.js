@@ -3,8 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import Home from './Home';
 import Signup from './SignUp';
-import Login from './login';
-import Posts from './login';
+import Login from './Login';
 import Profile from './Profile';
 import NewCohortBox from './NewCohortBox';
 import VerifyEmail from './VerifyEmail';
@@ -17,60 +16,72 @@ import Crash from './Crash';
 // ADMIN IMPORTS
 import { AdminAuthProvider } from './admin/context/AdminAuthContext';
 import AdminRoute from './admin/components/AdminRoute';
-import AdminLogin from './admin/Login';
+import AdminLogin from './admin/AdminLogin';
 import AdminDashboard from './admin/Dashboard';
 import AdminUsers from './admin/Users';
 import AdminReports from './admin/Reports';
 import ForgotPassword from './ForgotPassword';
+import MobilePage from './MobilePage';
 
 function App() {
-
-  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
-
-  if (isMobile) {
-    return <MobilePage />;
-  }
+  const isMobile =
+    /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) ||
+    window.innerWidth <= 768;
 
   return (
     <AdminAuthProvider>
       <Router>
-        <FriendRequestPopup />
+        {isMobile ? (
+          <MobilePage />
+        ) : (
+          <>
+            <FriendRequestPopup />
 
-        <Routes>
-          {/* ADMIN ROUTES */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={
-            <AdminRoute>
-              <AdminDashboard />
-            </AdminRoute>
-          } />
-          <Route path="/admin/users" element={
-            <AdminRoute>
-              <AdminUsers />
-            </AdminRoute>
-          } />
-          <Route path="/admin/reports" element={
-            <AdminRoute>
-              <AdminReports />
-            </AdminRoute>
-          } />
+            <Routes>
+              {/* ADMIN ROUTES */}
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <AdminRoute>
+                    <AdminUsers />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/reports"
+                element={
+                  <AdminRoute>
+                    <AdminReports />
+                  </AdminRoute>
+                }
+              />
 
-          {/* USER ROUTES */}
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/posts" element={<Posts />} />
-          <Route path="/profile/:id" element={<Profile />} />
-          <Route path="/new-cohort-box" element={<NewCohortBox />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/change-dp/:method/:id" element={<PhotoStep />} />
-          <Route path="/welcome" element={<LandingPage />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/crash" element={<Crash />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+              {/* USER ROUTES */}
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/profile/:id" element={<Profile />} />
+              <Route path="/new-cohort-box" element={<NewCohortBox />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/change-dp/:method/:id" element={<PhotoStep />} />
+              <Route path="/welcome" element={<LandingPage />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/crash" element={<Crash />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* HOME / CHAT */}
-          <Route path="/:chatId?" element={<Home />} />
-        </Routes>
+              {/* HOME / CHAT */}
+              <Route path="/:chatId?" element={<Home />} />
+            </Routes>
+          </>
+        )}
       </Router>
     </AdminAuthProvider>
   );
