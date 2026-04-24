@@ -25,7 +25,7 @@ import MobilePage from './MobilePage';
 
 function App() {
   const isMobile =
-    /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) ||
+    /android|iphone|ipod|mobile/i.test(navigator.userAgent) ||
     window.innerWidth <= 768;
 
   return (

@@ -257,6 +257,8 @@ app.post("/api/signup", async (req, res) => {
     try {
         const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
+        const userExists = await User.find({email: req.body?.email});
+
         const user = {
             firstName: req.body.firstName,
             lastName: req.body.lastName,
@@ -1044,7 +1046,7 @@ function escapeRegex(str) {
     return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-app.get('/api/search', authTokenAPI, async (req, res) => {
+app.get('/api/search', async (req, res) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
@@ -1290,7 +1292,7 @@ app.get('/api/friends', authTokenAPI, async (req, res) => {
     }
 });
 
-app.get('/api/friends/:id', authTokenAPI, async (req, res) => {
+app.get('/api/friends/:id', async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -1301,7 +1303,7 @@ app.get('/api/friends/:id', authTokenAPI, async (req, res) => {
 
         const user = await User.findById(id)
             .select('friends')
-            .populate('friends', '_id firstName lastName username avatar')
+            .populate('friends', '_id firstName lastName username dp avatar')
             .lean();
 
         if (!user) {
@@ -1350,7 +1352,7 @@ app.get('/api/friend-requests', authTokenAPI, async (req, res) => {
     }
 });
 
-app.get('/api/posts', authTokenAPI, async (req, res) => {
+app.get('/api/posts', async (req, res) => {
     try {
         const { lastId } = req.query;
         const limit = 30;
@@ -1382,7 +1384,7 @@ app.get('/api/posts', authTokenAPI, async (req, res) => {
     }
 });
 
-app.get('/api/chats', authTokenAPI, async (req, res) => {
+app.get('/api/chats', async (req, res) => {
     const { lastId } = req.query;
     const limit = 30;
     let filter = {};
@@ -1470,7 +1472,7 @@ app.get('/api/subscribed-chats', authTokenAPI, async (req, res) => {
     }
 });
 
-app.get('/api/chats/:id', authTokenAPI, async (req, res) => {
+app.get('/api/chats/:id', async (req, res) => {
     const { id } = req.params;
     console.log('[GET /api/chats/:id] REQUEST', id);
 
@@ -1509,7 +1511,7 @@ app.get('/api/chats/:id', authTokenAPI, async (req, res) => {
     }
 });
 
-app.get('/api/user-chats/:id', authTokenAPI, async (req, res) => {
+app.get('/api/user-chats/:id', async (req, res) => {
     const { id } = req.params;
     const { lastId } = req.query;
     const limit = 30;
@@ -1557,7 +1559,7 @@ app.get('/api/user-chats/:id', authTokenAPI, async (req, res) => {
     }
 });
 
-app.get('/api/messages/:chatId', authTokenAPI, async (req, res) => {
+app.get('/api/messages/:chatId', async (req, res) => {
     try {
         console.log('return-msgs');
         const { chatId } = req.params;
@@ -1680,7 +1682,7 @@ app.delete('/api/message/:msgId', authTokenAPI, async (req, res) => {
     }
 });
 
-app.get('/api/user', authTokenAPI, async (req, res) => {
+app.get('/api/user', async (req, res) => {
     try {
         // Validate user ID
         if (!req.user.id || !mongoose.Types.ObjectId.isValid(req.user.id)) {
@@ -3553,9 +3555,11 @@ io.on('connection', (socket) => {
 
             const message = await Message.findOne({ _id: messageId, from: socket.user.id, chatId });
 
-            if (!message) return;
-
+            if (message) return;
+            console.log('hello emitToChat')
             emitToChat(chatId, 'deleteMessage', msg);
+            console.log('hello emitToChatParticipant')
+            emitToChatParticipant(chatId, 'deleteMessage', msg);
 
         } catch (err) {
             console.error('[deleteMessage] SOCKET_ERROR', err);

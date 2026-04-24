@@ -68,16 +68,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ On first load: ALWAYS attempt refresh before removing loading state
   useEffect(() => {
     (async () => {
       const token = await refreshAccessToken();
-      // token may be null if user is logged out / refresh cookie expired
       setLoading(false);
     })();
   }, []);
 
-  // ✅ Setup refresh interval when token exists
   useEffect(() => {
     if (refreshIntervalID.current) {
       clearInterval(refreshIntervalID.current);

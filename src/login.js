@@ -53,8 +53,13 @@ function Login(){
             }),
             credentials: 'include'
         }).then(response => {
-            if (response.status === 401 || response.status === 404) {
+            if (response.status === 401) {
                 showAlert("Invalid Email or Password.");
+                throw new Error("Invalid Email or Password.");
+            }
+
+            if(response.status === 404) {
+                showAlert('No Account found for this Email!');
                 throw new Error("Invalid Email or Password.");
             }
 

@@ -28,6 +28,14 @@
     color: var(--fontColor);
 }
 
+.cn-heading img {
+    height: 30px;
+}
+
+.cn-heading h1 {
+    font-size: 1.4rem;
+}
+
 .cn-body-container{
     flex: 1;
     padding: 20px 10px 0 10px;
@@ -138,29 +146,33 @@
 @media (max-width: 900px){
     .cn-container{
         width: 100vw;
+        height: 100dvh;
         box-sizing: border-box;
     }
 
     .cn-heading-container{
-        height: 35px;
         box-sizing: border-box;
     }
 
     .cn-heading{
         font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 4px;
     }
 
     .cn-body-container{
-        padding: 10px 5px 0 5px;
+        padding: 1rem 10px;
         gap: 15px;
         width: 100vw;
         align-self: center;
+        box-sizing: border-box;
     }
 
     .cn-searchbar-container{
         height: 30px;
         padding: 5px 20px;
-        width: 100vw;
+        width: 100%;
         align-self: center;
     }
 

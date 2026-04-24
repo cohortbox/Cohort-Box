@@ -104,3 +104,9 @@
     width: 70px;
     object-fit: cover;
 }
+
+@media (max-width: 900px){
+    .mv-container{
+        padding: 1rem;
+    }
+}

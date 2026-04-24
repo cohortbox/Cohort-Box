@@ -52,12 +52,18 @@
     margin: 0;
     color: var(--fontColor);
     font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 158px;
 }
 
 .ncbs-sub-heading{
     margin: 0;
     color: var(--small);
     font-size: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 158px;
 }
 
 .ncbs-live-count-container{
@@ -74,14 +80,5 @@
 @media (max-width: 900px) {
     .ncbs-container{
         height: 55px;
-    }
-
-    .ncbs-img-container{
-        height: 35px;
-        width: 35px;
-    }
-
-    .ncbs-img{
-        height: 35px;
     }
 }

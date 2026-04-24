@@ -4,8 +4,9 @@ import ReactionMenu from './ReactMenu.js';
 import ReactionsMenu from './ReactionsMenu.js';
 import { useAuth } from '../context/AuthContext.js';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
-export default function TextMessage({ newSender, setIsReply, setRepliedTo, msg, sender, setMessages, selectedChat }){
+export default function TextMessage({ newSender, setIsReply, setRepliedTo, msg, sender, setMessages, selectedChat }) {
     const { user } = useAuth();
     const [pop, setPop] = useState(false);
     const senderColors = ['#c76060', '#c79569', '#c7c569', '#6ec769', '#69c2c7', '#6974c7', '#9769c7', '#c769bf']
@@ -30,21 +31,23 @@ export default function TextMessage({ newSender, setIsReply, setRepliedTo, msg, 
         });
     }
 
-    const senderIndex = sender 
-    ? selectedChat.participants.findIndex(p => p._id === sender._id)
-    : 0;
+    const senderIndex = sender
+        ? selectedChat.participants.findIndex(p => p._id === sender._id)
+        : 0;
 
-    return(
+    return (
         <div className={String(msg.from._id) === String(user.id) ? "my-msg-container" : "other-msg-container"}>
-            { String(msg.from._id) !== String(user.id) && newSender &&
-                <div className='msg-user-dp-container'>
-                    <img className='msg-user-dp' src={msg.from.dp}/>
-                </div>
+            {String(msg.from._id) !== String(user.id) && newSender &&
+                <Link style={{ textDecoration: 'none' }} to={`/profile/${sender._id}`}>
+                    <div className='msg-user-dp-container'>
+                        <img className='msg-user-dp' src={msg.from.dp} />
+                    </div>
+                </Link>
             }
             <div className={`msg-menu-btns-container ${newSender ? 'right' : ''}`}>
                 <div className={msg.from._id === user.id ? `my-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${pop ? 'msg-pop' : ''}` : `other-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${newSender ? 'left' : ''} ${pop ? 'msg-pop' : ''}`}>
                     {msg.from._id !== user.id && sender && newSender && (
-                        <p className='sender-name' style={{ color: `${senderColors[senderIndex]}` }}>{sender.username}</p>
+                        <Link style={{ textDecoration: 'none' }} to={`/profile/${sender._id}`}><h4 className='sender-name' style={{ color: `${senderColors[senderIndex] ? senderColors[senderIndex] : '#c5cad3'}` }}>{sender.username}</h4></Link>
                     )}
                     {msg.isReply && msg.repliedTo && (
                         <div className="reply-msg-container">
@@ -71,9 +74,9 @@ export default function TextMessage({ newSender, setIsReply, setRepliedTo, msg, 
                         </div>
                     )}
                 </div>
-                <MessageMenu setIsReply={setIsReply} setRepliedTo={setRepliedTo} msg={msg} setMessages={setMessages}/>
-                <ReactionMenu msg={msg}/>
+                <MessageMenu setIsReply={setIsReply} setRepliedTo={setRepliedTo} msg={msg} setMessages={setMessages} />
+                <ReactionMenu msg={msg} />
             </div>
-        </div>   
+        </div>
     )
 }

@@ -284,7 +284,10 @@ function Home() {
   }, []);
 
   useSocketEvent("deleteMessage", (serverMsg) => {
-    if (!selectedChat || String(serverMsg.chatId) !== String(selectedChat._id)) return;
+    if (!selectedChat || String(serverMsg.chatId) !== String(selectedChat._id)) {
+      console.log('hello from deleteMessage')
+      return;
+    }
     setMessages(prev => prev.filter(msg => String(msg._id) !== String(serverMsg._id)));
   }, [selectedChat?._id]);
 

@@ -134,3 +134,16 @@
     object-fit: cover;
 }
 
+@media(max-width: 900px) {
+    .main-media-view{
+        justify-content: center;
+        padding: 0;
+    }
+    .main-media-view img{
+        max-width: 70vw;
+    }
+    .main-media-view button img{
+        height: 20px;
+    }
+}
+

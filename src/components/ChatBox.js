@@ -22,7 +22,7 @@ import AudioMessage from './AudioMessage.js';
 import ChatInfoMessage from './ChatInfoMessage.js';
 import LoadingMessages from './LoadingMessages.js';
 import { ReactComponent as MyIcon } from '../images/comment.svg';
-
+import msgAudio from '../audio/msgPop.mp3';
 
 function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, messages, setMessages, typingUsers, setShowLiveChat, showLiveChat, focusMessageId, clearFocus }) {
 
@@ -56,6 +56,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
   const msgRefs = useRef({});
   const caretPosRef = useRef(0);
   const restoreRef = useRef(null); 
+  const audioRef = useRef(null);
   const PAGE_SIZE = 20;
 
   const { refs, floatingStyles } = useFloating({
@@ -69,6 +70,11 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
   const isFocusingRef = useRef(false);
 
   const messagesRef = useRef([]);
+
+  useEffect(() => {
+    audioRef.current = new Audio(msgAudio);
+    audioRef.current.volume = 0.6; // optional
+  }, []);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -104,11 +110,11 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
     setShowNewMsgPill(false);
   }
 
-  function isNearBottom(threshold = 80) {
+  function isNearBottom(threshold = -80) {
     const el = messagesBoxRef.current;
     if (!el) return true;
 
-    return el.scrollTop < threshold;
+    return el.scrollTop > threshold;
   }
 
   useEffect(() => {
@@ -166,6 +172,11 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
 
     if (senderId === String(user.id)) {
       return;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0; // restart sound if already playing
+      audioRef.current.play().catch(() => { });
     }
 
     if (isNearBottom()) {

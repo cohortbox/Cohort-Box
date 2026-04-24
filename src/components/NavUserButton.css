@@ -42,6 +42,9 @@
     letter-spacing: 0.05rem;
     margin: 0;
     color: var(--fontColor);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 158px;
 }
 
 .nub-name{
@@ -49,6 +52,9 @@
     letter-spacing: 0.05rem;
     margin: 0;
     color: var(--small);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 158px;
 }
 
 .nub-name-img-container .badge-container{

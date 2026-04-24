@@ -518,7 +518,7 @@
 }
 
 .my-media-msg{
-  padding: 7px;
+  padding: 16px 7px 7px 7px;
   background-color: var(--otherMsgBg);
   border-right: 4px solid #1abb02;
   border-radius: 8px 5px 5px 8px;
@@ -839,12 +839,16 @@
 }
 
 @media (max-width: 900px){
+  .chat-box{
+    max-width: 100vw;
+    min-width: 100vw;
+  }
   .chat-heading-and-btns-container{
     padding: 10px 6px;
   }
   .chat-box-heading{
-    font-size: 1rem;
-    max-width: 90px;
+    font-size: 1.1rem;
+    max-width: 110px;
   }
   .chatDp{
     height: 35px;
@@ -874,5 +878,22 @@
   }
   .chat-close-img{
     height: 15px;
+  }
+  .other-msg{
+    margin-left: 50px;
+  }
+  .msg-user-dp-container{
+    height: 40px;
+    width: 40px;
+    margin-top: 30px;
+  }
+  .msg-user-dp{
+    height: 40px;
+  }
+  .audio-msg-wrapper{
+    width: 240px;
+  }
+  .left{
+    margin: 0;
   }
 }

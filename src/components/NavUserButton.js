@@ -9,6 +9,7 @@ function NavUserButton({ user, isFriend, sentRequest, gotRequest }) {
 
   const { socket } = useSocket();
   const { accessToken } = useAuth();
+  const thisUser = useAuth().user;
 
   const callApi = async (url, method, body = null) => {
     const res = await fetch(`${url}`, {
@@ -91,31 +92,29 @@ function NavUserButton({ user, isFriend, sentRequest, gotRequest }) {
           <h1 className="nub-username">{user.username}</h1>
           <h1 className="nub-name">{user.firstName + ' ' + user.lastName}</h1>
         </div>
-        <div className='badge-container'>
-          <img src={pioneerImg} alt="pioneer" />
-        </div>
       </div>
-
-      <div className="nub-btns-container">
-        {isFriend ? (
-          <button className="nub-btn" onClick={handleUnfriend}>Unfriend</button>
-        ) : sentRequest ? (
-          <button className="nub-btn cancel" onClick={handleCancelSentRequest}>Cancel</button>
-        ) : gotRequest ? (
-          <div className="nub-btn got-request-btn">
-            <div className="request-btns">
-              <button onClick={handleAccept}>
-                <img className="request-btn-img" src={accept} alt="accept" />
-              </button>
-              <button onClick={handleReject}>
-                <img className="request-btn-img" src={cancel} alt="reject" />
-              </button>
+      { user._id !== thisUser.id && (
+        <div className="nub-btns-container">
+          {isFriend ? (
+            <button className="nub-btn" onClick={handleUnfriend}>Unfriend</button>
+          ) : sentRequest ? (
+            <button className="nub-btn cancel" onClick={handleCancelSentRequest}>Cancel</button>
+          ) : gotRequest ? (
+            <div className="nub-btn got-request-btn">
+              <div className="request-btns">
+                <button onClick={handleAccept}>
+                  <img className="request-btn-img" src={accept} alt="accept" />
+                </button>
+                <button onClick={handleReject}>
+                  <img className="request-btn-img" src={cancel} alt="reject" />
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <button className="nub-btn" onClick={handleAddFriend}>Add Friend</button>
-        )}
-      </div>
+          ) : (
+            <button className="nub-btn" onClick={handleAddFriend}>Add Friend</button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

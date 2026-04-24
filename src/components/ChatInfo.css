@@ -273,3 +273,11 @@ p{
 .hidden{
     display: none;
 }
+
+@media (max-width: 900px){
+    .chat-info-container{
+        padding: 12px;
+        width: 88vw;
+        gap: 1rem;
+    }
+}

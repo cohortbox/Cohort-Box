@@ -26,6 +26,7 @@ function Profile() {
     const [userObj, setUserObj] = useState(null);
     const [chats, setChats] = useState([]);
     const [friends, setFriends] = useState([]);
+    const [myFriends, setMyFriends] = useState([]);
     const [friendRequests, setFriendRequests] = useState([]);
     const [showReport, setShowReport] = useState(false);
 
@@ -153,6 +154,7 @@ function Profile() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [open, refs]);
 
+        
     useEffect(() => {
         if (!user) return;
 
@@ -167,9 +169,34 @@ function Profile() {
             }
             return response.json();
         }).then(data => {
-            setUserObj(data.userDB);
-            setFriends(data.userDB.friends)
+            setUserObj(data?.userDB);
+            setFriends(data?.userDB?.friends)
+            if(String(id) === String(user.id)){
+                setMyFriends(data?.userDB?.friends);
+            }
             setProfileLoading(false);
+        }).catch(err => {
+            console.error(err);
+            navigate('/crash')
+        })
+    }, [user, accessToken, id]);
+
+    useEffect(() => {
+        if (!user) return;
+        if(String(id) === String(user.id)) return;
+
+        fetch(`/api/friends/${user.id}`, {
+            method: 'GET',
+            headers: {
+                'authorization': `Bearer ${accessToken}`
+            }
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error('Request Failed!')
+            }
+            return response.json();
+        }).then(data => {
+            setMyFriends(data.friends);
         }).catch(err => {
             console.error(err);
             navigate('/crash')
@@ -237,7 +264,7 @@ function Profile() {
     }
 
     const friendIds = useMemo(
-        () => new Set(friends?.map(f => String(f._id))),
+        () => new Set(myFriends?.map(f => String(f._id))),
         [friends]
     );
 

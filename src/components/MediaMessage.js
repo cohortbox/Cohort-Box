@@ -5,6 +5,7 @@ import ReactionsMenu from './ReactionsMenu.js';
 import playIcon from '../images/play.png';
 import { useAuth } from '../context/AuthContext.js';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function MediaMessage({ newSender, setIsReply, setRepliedTo, msg, sender, setMessages, setClickedMedia, selectedChat, setClickedMsg }) {
   const { user } = useAuth();
@@ -57,16 +58,18 @@ export default function MediaMessage({ newSender, setIsReply, setRepliedTo, msg,
   return (
     <div className={user.id === msg.from._id ? 'my-msg-container' : 'other-msg-container'} onClick={() => setClickedMsg(msg)}>
       {String(msg.from._id) !== String(user.id) && newSender &&
-        <div className='msg-user-dp-container'>
-          <img className='msg-user-dp' src={msg.from.dp} />
-        </div>
+        <Link style={{textDecoration: 'none'}} to={`/profile/${sender._id}`}>
+          <div className='msg-user-dp-container'>
+            <img className='msg-user-dp' src={msg.from.dp} />
+          </div>
+        </Link>
       }
       <div className={`msg-menu-btns-container ${newSender ? 'right' : ''}`}>
         {msg.media.length > 0 && msg.media.length <= 2 ? (
           <div className={msg.from._id === user.id ? `my-media-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''}${pop ? 'msg-pop' : ''}` : `other-media-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${newSender ? 'left' : ''} ${pop ? 'msg-pop' : ''}`}>
             <div className='name-menu-container'>
               {msg.from._id !== user.id && sender && newSender && (
-                <h4 className='sender-name' style={{ color: `${senderColors[senderIndex] ? senderColors[senderIndex] : '#c5cad3'}` }}>{sender.username}</h4>
+                <Link style={{textDecoration: 'none'}} to={`/profile/${sender._id}`}><h4 className='sender-name' style={{ color: `${senderColors[senderIndex] ? senderColors[senderIndex] : '#c5cad3'}` }}>{sender.username}</h4></Link>
               )}
             </div>
             {msg.isReply && msg.repliedTo && (
@@ -117,7 +120,7 @@ export default function MediaMessage({ newSender, setIsReply, setRepliedTo, msg,
               {user.id === msg.from._id &&
                 <div className='name-menu-container'>
                   {msg.from._id !== user.id && sender && newSender && (
-                    <h4 className='sender-name' style={{ color: `${senderColors[senderIndex]}` }}>{sender.username}</h4>
+                    <Link style={{textDecoration: 'none'}} to={`/profile/${sender._id}`}><h4 className='sender-name' style={{ color: `${senderColors[senderIndex] ? senderColors[senderIndex] : '#c5cad3'}` }}>{sender.username}</h4></Link>
                   )}
                 </div>
               }
@@ -169,7 +172,7 @@ export default function MediaMessage({ newSender, setIsReply, setRepliedTo, msg,
             <div className={msg.from._id === user.id ? `my-media-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''}${pop ? 'msg-pop' : ''}` : `other-media-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${newSender ? 'left' : ''} ${pop ? 'msg-pop' : ''}`}>
               <div className='name-menu-container'>
                 {msg.from._id !== user.id && sender && newSender && (
-                  <h4 className='sender-name' style={{ color: `${senderColors[senderIndex]}` }}>{sender.username}</h4>
+                  <Link style={{textDecoration: 'none'}} to={`/profile/${sender._id}`}><h4 className='sender-name' style={{ color: `${senderColors[senderIndex] ? senderColors[senderIndex] : '#c5cad3'}` }}>{sender.username}</h4></Link>
                 )}
               </div>
               {msg.isReply && msg.repliedTo && (

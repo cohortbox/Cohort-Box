@@ -7,7 +7,9 @@ import NavUserButton from './NavUserButton';
 import { useAuth } from '../context/AuthContext';
 import { useSocketEvent } from '../context/SocketContext';
 import close from '../images/close-gray.png'
+import logo from '../images/logo.png';
 import Toast from './Toast';
+import menu from '../images/menu.png'
 
 function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedChat, userChats = [], setUserChats = () => {}, isNewMessage = false, setIsNewMessage = () => {}, setNewMessageChatIds = () => {}, newMessageChatIds= [], isMobile = false }) {
   const { user, accessToken, loading } = useAuth();
@@ -527,7 +529,14 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
   return (
     <div className='cn-container'>
       <div className='cn-heading-container'>
-        <h3 className='cn-heading'>MY COHORT BOXES</h3>
+        <div className='cn-heading'>
+          {
+            isMobile && (
+              <img src={logo}/>
+            )
+          }
+          <h1>{isMobile ? 'COHORTBOX' : 'MY COHORT BOXES'}</h1>
+        </div>
       </div>
 
       <div className='cn-body-container'>
