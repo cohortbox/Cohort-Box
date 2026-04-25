@@ -1,0 +1,109 @@
+.login-popup-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    z-index: 100;
+}
+
+.login-popup-wrapper {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+}
+
+.login-popup-wrapper>img {
+    height: 400px;
+    transform: translateX(30px);
+}
+
+.login-popup-body {
+    transform: translateX(-30px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    height: fit-content;
+    width: 600px;
+    border: 1px solid var(--borderColor);
+    border-radius: 15px;
+    background-color: var(--black);
+    padding: 1.6rem 2rem;
+}
+
+.login-popup-body .heading-container {
+    display: flex;
+    align-items: center;
+    margin: 0;
+}
+
+.login-popup-body .heading-container h1 {
+    font-size: 2rem;
+    color: var(--fontColor);
+    font-family: 'GR';
+    margin: 0;
+}
+
+.login-popup-body .heading-container h1 .green {
+    color: var(--green);
+    font-family: 'GBL';
+}
+
+.login-popup-body .mid-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px solid var(--fontColor);
+    border-bottom: 1px solid var(--fontColor);
+    padding: 16px 0px;
+}
+
+.login-popup-body>a {
+    border-radius: 100px;
+    height: 40px;
+    width: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'GBL';
+    color: var(--black);
+    background-color: var(--green);
+    border: none;
+    font-size: 1.4rem;
+    transition: ease-in-out 0.2s;
+    cursor: pointer;
+}
+
+.login-popup-body>a:hover {
+    border-radius: 8px;
+}
+
+.login-popup-body p {
+    color: var(--small);
+    font-size: 0.8rem;
+}
+
+.login-popup-body p a {
+    color: var(--green);
+}
+
+.login-popup-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    width: 100vw;
+    background-color: rgba(0, 0, 0, 0.771);
+}

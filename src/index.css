@@ -70,6 +70,11 @@ body {
   background-color: var(--black);
 }
 
+a{
+  text-decoration: none;
+  cursor: pointer;
+}
+
 h1{
   margin: 0;
 }
@@ -98,13 +103,17 @@ code {
 }
 
 .new-indicator{
-    background-color: red;
-    border-radius: 20px;
-    height: 10px;
-    position: absolute;
-    right: -5px;
-    top: -1px;
-    width: 10px;
+  background-color: red;
+  border-radius: 20px;
+  height: 10px;
+  position: absolute;
+  right: -5px;
+  top: -1px;
+  width: 10px;
+}
+
+.text-green{
+  color: var(--green);
 }
 
 @keyframes spin {

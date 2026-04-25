@@ -18,7 +18,7 @@
     gap: 1rem;
 }
 
-.np-container h1{
+.np-container > h1{
     font-size: 1rem;
     color: var(--fontColor);
     height: 39px;

@@ -10,7 +10,7 @@ function LiveCommentMenu({ selectedChat, comment }) {
     const [open, setOpen] = useState(false);
     const { user } = useAuth();
     const isParticipant = selectedChat?.participants?.some(
-        (p) => p._id === user.id
+        (p) => p._id === user?.id
     );
 
 

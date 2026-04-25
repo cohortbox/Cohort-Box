@@ -20,13 +20,13 @@ export const SocketProvider = ({ children }) => {
   // Connect / disconnect lifecycle
   useEffect(() => {
     // Only attempt connection when we have a token and auth is done loading
-    if (loading || !accessToken) return;
+    if (loading) return;
 
-    const s = connectSocket(accessToken);
+    const s = connectSocket(accessToken || null);
 
     // Register the user once the transport is up
     s.on("connect", () => {
-      if (user?.id) {
+      if (user?.id && accessToken) {
         s.emit("register", user.id);
       }
     });
@@ -44,8 +44,11 @@ export const SocketProvider = ({ children }) => {
 
   // Keep token fresh on the existing connection
   useEffect(() => {
-    if (!socket || !accessToken) return;
-    socket.emit("updateToken", accessToken);
+    if (!socket) return;
+
+    if (accessToken) {
+      socket.emit("updateToken", accessToken);
+    }
   }, [socket, accessToken]);
 
   // Stable helper emits (nice for DX, optional to use)

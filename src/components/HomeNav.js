@@ -10,6 +10,7 @@ import close from '../images/close-gray.png'
 import logo from '../images/logo.png';
 import Toast from './Toast';
 import menu from '../images/menu.png'
+import LoginFiller from './LoginFiller';
 
 function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedChat, userChats = [], setUserChats = () => {}, isNewMessage = false, setIsNewMessage = () => {}, setNewMessageChatIds = () => {}, newMessageChatIds= [], isMobile = false }) {
   const { user, accessToken, loading } = useAuth();
@@ -285,9 +286,6 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
 
       const result = await fetch(`/api/search?q=${encodeURIComponent(searchInput)}`, {
         method: 'GET',
-        headers: {
-          'authorization': `Bearer ${accessToken}`
-        }
       })
 
       if (!result.ok) {
@@ -692,7 +690,7 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
           }
 
           {
-            !searchState && currFilter === 'sub' && (
+            !searchState && currFilter === 'sub' && user && (
               <>
                 {
                   subscribedChats.length === 0 && (
@@ -720,8 +718,13 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
             )
           }
 
+          { !searchState && currFilter === 'sub' && !user && (
+              <LoginFiller message='To Subscribe to Cohort Boxes'/>
+            )
+          }
+
           {
-            !searchState && currFilter === 'my' && (
+            !searchState && currFilter === 'my' && user && (
               <>
                 {
                   userChats.length === 0 && (
@@ -748,6 +751,12 @@ function ChatsNav({ users, setUsers, chats, setChats, selectedChat, setSelectedC
 
                 <div ref={loadMoreMyRef} style={{ height: 1 }} />
               </>
+            )
+          }
+
+          {
+            !searchState && currFilter === 'my' && !user && (
+              <LoginFiller message='To Create and Become a part of Cohort Boxes'/>
             )
           }
 

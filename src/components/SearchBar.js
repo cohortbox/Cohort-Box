@@ -13,7 +13,7 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
     const [query, setQuery] = useState('');
     const [toastMessage, setToastMessage] = useState("");
     const [showToast, setShowToast] = useState(false)
-    const { accessToken, user } = useAuth();
+    const { accessToken, user, loading } = useAuth();
     const { socket } = useSocket();
 
     function showAlert(msg) {
@@ -26,6 +26,7 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
     }
 
     useEffect(() => {
+        if(!accessToken || loading) return;
         fetch(`/api/friends`, {
             method: 'GET',
             headers: {
@@ -43,10 +44,11 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
             console.error(err);
             navigate('/crash');
         })
-    }, [])
+    }, [accessToken, loading])
 
     function handleSearch(e){
         e.preventDefault();
+        if(!accessToken || loading) return;
         if(!query || !query.trim()) return;
         fetch(`/api/friends?q=${encodeURIComponent(query)}`, {
             method: 'GET',
@@ -83,6 +85,7 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
     }
 
     function handleAddParticipants(e){
+        if(!accessToken || loading) return;
         e.preventDefault();
         if(!selectedChat) return;
         if(!chatId) return;
@@ -149,7 +152,7 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            from: user.id,
+                            from: user?.id,
                             chatId,
                             type: 'chatInfo',
                             message: `Admin requested ${intendedMember.username} to join this chat.`,
@@ -204,7 +207,7 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
                         { addParticipant ? 
                             users
                                 .filter(u => {
-                                    if (u._id === user.id) return false;
+                                    if (u._id === user?.id) return false;
 
                                     if (addParticipant && selectedChat?.participants) {
                                         return !selectedChat.participants.some(
@@ -233,7 +236,7 @@ function SearchBar({ searchBarClass, setSearchBarClass, members, setMembers, cha
                             :
                             users.length > 0 ? 
                                 users.map((u, index) => {
-                                    if(u._id === user.id) return;
+                                    if(u._id === user?.id) return;
                                     return (
                                         <div key={index} className={'user' + searchBarClass}>
                                             <h2>{u.firstName + ' ' + u.lastName}</h2>

@@ -1,8 +1,11 @@
 import './NotificationPanel.css';
 import { useEffect, useRef, useState } from 'react';
 import Notification from './Notification';
+import { useAuth } from '../context/AuthContext';
+import LoginFiller from './LoginFiller';
 
 export default function NotificationPanel({notificationBtnRef, openNotification, setOpenNotification, setNotifications, notifications}){
+    const {user} = useAuth();
     const panelRef = useRef(null);
 
     useEffect(() => {
@@ -30,11 +33,19 @@ export default function NotificationPanel({notificationBtnRef, openNotification,
         <div ref={panelRef} className='np-container'>
             <h1>NOTIFICATIONS</h1>
             <div className='notifications-container'>
-                { notifications.length > 0 ? 
+                { notifications.length > 0 && 
                     notifications.map((not, index) => (
                         <Notification notification={not} setNotifications={setNotifications} key={index}/>
-                    )) : (
+                    ))
+                }
+                { notifications.length === 0 && user &&
+                    (
                         <p className='no-notifications'>There are no notifications for you!</p>
+                    )
+                }
+                {
+                    !user && (
+                        <LoginFiller message='To see Notifications'/>
                     )
                 }
             </div>

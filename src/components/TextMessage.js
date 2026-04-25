@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext.js';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-export default function TextMessage({ newSender, setIsReply, setRepliedTo, msg, sender, setMessages, selectedChat }) {
+export default function TextMessage({ newSender, setIsReply, setRepliedTo, msg, sender, setMessages, selectedChat, setLoginPopup = () => {} }) {
     const { user } = useAuth();
     const [pop, setPop] = useState(false);
     const senderColors = ['#c76060', '#c79569', '#c7c569', '#6ec769', '#69c2c7', '#6974c7', '#9769c7', '#c769bf']
@@ -36,8 +36,8 @@ export default function TextMessage({ newSender, setIsReply, setRepliedTo, msg, 
         : 0;
 
     return (
-        <div className={String(msg.from._id) === String(user.id) ? "my-msg-container" : "other-msg-container"}>
-            {String(msg.from._id) !== String(user.id) && newSender &&
+        <div className={String(msg.from._id) === String(user?.id) ? "my-msg-container" : "other-msg-container"}>
+            {String(msg.from._id) !== String(user?.id) && newSender &&
                 <Link style={{ textDecoration: 'none' }} to={`/profile/${sender._id}`}>
                     <div className='msg-user-dp-container'>
                         <img className='msg-user-dp' src={msg.from.dp} />
@@ -45,8 +45,8 @@ export default function TextMessage({ newSender, setIsReply, setRepliedTo, msg, 
                 </Link>
             }
             <div className={`msg-menu-btns-container ${newSender ? 'right' : ''}`}>
-                <div className={msg.from._id === user.id ? `my-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${pop ? 'msg-pop' : ''}` : `other-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${newSender ? 'left' : ''} ${pop ? 'msg-pop' : ''}`}>
-                    {msg.from._id !== user.id && sender && newSender && (
+                <div className={msg.from._id === user?.id ? `my-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${pop ? 'msg-pop' : ''}` : `other-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${newSender ? 'left' : ''} ${pop ? 'msg-pop' : ''}`}>
+                    {msg.from._id !== user?.id && sender && newSender && (
                         <Link style={{ textDecoration: 'none' }} to={`/profile/${sender._id}`}><h4 className='sender-name' style={{ color: `${senderColors[senderIndex] ? senderColors[senderIndex] : '#c5cad3'}` }}>{sender.username}</h4></Link>
                     )}
                     {msg.isReply && msg.repliedTo && (
@@ -69,13 +69,13 @@ export default function TextMessage({ newSender, setIsReply, setRepliedTo, msg, 
                     <span className="msg-text">{msg.message}</span>
                     <span className="msg-time">{formatTime(msg.timestamp)}</span>
                     {msg.reactions?.length > 0 && (
-                        <div className={String(msg.from._id) === String(user.id) ? "my-reactions" : "other-reactions"}>
-                            <ReactionsMenu reactions={msg.reactions} msgId={msg._id} selectedChat={selectedChat} />
+                        <div className={String(msg.from._id) === String(user?.id) ? "my-reactions" : "other-reactions"}>
+                            <ReactionsMenu reactions={msg.reactions} msgId={msg._id} selectedChat={selectedChat} setLoginPopup={setLoginPopup} />
                         </div>
                     )}
                 </div>
                 <MessageMenu setIsReply={setIsReply} setRepliedTo={setRepliedTo} msg={msg} setMessages={setMessages} />
-                <ReactionMenu msg={msg} />
+                <ReactionMenu msg={msg} setLoginPopup={setLoginPopup} />
             </div>
         </div>
     )

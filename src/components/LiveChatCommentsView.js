@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import closeImg from '../images/close-gray.png';
 import { useSocket, useSocketEvent } from '../context/SocketContext';
 import LiveCommentMenu from './LiveCommentMenu';
+import LoginFiller from './LoginFiller';
 
 export default function LiveChatView({ selectedChat, setShowLiveChat }) {
     const senderColors = [
@@ -132,16 +133,26 @@ export default function LiveChatView({ selectedChat, setShowLiveChat }) {
                 }
                 <div ref={bottomRef} />
             </div>
-            <div className='comment-msg-input-container'>
-                <input
-                    type='text'
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && sendComment()}
-                    placeholder='Comment Live'
-                />
-                <button disabled={cooldown ? true : false} onClick={sendComment}><MyIcon fill='#c5cad3' style={{ width: '30px', height: '30px', fill: '#c5cad3' }} /></button>
-            </div>
+            { 
+                user && accessToken && (
+                    <div className='comment-msg-input-container'>
+                        <input
+                            type='text'
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && sendComment()}
+                            placeholder='Comment Live'
+                        />
+                        <button disabled={cooldown ? true : false} onClick={sendComment}><MyIcon fill='#c5cad3' style={{ width: '30px', height: '30px', fill: '#c5cad3' }} /></button>
+                    </div>
+                )
+            }
+
+            {
+                !user && (
+                    <LoginFiller message='To join Live Chat'/>
+                )
+            }
         </div>
     )
 }

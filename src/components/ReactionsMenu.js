@@ -1,9 +1,11 @@
 import "./ReactionsMenu.css";
 import { useEffect, useMemo, useState } from "react";
 import { useFloating, offset, flip, shift } from "@floating-ui/react";
+import { useAuth } from "../context/AuthContext";
 
-export default function ReactionsPopup({ reactions = [], selectedChat, isCimv = false }) {
+export default function ReactionsPopup({ reactions = [], selectedChat, isCimv = false, setLoginPopup = () => {} }) {
     const [open, setOpen] = useState(false);
+    const {user} = useAuth();
 
     const { refs, floatingStyles } = useFloating({
         placement: "top",
@@ -86,7 +88,7 @@ export default function ReactionsPopup({ reactions = [], selectedChat, isCimv = 
                 ref={refs.setReference}
                 type="button"
                 className="reactions-trigger"
-                onClick={() => setOpen(prev => !prev)}
+                onClick={user ? () => setOpen(prev => !prev) : () => setLoginPopup(true)}
             >
                 <span className={isCimv ? "reaction-bubble is-cimv" : 'reaction-bubble'}>
                     {allTopEmojis.slice(0,2).map(e => <span key={e.emoji}>{e.emoji}</span>)}

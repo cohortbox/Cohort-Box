@@ -12,7 +12,7 @@ import notificationImg from '../images/notification.png';
 import { useAuth } from '../context/AuthContext';
 import { useSocket, useSocketEvent } from '../context/SocketContext';
 
-function NavBar({ selectedChat }){
+function NavBar({ selectedChat, setLoginPopup = () => {} }){
     const { socket } = useSocket();
     const { user, accessToken } = useAuth();
     const [open, setOpen] = useState(false);
@@ -133,12 +133,23 @@ function NavBar({ selectedChat }){
             </section>
 
             <section className="nav-btn-container">
-                <Link to={user ? `/profile/${user.id}` : '/login'} style={{textDecoration: 'none'}}>
-                    <button className="nav-btn">
-                        <img src={userDB ? userDB :  profileImg} alt="Profile" className="nav-btn-img profile-img-navbar"/>
-                        <span>PROFILE</span>
-                    </button>
-                </Link>
+                {
+                    user ? (
+                        <Link to={user ? `/profile/${user.id}` : '/login'} style={{ textDecoration: 'none' }}>
+                            <button className="nav-btn">
+                                <img src={userDB ? userDB : profileImg} alt="Profile" className="nav-btn-img profile-img-navbar" />
+                                <span>PROFILE</span>
+                            </button>
+                        </Link>
+                    ) : (
+                        <div onClick={() => setLoginPopup(true)}>
+                            <button className="nav-btn">
+                                <img src={userDB ? userDB : profileImg} alt="Profile" className="nav-btn-img profile-img-navbar" />
+                                <span>PROFILE</span>
+                            </button>
+                        </div>
+                    )
+                }
                 <Link to={user ? `/settings` : '/login'} style={{textDecoration: 'none'}}>
                     <button className="nav-btn">
                         <img src={settingsImg} alt="Settings" className="nav-btn-img"/>

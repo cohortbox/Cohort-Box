@@ -1,0 +1,41 @@
+.login-filler-container{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.8rem 1.2rem;
+    box-sizing: border-box;
+}
+
+.login-filler-container h1 {
+    border-bottom: 1px solid var(--borderColor);
+    height: fit-content;
+    font-size: 1.2rem;
+    width: 100%;
+    color: var(--fontColor);
+    text-align: center;
+    padding-bottom: 0.8rem;
+}
+
+.login-filler-container h1 .extra-bold{
+    font-family: 'GEB';
+    font-size: 1.4rem;
+}
+
+.login-filler-container a {
+    background-color: var(--green);
+    border-radius: 50px;
+    cursor: pointer;
+    margin-top: 0.8rem;
+    transition: all .3s ease;
+    width: 100%;
+    color: var(--black);
+    font-family: 'GEB';
+    text-align: center;
+    font-size: 1.2rem;
+    padding: 4px 0;
+}
+
+.login-filler-container a:hover {
+    border-radius: 2px;
+}

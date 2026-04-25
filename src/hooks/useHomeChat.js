@@ -28,17 +28,10 @@ export default function useHomeChat() {
   };
 
   useEffect(() => {
-    if (!accessToken && !loading) {
-      navigate("/login");
-    }
-  }, [accessToken, loading, navigate]);
-
-  useEffect(() => {
-    if (!accessToken || !paramChatId || loading) return;
+    if (!paramChatId) return;
 
     fetch(`/api/chats/${paramChatId}`, {
       method: "GET",
-      headers: { authorization: `Bearer ${accessToken}` },
     })
       .then((res) => {
         if (!res.ok) throw new Error("Request Failed!");
@@ -52,12 +45,8 @@ export default function useHomeChat() {
   }, [paramChatId, accessToken, loading, navigate]);
 
   useEffect(() => {
-    if (!accessToken || loading) return;
-
     fetch(`/api/chats`, {
       method: "GET",
-      headers: { authorization: `Bearer ${accessToken}` },
-      credentials: "include",
     })
       .then((res) => {
         if (!res.ok) {
@@ -76,14 +65,11 @@ export default function useHomeChat() {
         console.error(err);
         navigate("/crash");
       });
-  }, [accessToken, loading, navigate]);
+  }, [navigate]);
 
   useEffect(() => {
-    if (!accessToken || loading) return;
-
     fetch("/api/users", {
       method: "GET",
-      headers: { authorization: `Bearer ${accessToken}` },
     })
       .then((res) => {
         if (!res.ok) throw new Error("Request failed: " + res.status);
@@ -94,14 +80,13 @@ export default function useHomeChat() {
         console.error(err);
         navigate("/crash");
       });
-  }, [accessToken, loading, navigate]);
+  }, [navigate]);
 
   useEffect(() => {
-    if (!accessToken || loading || !user?.id) return;
+    if (!user?.id) return;
 
     fetch(`/api/user-chats/${encodeURIComponent(user.id)}`, {
       method: "GET",
-      headers: { authorization: `Bearer ${accessToken}` },
     })
       .then((res) => {
         if (!res.ok) throw new Error("Request failed: " + res.status);
@@ -112,7 +97,7 @@ export default function useHomeChat() {
         console.error(err);
         navigate("/crash");
       });
-  }, [accessToken, loading, user?.id, navigate]);
+  }, [user?.id, navigate]);
 
   const updateReactions = (existing = [], data) => {
     const filtered = existing.filter(

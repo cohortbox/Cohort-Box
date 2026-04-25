@@ -17,12 +17,12 @@ function getMyReaction(message, userId) {
   return reaction ? reaction.emoji : null;
 }
 
-function ReactionMenu({ msg, isPost = false, onReactLocal }) {
+function ReactionMenu({ msg, isPost = false, onReactLocal, setLoginPopup = () => {} }) {
   const { socket } = useSocket();
   const { user, accessToken } = useAuth();
   const [open, setOpen] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
-  const [myReaction, setMyReaction] = useState(getMyReaction(msg, user.id));
+  const [myReaction, setMyReaction] = useState(getMyReaction(msg, user?.id));
   const navigate = useNavigate();
 
   // Floating UI for main reactions menu
@@ -43,8 +43,8 @@ function ReactionMenu({ msg, isPost = false, onReactLocal }) {
   const emojiBtnRef = emojiRefs.setReference;
 
   useEffect(() => {
-    setMyReaction(getMyReaction(msg, user.id))
-  }, [msg, user.id])
+    setMyReaction(getMyReaction(msg, user?.id))
+  }, [msg, user?.id])
 
   // Click outside handling
   useEffect(() => {
@@ -88,13 +88,13 @@ function ReactionMenu({ msg, isPost = false, onReactLocal }) {
 
     // Optimistic UI update for posts
     if (isPost && typeof onReactLocal === "function") {
-      onReactLocal(emoji, user.id);
+      onReactLocal(emoji, user?.id);
     }
 
     const payload =  {
       emoji,
       msgId: msg._id,
-      userId: user.id,
+      userId: user?.id,
       chatId: msg.chatId,
       removing: isRemoving,
     }
@@ -138,6 +138,10 @@ function ReactionMenu({ msg, isPost = false, onReactLocal }) {
         className={isPost ? "rm-btn-post" : "rm-btn"}
         onClick={(e) => {
           e.preventDefault();
+          if(!user){
+            setLoginPopup(true)
+            return;
+          }
           setOpen((prev) => !prev);
         }}
         type="button"

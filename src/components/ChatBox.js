@@ -24,7 +24,7 @@ import LoadingMessages from './LoadingMessages.js';
 import { ReactComponent as MyIcon } from '../images/comment.svg';
 import msgAudio from '../audio/msgPop.mp3';
 
-function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, messages, setMessages, typingUsers, setShowLiveChat, showLiveChat, focusMessageId, clearFocus }) {
+function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, messages, setMessages, typingUsers, setShowLiveChat, showLiveChat, focusMessageId, clearFocus, setLoginPopup = () => {} }) {
 
   const senderColors = ['#c76060', '#c79569', '#c7c569', '#6ec769', '#69c2c7', '#6974c7', '#9769c7', '#c769bf']
 
@@ -99,6 +99,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
   }, [focusMessageId, messages.length]);
 
   function scrollToBottom(smooth = true) {
+    console.log('scrollToBottom RAN!!')
     const el = messagesBoxRef.current;
     if (!el) return;
 
@@ -170,7 +171,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
 
     const senderId = String(msg.from?._id);
 
-    if (senderId === String(user.id)) {
+    if (senderId === String(user?.id)) {
       return;
     }
 
@@ -344,7 +345,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
         const chatId = selectedChat._id;
 
         const isParticipant = Array.isArray(selectedChat.participants)
-          ? selectedChat.participants.some((p) => p?._id === user.id)
+          ? selectedChat.participants.some((p) => p?._id === user?.id)
           : false;
 
         // Everyone joins room (so they receive updates like reactions/live counts)
@@ -352,7 +353,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
 
         // Only participants trigger "opened by participant" + subscriber notifications
         if (isParticipant) {
-          socket.emit("chatOpenedByParticipant", { chatId, userId: user.id });
+          socket.emit("chatOpenedByParticipant", { chatId, userId: user?.id });
 
           // Notify subscribers (your existing behavior)
           const subs = Array.isArray(selectedChat.subscribers) ? selectedChat.subscribers : [];
@@ -364,7 +365,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
 
             const body = {
               user: subId,
-              sender: user.id,
+              sender: user?.id,
               type: "chat_participant_joined",
               chat: chatId,
               message: null,
@@ -411,14 +412,18 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
     return () => {
       cancelled = true;
 
+      const isParticipant = Array.isArray(selectedChat.participants)
+        ? selectedChat.participants.some((p) => p?._id === user?.id)
+        : false;
+
       if (socket && selectedChat?._id) {
         socket.emit("leaveChat", selectedChat._id);
         console.log("left chat:", selectedChat._id);
       }
 
       // also stop typing if user leaves while typing (optional but recommended)
-      if (socket && isTypingRef.current && selectedChat?._id) {
-        socket.emit("typing", { chatId: selectedChat._id, userId: user.id, typing: false });
+      if (isParticipant && socket && isTypingRef.current && selectedChat?._id) {
+        socket.emit("typing", { chatId: selectedChat._id, userId: user?.id, typing: false });
         isTypingRef.current = false;
       }
 
@@ -428,7 +433,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
         typingTimeoutRef.current = null;
       }
     };
-  }, [selectedChat, accessToken, socket, user.id, focusMessageId]);
+  }, [selectedChat, accessToken, socket, user?.id, focusMessageId]);
 
   useEffect(() => {
     const el = messagesBoxRef.current;
@@ -465,6 +470,10 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
   }, [selectedChat?._id]);
 
   function handleSubscribe(e) {
+    if(!accessToken || !user){
+      setLoginPopup(true);
+      return;
+    }
     e.preventDefault();
     fetch('/api/chat/subscribe', {
       method: 'PATCH',
@@ -491,6 +500,10 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
 
   function handleUnsubscribe(e) {
     e.preventDefault();
+    if(!accessToken || !user){
+      setLoginPopup(true);
+      return;
+    }
     fetch('/api/chat/unsubscribe', {
       method: 'PATCH',
       headers: {
@@ -535,7 +548,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
     if (socket && selectedChat) {
       if (!isTypingRef.current) {
         // only emit once when typing starts
-        socket.emit("typing", { chatId: selectedChat._id, userId: user.id, typing: true });
+        socket.emit("typing", { chatId: selectedChat._id, userId: user?.id, typing: true });
         isTypingRef.current = true;
       }
 
@@ -546,7 +559,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
 
       // set a new timeout (2s) to mark typing as stopped
       typingTimeoutRef.current = setTimeout(() => {
-        socket.emit("typing", { chatId: selectedChat._id, userId: user.id, typing: false });
+        socket.emit("typing", { chatId: selectedChat._id, userId: user?.id, typing: false });
         isTypingRef.current = false;
       }, 2000);
     }
@@ -562,7 +575,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
 
         const newMessageBody = {
           optimisticId,
-          from: user.id,
+          from: user?.id,
           chatId: selectedChat._id,
           type: "text",
           isReply: isReply ? true : false,
@@ -575,7 +588,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
         setMessages(prev => [
           {
             from: {
-              _id: user.id,
+              _id: user?.id,
               username: user.username,
               firstName: user.firstName,
               lastName: user.lastName,
@@ -665,7 +678,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
         setMessages(prev => [
           {
             from: {
-              _id: user.id,
+              _id: user?.id,
               username: user.username,
               firstName: user.firstName,
               lastName: user.lastName,
@@ -701,7 +714,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
 
           const newMessageBody = {
             optimisticId,
-            from: user.id,
+            from: user?.id,
             chatId: selectedChat._id,
             type: "audio",
             message: " ",
@@ -738,7 +751,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
 
           socket.emit("typing", {
             chatId: selectedChat._id,
-            userId: user.id,
+            userId: user?.id,
             typing: false
           });
 
@@ -827,8 +840,8 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
               <img onClick={() => setChatInfoClass('')} className='chatDp' src={selectedChat.chatDp} />
             </div>
             <h3 onClick={() => setChatInfoClass('')} className='chat-box-heading'>{selectedChat.chatName}</h3>
-            {!selectedChat.participants.some(p => p._id === user.id) && (
-              selectedChat?.subscribers.includes(user.id) ?
+            {!selectedChat.participants.some(p => p._id === user?.id) && (
+              selectedChat?.subscribers.includes(user?.id) ?
                 (<button className='unsubscribe-btn' onClick={handleUnsubscribe}>Unsubscribe</button>) :
                 (<button className='subscribe-btn' onClick={handleSubscribe}>Subscribe</button>)
             )}
@@ -888,6 +901,8 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
                 setMessages={setMessages}
                 selectedChat={selectedChat}
                 setClickedMsg={setClickedMsg}
+                setLoginPopup={setLoginPopup}
+
               />
             ) : msg.type === 'media' && msg.media.length > 0 ? (
               <MediaMessage
@@ -900,6 +915,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
                 setClickedMedia={setClickedMedia}
                 selectedChat={selectedChat}
                 setClickedMsg={setClickedMsg}
+                setLoginPopup={setLoginPopup}
               />
             ) : msg.type === 'audio' ? (
               <AudioMessage
@@ -911,6 +927,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
                 sender={msg.from}
                 selectedChat={selectedChat}
                 setClickedMsg={setClickedMsg}
+                setLoginPopup={setLoginPopup}
               />
             ) : msg.type === 'chatInfo' ? (
               <ChatInfoMessage msg={msg} />
@@ -930,7 +947,7 @@ function ChatBox({ setChats, paramChatId, selectedChat, setSelectedChat, message
           );
         })}
       </div>
-      {selectedChat && selectedChat.participants.some(p => p._id === user.id) && (
+      {selectedChat && selectedChat.participants.some(p => p._id === user?.id) && (
         <form className='msg-input-form' onSubmit={sendMessage}>
           {
             isReply && repliedTo &&

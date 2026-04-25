@@ -8,18 +8,14 @@ import { useNavigate } from 'react-router-dom';
 function Posts(){
 
     const [posts, setPosts] = useState([]);
-    const { accessToken, loading } = useAuth();
+    const { loading } = useAuth();
     const navigate = useNavigate();
     
     useEffect(() => {
-        if (!accessToken) return;
         if(loading) return;
 
         fetch(`/api/posts`, {
             method: 'GET',
-            headers: {
-                'authorization': `Bearer ${accessToken}`
-            }
         }).then(response => {
             if(!response.ok){
                 if(response.status === 404){
@@ -39,7 +35,7 @@ function Posts(){
             console.error(err);
             navigate('/crash')
         })
-    },[accessToken])
+    },[])
 
     return (
         <div className='posts-page'>

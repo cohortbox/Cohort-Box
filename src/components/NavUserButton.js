@@ -93,7 +93,7 @@ function NavUserButton({ user, isFriend, sentRequest, gotRequest }) {
           <h1 className="nub-name">{user.firstName + ' ' + user.lastName}</h1>
         </div>
       </div>
-      { user._id !== thisUser.id && (
+      { thisUser && user._id !== thisUser?.id && (
         <div className="nub-btns-container">
           {isFriend ? (
             <button className="nub-btn" onClick={handleUnfriend}>Unfriend</button>

@@ -7,12 +7,14 @@ export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(""); // keep it "" not null
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loggedIn, setLoggedIn] = useState(false)
 
   const refreshIntervalID = useRef(null);
   const refreshingRef = useRef(false);
 
   const login = (token) => {
     setAccessToken(token || "");
+    setLoggedIn(true);
     setUser(token ? jwtDecode(token) : null);
   };
 
@@ -25,6 +27,7 @@ export const AuthProvider = ({ children }) => {
         },
         credentials: 'include'
       });
+      setLoggedIn(false);
     } catch (err) {
       console.log("Could not Logout! Error: ", err);
     } finally {
@@ -38,6 +41,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const refreshAccessToken = async () => {
+    if(!loggedIn) return;
     if (refreshingRef.current) return null;
     refreshingRef.current = true;
 

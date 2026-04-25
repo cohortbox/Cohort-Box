@@ -251,7 +251,7 @@ function ChatInfo({
         <div className="chat-info-heading">
           <div className="chat-img-container">
             <img className="chat-img" src={selectedChat.chatDp} alt="" />
-            {String(user.id) === String(selectedChat.chatAdmin) &&
+            {String(user?.id) === String(selectedChat.chatAdmin) &&
               <div className="photo-change-btn">
                 <img
                   className="photo-change-img"
@@ -348,7 +348,7 @@ function ChatInfo({
         </div>
 
         {selectedChat.participants.some((p) => p._id === user?.id) && selectedChat.chatAdmin !== user?.id && (
-          <button className="leave-chat-btn" onClick={(e) => handleLeaveChat(e, user.id, selectedChat._id)}>
+          <button className="leave-chat-btn" onClick={(e) => handleLeaveChat(e, user?.id, selectedChat._id)}>
             <img src={leaveIcon} alt="" /> <p>Leave Cohort Box</p>
           </button>
         )}

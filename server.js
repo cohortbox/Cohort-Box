@@ -198,7 +198,6 @@ async function emitToChatParticipant(chatId, eventName, payload) {
     }
 }
 
-
 const authTokenAPI = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -216,20 +215,51 @@ const authTokenAPI = (req, res, next) => {
     })
 }
 
-const authTokenSocketIO = (socket, next) => {
-    const token = socket.handshake.auth.token; // token sent from frontend
-    if (!token) {
-        return next(new Error("No token provided"));
+const optionalAuthTokenAPI = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  // Guest request
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_KEY, async (err, user) => {
+    if (err) {
+      req.user = null; // treat invalid token as guest
+      return next();
     }
 
-    jwt.verify(token, process.env.ACCESS_TOKEN_KEY, (err, user) => {
-        if (err) {
-            return next(new Error("Invalid Token"));
-        }
-        socket.user = user; // attach user info to socket
-        next();
-    });
-}
+    req.user = user;
+    next();
+  });
+};
+
+const authTokenSocketIO = (socket, next) => {
+  const token = socket.handshake.auth?.token;
+
+  // guest socket
+  if (!token) {
+    socket.user = null;
+    socket.isGuest = true;
+    socket.guestId = socket.id;
+    return next();
+  }
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_KEY, (err, user) => {
+    if (err) {
+      socket.user = null;
+      socket.isGuest = true;
+      socket.guestId = socket.id;
+      return next();
+    }
+
+    socket.user = user;
+    socket.isGuest = false;
+    next();
+  });
+};
 
 const adminAuthAPI = async (req, res, next) => {
     try {
@@ -245,6 +275,17 @@ const adminAuthAPI = async (req, res, next) => {
     } catch (err) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
+}
+
+function requireSocketUser(socket) {
+  if (!socket.user?.id) {
+    socket.emit("authRequired", {
+      message: "Login required for this action"
+    });
+    return false;
+  }
+
+  return true;
 }
 
 io.use(authTokenSocketIO);
@@ -1046,12 +1087,10 @@ function escapeRegex(str) {
     return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-app.get('/api/search', async (req, res) => {
+app.get('/api/search', optionalAuthTokenAPI, async (req, res) => {
     try {
+        console.log('hello')
         const userId = req.user?.id;
-        if (!userId) {
-            return res.status(400).json({ message: 'User ID not found in request!' });
-        }
 
         const rawQuery = (req.query.q || '').trim();
         if (rawQuery.length < 2 || rawQuery.length > 50) {
@@ -1063,13 +1102,18 @@ app.get('/api/search', async (req, res) => {
         const LIMIT = 10;
 
         const userFilter = {
-            _id: { $ne: userId },
             $or: [
                 { username: { $regex: `${query}`, $options: 'i' } },
                 { firstName: { $regex: `^${query}`, $options: 'i' } },
                 { lastName: { $regex: `^${query}`, $options: 'i' } }
             ]
         };
+
+        if(userId){
+            userFilter._id = {
+                $ne: userId,
+            }
+        }
 
         const chatFilter = {
             chatName: { $regex: `^${query}`, $options: 'i' },
@@ -1163,17 +1207,22 @@ app.delete('/api/notification/:notificationId', authTokenAPI, async (req, res) =
     }
 });
 
-app.get('/api/users', authTokenAPI, async (req, res) => {
+app.get('/api/users', optionalAuthTokenAPI, async (req, res) => {
     try {
         const lastId = req.query.lastId;
         const query = (req.query.q || '').trim();
         const limit = Math.min(Number(req.query.limit) || 30, 200);
 
-        if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
-            return res.status(400).json({ message: 'Invalid user ID' });
-        }
+        const filter = { $or: [{ status: 'active' }, { status: 'warned' }] };
 
-        const filter = { _id: { $ne: req.user.id }, $or: [{ status: 'active' }, { status: 'warned' }] };
+        if(req.user){
+            if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+                return res.status(400).json({ message: 'Invalid user ID' });
+            }
+            filter._id = {
+                $ne: req?.user?.id
+            };
+        };
 
         // Search by name if query exists
         if (query) {
@@ -1205,7 +1254,7 @@ app.get('/api/users', authTokenAPI, async (req, res) => {
     }
 });
 
-app.get('/api/user/:userId', async (req, res) => {
+app.get('/api/user/:userId', optionalAuthTokenAPI,  async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -1237,7 +1286,7 @@ app.get('/api/user/:userId', async (req, res) => {
     }
 });
 
-app.get('/api/user-dp', authTokenAPI, async (req, res) => {
+app.get('/api/user-dp', optionalAuthTokenAPI, authTokenAPI, async (req, res) => {
     try {
         const userId = req.user.id;
         if (!mongoose.isValidObjectId(userId)) {
@@ -1254,7 +1303,7 @@ app.get('/api/user-dp', authTokenAPI, async (req, res) => {
     }
 })
 
-app.get('/api/friends', authTokenAPI, async (req, res) => {
+app.get('/api/friends', optionalAuthTokenAPI, authTokenAPI, async (req, res) => {
     try {
         const id = req.user.id;
         const query = (req.query.q || '').trim();
@@ -1292,7 +1341,7 @@ app.get('/api/friends', authTokenAPI, async (req, res) => {
     }
 });
 
-app.get('/api/friends/:id', async (req, res) => {
+app.get('/api/friends/:id', optionalAuthTokenAPI, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -1352,7 +1401,7 @@ app.get('/api/friend-requests', authTokenAPI, async (req, res) => {
     }
 });
 
-app.get('/api/posts', async (req, res) => {
+app.get('/api/posts', optionalAuthTokenAPI, async (req, res) => {
     try {
         const { lastId } = req.query;
         const limit = 30;
@@ -1384,7 +1433,7 @@ app.get('/api/posts', async (req, res) => {
     }
 });
 
-app.get('/api/chats', async (req, res) => {
+app.get('/api/chats', optionalAuthTokenAPI, async (req, res) => {
     const { lastId } = req.query;
     const limit = 30;
     let filter = {};
@@ -1472,7 +1521,7 @@ app.get('/api/subscribed-chats', authTokenAPI, async (req, res) => {
     }
 });
 
-app.get('/api/chats/:id', async (req, res) => {
+app.get('/api/chats/:id' ,optionalAuthTokenAPI, async (req, res) => {
     const { id } = req.params;
     console.log('[GET /api/chats/:id] REQUEST', id);
 
@@ -1511,7 +1560,7 @@ app.get('/api/chats/:id', async (req, res) => {
     }
 });
 
-app.get('/api/user-chats/:id', async (req, res) => {
+app.get('/api/user-chats/:id', optionalAuthTokenAPI, async (req, res) => {
     const { id } = req.params;
     const { lastId } = req.query;
     const limit = 30;
@@ -1559,7 +1608,7 @@ app.get('/api/user-chats/:id', async (req, res) => {
     }
 });
 
-app.get('/api/messages/:chatId', async (req, res) => {
+app.get('/api/messages/:chatId', optionalAuthTokenAPI, async (req, res) => {
     try {
         console.log('return-msgs');
         const { chatId } = req.params;
@@ -1656,7 +1705,7 @@ app.get("/api/participant-reaction/:msgId", authTokenAPI, async (req, res) => {
     }
 });
 
-app.delete('/api/message/:msgId', authTokenAPI, async (req, res) => {
+app.delete('/api/message/:msgId', optionalAuthTokenAPI, authTokenAPI, async (req, res) => {
     try {
         const userId = req.user.id;
         const msgId = req.params.msgId;
@@ -1682,7 +1731,7 @@ app.delete('/api/message/:msgId', authTokenAPI, async (req, res) => {
     }
 });
 
-app.get('/api/user', async (req, res) => {
+app.get('/api/user', optionalAuthTokenAPI, async (req, res) => {
     try {
         // Validate user ID
         if (!req.user.id || !mongoose.Types.ObjectId.isValid(req.user.id)) {
@@ -3133,6 +3182,7 @@ io.on('connection', (socket) => {
     console.log("A user connected:", socket.user);
 
     socket.on('register', async (userID) => {
+        if (!requireSocketUser(socket)) return;
         try {
             if (!userID) return;
             const userDB = await User.findById(userID).select('firstName lastName');
@@ -3150,54 +3200,68 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('joinChat', async ({ chatId, role }) => {
+    socket.on("joinChat", async ({ chatId, role }) => {
         try {
-            const userId = socket.user.id;
-
             if (!mongoose.Types.ObjectId.isValid(chatId)) return;
 
             const chatIdStr = String(chatId);
 
+            // guest OR logged-in viewer
             if (role === "viewer") {
+                const viewerId = socket.user?.id || socket.guestId || socket.id;
+
                 socket.join(`chat:${chatIdStr}:viewers`);
-                trackViewer(chatId, userId);
+
+                trackViewer(chatId, viewerId);
                 emitViewerCount(chatId);
+
                 socket.currentChatId = chatId;
                 socket.currentRole = "viewer";
+                socket.viewerId = viewerId;
+
                 return;
             }
 
-            // participant
+            // member role requires login
+            if (!requireSocketUser(socket)) return;
+
+            const userId = socket.user.id;
+
             const participants = await getParticipants(chatId);
             if (!participants?.has(String(userId))) return;
 
             socket.join(`chat:${chatIdStr}:members`);
+
             socket.currentChatId = chatId;
             socket.currentRole = "member";
         } catch (err) {
             console.log(err);
-            return;
         }
     });
 
-    socket.on('leaveChat', (chatId) => {
+    socket.on("leaveChat", (chatId) => {
         try {
-            const userId = socket.user.id;
             if (!chatId) return;
+
+            const viewerId = socket.viewerId || socket.user?.id || socket.guestId || socket.id;
 
             socket.leave(`chat:${chatId}:viewers`);
             socket.leave(`chat:${chatId}:members`);
 
-            untrackViewer(chatId, userId);
+            untrackViewer(chatId, viewerId);
             emitViewerCount(chatId);
+
+            socket.currentChatId = null;
+            socket.currentRole = null;
+            socket.viewerId = null;
         } catch (err) {
             console.log(err);
-            return;
         }
     });
 
     socket.on('participantRemoved', async ({ userId, chatId }) => {
         try {
+            if (!requireSocketUser(socket)) return;
             console.log('Received particpantRemoved');
             if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(chatId)) return;
             const removedUser = await User.findById(userId);
@@ -3222,6 +3286,7 @@ io.on('connection', (socket) => {
 
     socket.on('participantRequested', async ({ userId, chatId, message }) => {
         try {
+            if (!requireSocketUser(socket)) return;
             console.log('Received particpantAdded');
             if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(chatId)) return;
             const chat = await Chat.findById(chatId).select('chatAdmin');
@@ -3237,6 +3302,7 @@ io.on('connection', (socket) => {
 
     socket.on('participantAccepted', async ({ chatId }) => {
         try {
+            if (!requireSocketUser(socket)) return;
             console.log('Received participantAccepted');
             const userId = socket.user.id;
             if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(chatId)) return;
@@ -3254,6 +3320,7 @@ io.on('connection', (socket) => {
 
     socket.on('participantJoined', async ({ chatId }) => {
         try {
+            if (!requireSocketUser(socket)) return;
             const userId = socket.user.id;
             if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(chatId)) return;
             const chat = await Chat.findOne({ _id: chatId, participants: userId });
@@ -3272,6 +3339,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on('message', async ({ message }) => {
+        if (!requireSocketUser(socket)) return;
         try {
             if (String(socket.user.id) !== String(message.from._id)) {
                 return;
@@ -3313,6 +3381,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('privateMessageRead', async ({ msgId, to, chatId }) => {
+        if (!requireSocketUser(socket)) return;
         try {
             const receiverSocket = onlineUsers[to];
             await Message.updateOne({ _id: msgId }, { $set: { read: true } })
@@ -3325,6 +3394,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('reaction', async (data) => {
+        if (!requireSocketUser(socket)) return;
         try {
             const { msgId, chatId, username, emoji, remove, reactions } = data;
 
@@ -3353,6 +3423,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('typing', async (data) => {
+        if (!requireSocketUser(socket)) return;
         try {
             console.log('typing')
             const { chatId, typing } = data;
@@ -3376,6 +3447,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('liveComment', async (data) => {
+        if (!requireSocketUser(socket)) return;
         try {
             if (!data) {
                 return;
@@ -3402,6 +3474,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('liveCommentPin', async ({ chatId, comment }) => {
+        if (!requireSocketUser(socket)) return;
         try {
             if (!chatId || !comment) return;
 
@@ -3426,6 +3499,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('friendRequest', async (request) => {
+        if (!requireSocketUser(socket)) return;
         try {
             socket.emit('friendRequestSent', request);
             const receiverSocket = onlineUsers[request.to._id];
@@ -3439,6 +3513,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('cancelFriendRequest', async (request) => {
+        if (!requireSocketUser(socket)) return;
         try {
             socket.emit('friendRequestCanceled', { to: request.to._id, from: request.from._id });
             const receiverSocket = onlineUsers[request.to._id];
@@ -3456,6 +3531,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('acceptFriendRequest', async (userId) => {
+        if (!requireSocketUser(socket)) return;
         try {
             const fromUserId = userId;
             const fromUser = await User.findById(fromUserId).select('_id firstName lastName');
@@ -3487,6 +3563,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('rejectFriendRequest', async (data) => {
+        if (!requireSocketUser(socket)) return;
         try {
             socket.emit('friendRequestRejected', { to: data.to, from: data.from });
             const receiverSocket = onlineUsers[data.from];
@@ -3500,6 +3577,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('unfriend', async (userId) => {
+        if (!requireSocketUser(socket)) return;
         try {
             socket.emit('unfriend', userId);
             const receiverSocket = onlineUsers[userId];
@@ -3513,6 +3591,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('notification', async (notification) => {
+        if (!requireSocketUser(socket)) return;
         try {
             const receiverSocket = onlineUsers[notification.user];
             if (receiverSocket) {
@@ -3525,6 +3604,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('deleteMessage', async (msg) => {
+        if (!requireSocketUser(socket)) return;
         try {
             if (!msg) {
                 return;
@@ -3567,26 +3647,26 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('disconnect', () => {
-        let disconnectedUserId = null;
-
-        for (let userID in onlineUsers) {
-            if (onlineUsers[userID].socketID === socket.id) {
-                disconnectedUserId = userID;
-                delete onlineUsers[userID];
-                break;
+    socket.on("disconnect", () => {
+        if (socket.user?.id) {
+            for (let userID in onlineUsers) {
+                if (onlineUsers[userID].socketID === socket.id) {
+                    delete onlineUsers[userID];
+                    break;
+                }
             }
         }
 
-        const chatId = socket.currentChatId;   // ✅ FIX
-        if (chatId && disconnectedUserId) {
-            untrackViewer(chatId, disconnectedUserId); // ✅ reuse your function
+        const chatId = socket.currentChatId;
+        const viewerId = socket.viewerId || socket.user?.id || socket.guestId || socket.id;
+
+        if (chatId && viewerId) {
+            untrackViewer(chatId, viewerId);
             emitViewerCount(chatId);
         }
 
-        console.log('Socket disconnected:', socket.id);
+        console.log("Socket disconnected:", socket.id);
     });
-
 });
 
 connectDB(process.env.MONGO_URI)

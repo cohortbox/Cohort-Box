@@ -7,7 +7,7 @@ import ReactionsMenu from './ReactionsMenu.js';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-export default function AudioMessage({ newSender, setIsReply, setRepliedTo, msg, setMessages, sender, selectedChat, setClickedMsg }) {
+export default function AudioMessage({ newSender, setIsReply, setRepliedTo, msg, setMessages, sender, selectedChat, setClickedMsg, setLoginPopup = () => {} }) {
     const { user } = useAuth();
     const [pop, setPop] = useState(false);
     const senderColors = ['#c76060', '#c79569', '#c7c569', '#6ec769', '#69c2c7', '#6974c7', '#9769c7', '#c769bf']
@@ -45,8 +45,8 @@ export default function AudioMessage({ newSender, setIsReply, setRepliedTo, msg,
     }
 
     return (
-        <div className={user.id === msg.from._id ? 'my-msg-container' : 'other-msg-container'} onClick={() => setClickedMsg(msg)}>
-            {String(msg.from._id) !== String(user.id) &&
+        <div className={user?.id === msg.from._id ? 'my-msg-container' : 'other-msg-container'} onClick={() => setClickedMsg(msg)}>
+            {String(msg.from._id) !== String(user?.id) &&
                 <Link style={{ textDecoration: 'none' }} to={`/profile/${sender._id}`}>
                     <div className='msg-user-dp-container'>
                         <img className='msg-user-dp' src={msg.from.dp} />
@@ -54,10 +54,10 @@ export default function AudioMessage({ newSender, setIsReply, setRepliedTo, msg,
                 </Link>
             }
             <div className={`msg-menu-btns-container ${newSender ? 'right' : ''}`}>
-                <div className={msg.from._id === user.id ? `my-media-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${pop ? 'msg-pop' : ''}` : `other-media-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${newSender ? 'left' : ''} ${pop ? 'msg-pop' : ''}`}>
-                    {msg.from._id !== user.id &&
+                <div className={msg.from._id === user?.id ? `my-media-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${pop ? 'msg-pop' : ''}` : `other-media-msg ${msg?.reactions?.length > 0 ? 'has-reactions' : ''} ${newSender ? 'left' : ''} ${pop ? 'msg-pop' : ''}`}>
+                    {msg.from._id !== user?.id &&
                         <div className='name-menu-container'>
-                            {msg.from._id !== user.id && sender && newSender && (
+                            {msg.from._id !== user?.id && sender && newSender && (
                                 <Link style={{ textDecoration: 'none' }} to={`/profile/${sender._id}`}><h4 className='sender-name' style={{ color: `${senderColors[senderIndex] ? senderColors[senderIndex] : '#c5cad3'}` }}>{sender.username}</h4></Link>
                             )}
                         </div>
@@ -86,13 +86,13 @@ export default function AudioMessage({ newSender, setIsReply, setRepliedTo, msg,
                     </div>
                     <span className="msg-time">{formatTime(msg.timestamp)}</span>
                     {msg.reactions?.length > 0 && (
-                        <div className={String(msg.from._id) === String(user.id) ? "my-reactions" : "other-reactions"}>
-                            <ReactionsMenu reactions={msg.reactions} msgId={msg._id} selectedChat={selectedChat} />
+                        <div className={String(msg.from._id) === String(user?.id) ? "my-reactions" : "other-reactions"}>
+                            <ReactionsMenu reactions={msg.reactions} msgId={msg._id} selectedChat={selectedChat} setLoginPopup={setLoginPopup} />
                         </div>
                     )}
                 </div>
                 <MessageMenu setIsReply={setIsReply} setRepliedTo={setRepliedTo} msg={msg} setMessages={setMessages} />
-                <ReactionMenu msg={msg} />
+                <ReactionMenu msg={msg} setLoginPopup={setLoginPopup}/>
             </div>
         </div>
     )
