@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const mediaSchema = new mongoose.Schema({ url: String, type: { type:  String, enum: ['image', 'video', 'audio'] }})
+const mediaSchema = new mongoose.Schema({ url: String, type: { type:  String, enum: ['image', 'video', 'audio', 'gif, sticker'] }})
 
 const messageSchema = new mongoose.Schema({
   from: {
@@ -19,9 +19,17 @@ const messageSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["text", "media", "file", "audio", "chatInfo"],
+    enum: ["text", "media", "file", "audio", "gif", "sticker","chatInfo"],
     default: "text",
   },
+  mentions: [
+    {
+      user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      username: String, // snapshot (optional but useful)
+      start: Number,
+      end: Number
+    }
+  ],
   isReply: Boolean,
   repliedTo: {
     type: mongoose.Schema.Types.ObjectId,

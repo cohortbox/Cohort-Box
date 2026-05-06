@@ -9,6 +9,7 @@ const FriendRequest = require('./models/friendRequestSchema.js');
 const Notification = require('./models/notificationSchema.js');
 const Report = require('./models/reportSchema.js');
 const Admin = require('./models/adminSchema.js');
+const ChatRestriction = require("./models/chatRestrictionSchema.js")
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -23,6 +24,7 @@ const path = require('path');
 const multer = require('multer');
 const { uploadBufferToR2 } = require('./config/r2.js');
 const { default: mongoose } = require('mongoose');
+
 const saltRounds = 10;
 
 const upload = multer({
@@ -47,7 +49,6 @@ const uploadAudio = multer({
         cb(null, true);
     },
 });
-
 
 let onlineUsers = {};
 const liveViewers = new Map();
@@ -80,6 +81,73 @@ function emitViewerCount(chatId) {
     // who should receive the count? usually everyone watching the chat
     io.to(`chat:${chatId}:viewers`).emit('liveViewerCount', { chatId, count });
     io.to(`chat:${chatId}:members`).emit('liveViewerCount', { chatId, count });
+}
+
+function validateMessagePayload(body) {
+    const errors = [];
+
+    const {
+        chatId,
+        message,
+        media,
+        mentions = [],
+        type,
+        isReply,
+        repliedTo
+    } = body;
+
+    // chatId
+    if (!chatId || !mongoose.Types.ObjectId.isValid(chatId)) {
+        errors.push("Invalid or missing chatId");
+    }
+
+    // message or media required
+    if (!message && (!media || media.length === 0)) {
+        errors.push("Message or media is required");
+    }
+
+    // media validation
+    if (media) {
+        if (!Array.isArray(media)) {
+            errors.push("Media must be an array");
+        } else {
+            media.forEach((m, i) => {
+                if (!m.url) errors.push(`Media[${i}] missing url`);
+                if (!['image', 'video', 'audio', 'gif', 'sticker'].includes(m.type)) {
+                    errors.push(`Media[${i}] invalid type`);
+                }
+            });
+        }
+    }
+
+    // type validation
+    if (type && !["text", "media", "file", "audio", "gif", "sticker", "chatInfo"].includes(type)) {
+        errors.push("Invalid message type");
+    }
+
+    // Mentions Validations
+    if (mentions ) {
+        if (!Array.isArray(mentions)) {
+            errors.push("Mentions must be an array");
+        } else {
+            for (const m of mentions) {
+                if (!mongoose.Types.ObjectId.isValid(m.user)) {
+                    errors.push("Invalid mention userId");
+                }
+            }
+        }
+    }
+
+    // reply validation
+    if (isReply && !repliedTo) {
+        errors.push("repliedTo is required when isReply is true");
+    }
+
+    if (repliedTo && !mongoose.Types.ObjectId.isValid(repliedTo)) {
+        errors.push("Invalid repliedTo ID");
+    }
+
+    return errors;
 }
 
 const participantsCache = new Map();
@@ -298,7 +366,7 @@ app.post("/api/signup", async (req, res) => {
     try {
         const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-        const userExists = await User.find({email: req.body?.email});
+        const userExists = await User.find({email: req.body?.email, status: 'deleted'});
 
         const user = {
             firstName: req.body.firstName,
@@ -309,6 +377,52 @@ app.post("/api/signup", async (req, res) => {
             verificationCode,
             verificationExpires: Date.now() + 1000 * 60 * 60,
         };
+
+        if(userExists){
+
+            const userDB = userExists;
+
+            await Notification.create({
+                user: userDB._id,
+                sender: process.env.COHORT_ROOT_USER_ID,
+                type: "welcome",
+                chat: null,
+                message: null,
+                text: "",
+                isRead: false,
+            });
+
+            // ✅ email logic moved to service (same behavior)
+            const emailRes = await sendVerificationEmail({
+                toEmail: user.email,
+                toName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+                code: verificationCode,
+            });
+
+            if(!emailRes.ok){
+                throw new Error(emailRes);
+            }
+
+            const payload = {
+                id: userDB._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                username: user.username,
+            };
+
+            const accessToken = jwt.sign(payload, process.env.ACCESS_TOKEN_KEY, { expiresIn: "10m" });
+            const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_KEY, { expiresIn: "7d" });
+
+            res.cookie("refreshToken", refreshToken, {
+                httpOnly: true,
+                secure: false,
+                sameSite: "lax",
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+            });
+
+            return res.status(201).json({ accessToken });
+        }
 
         const userDB = await User.create(user);
 
@@ -384,27 +498,16 @@ app.post('/api/update-verification-token', async (req, res) => {
 
         await user.save();
 
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
+        // Email content
+        const emailRes = await sendVerificationEmail({
+            toEmail: user.email,
+            toName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+            code: verificationCode,
         });
 
-        // Email content
-        const mailOptions = {
-            from: '"Cohort-Box" <no-reply@cohortbox.com>',
-            to: email,
-            subject: "Your New CohortBox Verification Code",
-            html: `
-                <h2>Your New Verification Code</h2>
-                <h1 style="font-size: 40px; font-weight: bold; letter-spacing: 6px;">${verificationCode}</h1>
-                <p>This code will expire in 10 minutes.</p>
-            `
-        };
-
-        await transporter.sendMail(mailOptions);
+        if(!emailRes.ok){
+            throw new Error(emailRes);
+        }
 
         return res.status(200).json({
             message: "Verification code sent successfully",
@@ -2028,30 +2131,49 @@ app.delete("/api/user", authTokenAPI, async (req, res) => {
 
 app.post('/api/message', authTokenAPI, async (req, res) => {
     try {
-        let { from, chatId, message, isReply, repliedTo, media, type, optimisticId } = req.body;
-        console.log(req.body)
-        from = new mongoose.Types.ObjectId(from);
-        chatId = new mongoose.Types.ObjectId(chatId);
-        if (!from || !chatId || (!message && (!media || media.length === 0) || (isReply && !repliedTo))) {
-            return res.status(400).json({ message: 'Please send all required fields!' });
+        let { chatId, message, mentions = [], isReply, repliedTo, media, type, optimisticId } = req.body;
+
+        const userId = req.user.id;
+
+        if (!mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ message: "Invalid chatId" });
         }
 
         const chat = await Chat.findById(chatId).select('participants');
-        if (!chat?.participants.some(p => p.equals(from))) {
-            console.log('This user is not allowed to send messages');
-            return res.status(403).json({ message: 'This user is not allowed to send messages' });
+
+        if (!chat) {
+            return res.status(404).json({ message: "Chat not found" });
+        }
+
+        if (!chat.participants.some(p => p.equals(userId))) {
+            return res.status(403).json({ message: "Not allowed" });
+        }
+
+        const errors = validateMessagePayload(req.body);
+
+        if (errors.length > 0) {
+            return res.status(400).json({
+                success: false,
+                errors
+            });
+        }
+
+        if (!type) {
+            type = media?.length ? media[0].type : "text";
         }
 
         const newMessage = await Message.create({
-            from,
+            from: userId,
             chatId,
-            message,
+            message: message.trim(),
             media,
+            mentions,
             isReply,
             repliedTo,
             type: type || undefined,
             reactions: []
         });
+
         const populatedMessage = await Message.findById(newMessage._id)
             .populate('from', '_id firstName lastName username dp')
             .populate({
@@ -2059,6 +2181,7 @@ app.post('/api/message', authTokenAPI, async (req, res) => {
                 select: 'from message media type',
                 populate: { path: 'from', select: '_id username firstName lastName dp' }, // sender of repliedTo
             });
+
         return res.status(200).json({ message: populatedMessage, optimisticId });
     } catch (err) {
         console.log(err);
@@ -2226,8 +2349,7 @@ app.post("/api/upload-images", authTokenAPI, upload.array("media", 10), async (r
         console.error(err);
         return res.status(500).json({ message: "Server Error!" });
     }
-}
-);
+});
 
 app.post("/api/upload-user-dp", authTokenAPI, upload.single('image'), async (req, res) => {
     try {
@@ -2304,8 +2426,7 @@ app.post("/api/upload-chat-dp", authTokenAPI, upload.single("image"), async (req
         console.error(err);
         return res.status(500).json({ message: "Server Error!" });
     }
-}
-);
+});
 
 app.post("/api/upload-audio", authTokenAPI, uploadAudio.single("audio"), async (req, res) => {
     try {
@@ -3175,6 +3296,126 @@ app.post('/api/reaction', authTokenAPI, async (req, res) => {
     } catch (err) {
         console.log(err);
         return res.status(500).json({ message: 'Internal Server Error!' })
+    }
+});
+
+app.post('/api/chat-ban', authTokenAPI, async (req, res) => {
+    try{
+        const {chatId, banUserId} = req.body;
+        const userId = req.user.id;
+
+        if (!banUserId) return res.status(400).json({ message: "Please send User ID to ban!" });
+        if (!mongoose.Types.ObjectId.isValid(banUserId)) {
+            return res.status(400).json({ message: "Please send a valid user ID to ban!" });
+        }
+
+        const banUser = await User.findById(banUserId);
+        if (!banUser) return res.status(404).json({ message: "No User found" });
+
+        if (!chatId) return res.status(400).json({ message: "Please send chat ID!" });
+        if (!mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ message: "Please send a valid chat ID!" });
+        }
+
+        const chat = await Chat.findById(chatId).select("chatAdmin");
+        if (!chat) return res.status(404).json({ message: "No Chat found" });
+
+        if (String(chat.chatAdmin) !== String(userId)) {
+            return res.status(403).json({ message: "User not Authorized!" });
+        }
+
+        if (String(userId) === String(banUserId)) {
+            return res.status(400).json({ message: "You cannot ban yourself" });
+        }
+
+        await ChatRestriction.updateOne(
+            { chat: chatId, user: banUserId, type: "ban" },
+            {
+                $setOnInsert: {
+                    createdAt: new Date(),
+                }
+            },
+            { upsert: true }
+        );
+
+        return res.status(201).json({
+            success: true,
+            message: "User banned successfully"
+        });
+
+    } catch (err) {
+        console.error("Chat Ban error:", err);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
+app.post('/api/chat-mute', authTokenAPI, async (req, res) => {
+    try{
+        const {chatId, muteUserId, muteUntil} = req.body;
+        const userId = req.user.id;
+
+        if (!muteUserId) return res.status(400).json({ message: "Please send User ID to mute!" });
+        if (!mongoose.Types.ObjectId.isValid(muteUserId)) {
+            return res.status(400).json({ message: "Please send a valid user ID to mute!" });
+        }
+
+        const muteUser = await User.findById(muteUserId);
+        if (!muteUser) return res.status(404).json({ message: "No User found" });
+
+        if (!chatId) return res.status(400).json({ message: "Please send chat ID!" });
+        if (!mongoose.Types.ObjectId.isValid(chatId)) {
+            return res.status(400).json({ message: "Please send a valid chat ID!" });
+        }
+
+        const chat = await Chat.findById(chatId).select("chatAdmin");
+        if (!chat) return res.status(404).json({ message: "No Chat found" });
+
+        if (String(chat.chatAdmin) !== String(userId)) {
+            return res.status(403).json({ message: "User not Authorized!" });
+        }
+
+        if (String(userId) === String(muteUserId)) {
+            return res.status(400).json({ message: "You cannot mute yourself" });
+        }
+
+        if (!muteUntil || isNaN(new Date(muteUntil))) {
+            return res.status(400).json({ message: "Invalid muteUntil date" });
+        }
+
+        const muteUntilDate = new Date(muteUntil);
+
+        if (muteUntilDate <= new Date()) {
+            return res.status(400).json({ message: "muteUntil must be in the future" });
+        }
+
+        const chatRestrictionBan = await ChatRestriction.findOne({
+            chat: chatId,
+            user: muteUserId,
+            type: 'ban',
+        });
+
+        if(chatRestrictionBan){
+            return res.status(200).json({message: 'User is already Muted!'})
+        }
+
+        await ChatRestriction.updateOne(
+            { chat: chatId, user: muteUserId, type: "mute", },
+            {
+                $set: { muteUntil, },
+                $setOnInsert: {
+                    createdAt: new Date(),
+                }
+            },
+            { upsert: true }
+        );
+
+        return res.status(201).json({
+            success: true,
+            message: "User Muted successfully"
+        });
+    } catch (err) {
+        console.error("Chat Mute error:", err);
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 });
 
